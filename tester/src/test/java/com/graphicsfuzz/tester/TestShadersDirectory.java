@@ -22,22 +22,22 @@ import java.nio.file.Paths;
 
 public final class TestShadersDirectory {
 
-  private TestShadersDirectory() {
-    // Utility class
-  }
-
-  public static String getTestShadersDirectory() {
-    File jarDir = ToolPaths.getJarDirectory();
-    if (ToolPaths.isRunningFromIde(jarDir)) {
-      return Paths.get(
-            ToolPaths.getSourceRoot(jarDir),
-            "tester",
-            "src",
-            "main",
-            "glsl").toString();
+    private TestShadersDirectory() {
+        // Utility class
     }
 
-    return Paths.get(ToolPaths.getInstallDirectory(), "test-shaders").toString();
-  }
+    public static String getTestShadersDirectory() {
+        File jarDir = ToolPaths.getJarDirectory();
+        if (ToolPaths.isRunningFromIde(jarDir)) {
+            return Paths.get(
+                    ToolPaths.getSourceRoot(jarDir),
+                    "tester",
+                    "src",
+                    "main",
+                    "glsl").toString();
+        }
+
+        return Paths.get(ToolPaths.getInstallDirectory(), "test-shaders").toString();
+    }
 
 }

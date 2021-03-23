@@ -35,47 +35,47 @@ import java.util.Set;
  */
 public abstract class CheckAstFeatureVisitor extends ScopeTrackingVisitor {
 
-  private Optional<FunctionDefinition> triggerFunction = Optional.empty();
-  private Map<String, Set<String>> callsIndirectly = new HashMap<String, Set<String>>();
+    private Optional<FunctionDefinition> triggerFunction = Optional.empty();
+    private Map<String, Set<String>> callsIndirectly = new HashMap<String, Set<String>>();
 
-  @Override
-  public void visitFunctionPrototype(FunctionPrototype functionPrototype) {
-    final Set<String> callSelf = new HashSet<>();
-    callSelf.add(functionPrototype.getName());
-    callsIndirectly.put(functionPrototype.getName(), callSelf);
-    super.visitFunctionPrototype(functionPrototype);
-  }
-
-  @Override
-  public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
-    super.visitFunctionCallExpr(functionCallExpr);
-    final String enclosingFunctionName = getEnclosingFunction().getPrototype().getName();
-    final String calledFunctionName = functionCallExpr.getCallee();
-    assert callsIndirectly.containsKey(enclosingFunctionName);
-    if (!callsIndirectly.containsKey(calledFunctionName)) {
-      return;
+    boolean check(TranslationUnit tu) {
+        visit(tu);
+        return triggerFunction.isPresent()
+                && callsIndirectly.get("main").contains(triggerFunction.get().getPrototype().getName());
     }
-    for (String function : callsIndirectly.keySet()) {
-      if (callsIndirectly.get(function).contains(enclosingFunctionName)) {
-        callsIndirectly.get(function).addAll(callsIndirectly
-              .get(calledFunctionName));
-      }
-    }
-  }
 
-  boolean check(TranslationUnit tu) {
-    visit(tu);
-    return triggerFunction.isPresent()
-          && callsIndirectly.get("main").contains(triggerFunction.get().getPrototype().getName());
-  }
-
-  /**
-   * Use this method to register that the feature of interest has been found.
-   */
-  protected void trigger() {
-    if (!atGlobalScope()) {
-      // Only set the trigger function if we are in some function.
-      this.triggerFunction = Optional.of(getEnclosingFunction());
+    /**
+     * Use this method to register that the feature of interest has been found.
+     */
+    protected void trigger() {
+        if (!atGlobalScope()) {
+            // Only set the trigger function if we are in some function.
+            this.triggerFunction = Optional.of(getEnclosingFunction());
+        }
     }
-  }
+
+    @Override
+    public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+        super.visitFunctionCallExpr(functionCallExpr);
+        final String enclosingFunctionName = getEnclosingFunction().getPrototype().getName();
+        final String calledFunctionName = functionCallExpr.getCallee();
+        assert callsIndirectly.containsKey(enclosingFunctionName);
+        if (!callsIndirectly.containsKey(calledFunctionName)) {
+            return;
+        }
+        for (String function : callsIndirectly.keySet()) {
+            if (callsIndirectly.get(function).contains(enclosingFunctionName)) {
+                callsIndirectly.get(function).addAll(callsIndirectly
+                        .get(calledFunctionName));
+            }
+        }
+    }
+
+    @Override
+    public void visitFunctionPrototype(FunctionPrototype functionPrototype) {
+        final Set<String> callSelf = new HashSet<>();
+        callSelf.add(functionPrototype.getName());
+        callsIndirectly.put(functionPrototype.getName(), callSelf);
+        super.visitFunctionPrototype(functionPrototype);
+    }
 }

@@ -22,60 +22,60 @@ import com.graphicsfuzz.common.util.IdGenerator;
 
 public class ReducerContext {
 
-  private static final int DEFAULT_MAX_PERCENTAGE_TO_REDUCE = 50;
-  private static final int DEFAULT_AGGRESSION_DECREASE_STEP = 5;
+    private static final int DEFAULT_MAX_PERCENTAGE_TO_REDUCE = 50;
+    private static final int DEFAULT_AGGRESSION_DECREASE_STEP = 5;
 
-  private final boolean reduceEverywhere;
-  private final ShadingLanguageVersion shadingLanguageVersion;
-  private final IRandom random;
-  private final IdGenerator idGenerator;
-  private final int maxPercentageToReduce;
-  private final int aggressionDecreaseStep;
+    private final boolean reduceEverywhere;
+    private final ShadingLanguageVersion shadingLanguageVersion;
+    private final IRandom random;
+    private final IdGenerator idGenerator;
+    private final int maxPercentageToReduce;
+    private final int aggressionDecreaseStep;
 
-  public ReducerContext(boolean reduceEverywhere,
-                        ShadingLanguageVersion shadingLanguageVersion,
-                        IRandom random, IdGenerator idGenerator, int maxPercentageToReduce,
-                        int aggressionDecreaseStep) {
-    this.reduceEverywhere = reduceEverywhere;
-    this.shadingLanguageVersion = shadingLanguageVersion;
-    this.random = random;
-    this.idGenerator = idGenerator;
-    this.maxPercentageToReduce = maxPercentageToReduce;
-    this.aggressionDecreaseStep = aggressionDecreaseStep;
-  }
+    public ReducerContext(boolean reduceEverywhere,
+                          ShadingLanguageVersion shadingLanguageVersion,
+                          IRandom random, IdGenerator idGenerator, int maxPercentageToReduce,
+                          int aggressionDecreaseStep) {
+        this.reduceEverywhere = reduceEverywhere;
+        this.shadingLanguageVersion = shadingLanguageVersion;
+        this.random = random;
+        this.idGenerator = idGenerator;
+        this.maxPercentageToReduce = maxPercentageToReduce;
+        this.aggressionDecreaseStep = aggressionDecreaseStep;
+    }
 
-  public ReducerContext(boolean reduceEverywhere,
-                        ShadingLanguageVersion shadingLanguageVersion,
-                        IRandom random, IdGenerator idGenerator) {
-    this(reduceEverywhere, shadingLanguageVersion, random, idGenerator,
-        DEFAULT_MAX_PERCENTAGE_TO_REDUCE, DEFAULT_AGGRESSION_DECREASE_STEP);
-  }
+    public ReducerContext(boolean reduceEverywhere,
+                          ShadingLanguageVersion shadingLanguageVersion,
+                          IRandom random, IdGenerator idGenerator) {
+        this(reduceEverywhere, shadingLanguageVersion, random, idGenerator,
+                DEFAULT_MAX_PERCENTAGE_TO_REDUCE, DEFAULT_AGGRESSION_DECREASE_STEP);
+    }
 
-  public boolean reduceEverywhere() {
-    return reduceEverywhere;
-  }
+    public int getAggressionDecreaseStep() {
+        return aggressionDecreaseStep;
+    }
 
-  public ShadingLanguageVersion getShadingLanguageVersion() {
-    assert shadingLanguageVersion != null;
-    return shadingLanguageVersion;
-  }
+    public IdGenerator getIdGenerator() {
+        assert idGenerator != null;
+        return idGenerator;
+    }
 
-  public IRandom getRandom() {
-    assert random != null;
-    return random;
-  }
+    public int getMaxPercentageToReduce() {
+        return maxPercentageToReduce;
+    }
 
-  public IdGenerator getIdGenerator() {
-    assert idGenerator != null;
-    return idGenerator;
-  }
+    public IRandom getRandom() {
+        assert random != null;
+        return random;
+    }
 
-  public int getMaxPercentageToReduce() {
-    return maxPercentageToReduce;
-  }
+    public ShadingLanguageVersion getShadingLanguageVersion() {
+        assert shadingLanguageVersion != null;
+        return shadingLanguageVersion;
+    }
 
-  public int getAggressionDecreaseStep() {
-    return aggressionDecreaseStep;
-  }
+    public boolean reduceEverywhere() {
+        return reduceEverywhere;
+    }
 
 }

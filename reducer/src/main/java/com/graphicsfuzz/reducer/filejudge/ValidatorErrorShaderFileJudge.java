@@ -23,21 +23,21 @@ import org.slf4j.LoggerFactory;
 
 public class ValidatorErrorShaderFileJudge implements IFileJudge {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ValidatorErrorShaderFileJudge.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ValidatorErrorShaderFileJudge.class);
 
-  private String errorString;
+    private String errorString;
 
-  public ValidatorErrorShaderFileJudge(String errorString) {
-    this.errorString = errorString;
-  }
+    public ValidatorErrorShaderFileJudge(String errorString) {
+        this.errorString = errorString;
+    }
 
-  @Override
-  public boolean isInteresting(
-      File shaderJobFile,
-      File shaderResultFileOutput
-  ) {
+    @Override
+    public boolean isInteresting(
+            File shaderJobFile,
+            File shaderResultFileOutput
+    ) {
 
-    throw new RuntimeException();
+        throw new RuntimeException();
 
     /*
     // 1. Shader file validates.
@@ -75,5 +75,5 @@ public class ValidatorErrorShaderFileJudge implements IFileJudge {
       throw new FileJudgeException(exception);
     }
     */
-  }
+    }
 }

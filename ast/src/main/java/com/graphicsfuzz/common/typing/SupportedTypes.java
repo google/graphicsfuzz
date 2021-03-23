@@ -21,17 +21,17 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 
 public class SupportedTypes {
 
-  public static boolean supported(BasicType type, ShadingLanguageVersion shadingLanguageVersion) {
-    if (BasicType.allUnsignedTypes().contains(type)
-        && !shadingLanguageVersion.supportedUnsigned()) {
-      return false;
+    public static boolean supported(BasicType type, ShadingLanguageVersion shadingLanguageVersion) {
+        if (BasicType.allUnsignedTypes().contains(type)
+                && !shadingLanguageVersion.supportedUnsigned()) {
+            return false;
+        }
+        if (type.isMatrix() && !BasicType.allSquareMatrixTypes().contains(type)
+                && !shadingLanguageVersion.supportedNonSquareMatrices()) {
+            return false;
+        }
+        return true;
     }
-    if (type.isMatrix() && !BasicType.allSquareMatrixTypes().contains(type)
-        && !shadingLanguageVersion.supportedNonSquareMatrices()) {
-      return false;
-    }
-    return true;
-  }
 
 
 }

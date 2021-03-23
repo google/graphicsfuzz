@@ -20,5 +20,5 @@ import java.util.List;
 import java.util.Optional;
 
 public interface UniformValueSupplier {
-  Optional<List<String>> getValues(String name);
+    Optional<List<String>> getValues(String name);
 }

@@ -39,95 +39,95 @@ import java.util.List;
 import java.util.Optional;
 
 public class LiteralToUniformReductionOpportunity
-    extends AbstractReductionOpportunity {
+        extends AbstractReductionOpportunity {
 
-  private final ConstantExpr literalExpr;
-  private final TranslationUnit translationUnit;
-  private final ShaderJob shaderJob;
+    private final ConstantExpr literalExpr;
+    private final TranslationUnit translationUnit;
+    private final ShaderJob shaderJob;
 
-  LiteralToUniformReductionOpportunity(ConstantExpr literalExpr,
-                                       TranslationUnit translationUnit,
-                                       ShaderJob shaderJob,
-                                       VisitationDepth depth) {
+    LiteralToUniformReductionOpportunity(ConstantExpr literalExpr,
+                                         TranslationUnit translationUnit,
+                                         ShaderJob shaderJob,
+                                         VisitationDepth depth) {
 
-    super(depth);
+        super(depth);
 
-    this.literalExpr = literalExpr;
-    this.translationUnit = translationUnit;
-    this.shaderJob = shaderJob;
-  }
-
-  @Override
-  void applyReductionImpl() {
-
-    final Number numericValue;
-    final String arrayName;
-    final BasicType basicType;
-
-    if (literalExpr instanceof IntConstantExpr) {
-      arrayName = Constants.INT_LITERAL_UNIFORM_VALUES;
-      basicType = BasicType.INT;
-      numericValue = ((IntConstantExpr) literalExpr).getNumericValue();
-    } else if (literalExpr instanceof UIntConstantExpr) {
-      arrayName = Constants.UINT_LITERAL_UNIFORM_VALUES;
-      basicType = BasicType.UINT;
-      numericValue = ((UIntConstantExpr) literalExpr).getNumericValue();
-    } else {
-      arrayName = Constants.FLOAT_LITERAL_UNIFORM_VALUES;
-      basicType = BasicType.FLOAT;
-      numericValue = Float.valueOf(((FloatConstantExpr) literalExpr).getValue());
+        this.literalExpr = literalExpr;
+        this.translationUnit = translationUnit;
+        this.shaderJob = shaderJob;
     }
 
-    // If the uniform array doesn't exist in the pipeline info, adds an empty array.
-    if (!shaderJob.getPipelineInfo().hasUniform(arrayName)) {
-      shaderJob.getPipelineInfo().addUniform(arrayName, basicType,
-          Optional.of(0), new ArrayList<>());
+    @Override
+    void applyReductionImpl() {
+
+        final Number numericValue;
+        final String arrayName;
+        final BasicType basicType;
+
+        if (literalExpr instanceof IntConstantExpr) {
+            arrayName = Constants.INT_LITERAL_UNIFORM_VALUES;
+            basicType = BasicType.INT;
+            numericValue = ((IntConstantExpr) literalExpr).getNumericValue();
+        } else if (literalExpr instanceof UIntConstantExpr) {
+            arrayName = Constants.UINT_LITERAL_UNIFORM_VALUES;
+            basicType = BasicType.UINT;
+            numericValue = ((UIntConstantExpr) literalExpr).getNumericValue();
+        } else {
+            arrayName = Constants.FLOAT_LITERAL_UNIFORM_VALUES;
+            basicType = BasicType.FLOAT;
+            numericValue = Float.valueOf(((FloatConstantExpr) literalExpr).getValue());
+        }
+
+        // If the uniform array doesn't exist in the pipeline info, adds an empty array.
+        if (!shaderJob.getPipelineInfo().hasUniform(arrayName)) {
+            shaderJob.getPipelineInfo().addUniform(arrayName, basicType,
+                    Optional.of(0), new ArrayList<>());
+        }
+
+        final int index;
+        final List<String> values = shaderJob.getPipelineInfo().getArgs(arrayName);
+
+        if (values.contains(numericValue.toString())) {
+            index = values.indexOf(numericValue.toString());
+        } else {
+            index = shaderJob.getPipelineInfo().appendValueToUniform(arrayName, numericValue);
+        }
+
+        final int arraySize = shaderJob.getPipelineInfo().getArgs(arrayName).size();
+        final ArrayInfo arrayInfo = new ArrayInfo(new IntConstantExpr(String.valueOf(arraySize)));
+        arrayInfo.setConstantSizeExpr(arraySize);
+        final VariableDeclInfo variableDeclInfo = new VariableDeclInfo(arrayName,
+                arrayInfo, null);
+        final VariablesDeclaration arrayDecl = new VariablesDeclaration(
+                new QualifiedType(basicType, Arrays.asList(TypeQualifier.UNIFORM)), variableDeclInfo
+        );
+
+        // Adds the new uniform array to the current translation unit in the case it doesn't exist.
+        if (!translationUnit.hasUniformDeclaration(arrayName)) {
+            translationUnit.addDeclaration(arrayDecl);
+        }
+
+        // Goes through each translation unit in the shader job and updates its existing uniform array
+        // to refer this new uniform array.
+        for (TranslationUnit tu : shaderJob.getShaders()) {
+            if (tu.hasUniformDeclaration(arrayName)) {
+                tu.updateTopLevelDeclaration(arrayDecl, tu.getUniformDeclaration(arrayName));
+            }
+        }
+
+        // Replaces the literal with an access of the uniform.
+        final IParentMap parentMap = IParentMap.createParentMap(translationUnit);
+        final ArrayIndexExpr aie = new ArrayIndexExpr(new VariableIdentifierExpr(arrayName),
+                new IntConstantExpr(String.valueOf(index)));
+
+        if (parentMap.hasParent(literalExpr)) {
+            parentMap.getParent(literalExpr).replaceChild(literalExpr, aie);
+        }
     }
 
-    final int index;
-    final List<String> values = shaderJob.getPipelineInfo().getArgs(arrayName);
-
-    if (values.contains(numericValue.toString())) {
-      index = values.indexOf(numericValue.toString());
-    } else {
-      index = shaderJob.getPipelineInfo().appendValueToUniform(arrayName, numericValue);
+    @Override
+    public boolean preconditionHolds() {
+        return true;
     }
-
-    final int arraySize = shaderJob.getPipelineInfo().getArgs(arrayName).size();
-    final ArrayInfo arrayInfo = new ArrayInfo(new IntConstantExpr(String.valueOf(arraySize)));
-    arrayInfo.setConstantSizeExpr(arraySize);
-    final VariableDeclInfo variableDeclInfo = new VariableDeclInfo(arrayName,
-        arrayInfo, null);
-    final VariablesDeclaration arrayDecl = new VariablesDeclaration(
-        new QualifiedType(basicType, Arrays.asList(TypeQualifier.UNIFORM)), variableDeclInfo
-    );
-
-    // Adds the new uniform array to the current translation unit in the case it doesn't exist.
-    if (!translationUnit.hasUniformDeclaration(arrayName)) {
-      translationUnit.addDeclaration(arrayDecl);
-    }
-
-    // Goes through each translation unit in the shader job and updates its existing uniform array
-    // to refer this new uniform array.
-    for (TranslationUnit tu: shaderJob.getShaders()) {
-      if (tu.hasUniformDeclaration(arrayName)) {
-        tu.updateTopLevelDeclaration(arrayDecl, tu.getUniformDeclaration(arrayName));
-      }
-    }
-
-    // Replaces the literal with an access of the uniform.
-    final IParentMap parentMap = IParentMap.createParentMap(translationUnit);
-    final ArrayIndexExpr aie = new ArrayIndexExpr(new VariableIdentifierExpr(arrayName),
-        new IntConstantExpr(String.valueOf(index)));
-
-    if (parentMap.hasParent(literalExpr)) {
-      parentMap.getParent(literalExpr).replaceChild(literalExpr, aie);
-    }
-  }
-
-  @Override
-  public boolean preconditionHolds() {
-    return true;
-  }
 
 }

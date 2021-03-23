@@ -29,41 +29,41 @@ import java.util.Map;
 
 public final class ReplaceLoopCounter {
 
-  private ReplaceLoopCounter() {
-    // Utility class; deliberately not constructable.
-  }
-
-  public static ForStmt replaceLoopCounter(ForStmt loop,
-      String oldLoopCounter,
-      String newLoopCounter) {
-    final Map<String, String> substitution = new HashMap<>();
-    substitution.put(oldLoopCounter, newLoopCounter);
-    new ApplySubstitution(substitution, loop.getBody());
-
-    replaceLoopCounterInInitializer(loop.getInit(), newLoopCounter);
-    replaceLoopCounterInCondition(loop.getCondition(), newLoopCounter);
-    replaceLoopCounterInIncrement(loop.getIncrement(), newLoopCounter);
-
-    return loop;
-  }
-
-  private static void replaceLoopCounterInIncrement(Expr increment, String newLoopCounter) {
-    ((VariableIdentifierExpr) ((UnaryExpr) increment).getExpr()).setName(newLoopCounter);
-  }
-
-  private static void replaceLoopCounterInCondition(Expr condition, String newLoopCounter) {
-    BinaryExpr binaryExpr = (BinaryExpr) condition;
-    VariableIdentifierExpr toReplace;
-    if (binaryExpr.getLhs() instanceof VariableIdentifierExpr) {
-      toReplace = (VariableIdentifierExpr) binaryExpr.getLhs();
-    } else {
-      toReplace = (VariableIdentifierExpr) binaryExpr.getRhs();
+    private ReplaceLoopCounter() {
+        // Utility class; deliberately not constructable.
     }
-    toReplace.setName(newLoopCounter);
-  }
 
-  private static void replaceLoopCounterInInitializer(Stmt init, String newLoopCounter) {
-    ((DeclarationStmt) init).getVariablesDeclaration().getDeclInfo(0).setName(newLoopCounter);
-  }
+    public static ForStmt replaceLoopCounter(ForStmt loop,
+                                             String oldLoopCounter,
+                                             String newLoopCounter) {
+        final Map<String, String> substitution = new HashMap<>();
+        substitution.put(oldLoopCounter, newLoopCounter);
+        new ApplySubstitution(substitution, loop.getBody());
+
+        replaceLoopCounterInInitializer(loop.getInit(), newLoopCounter);
+        replaceLoopCounterInCondition(loop.getCondition(), newLoopCounter);
+        replaceLoopCounterInIncrement(loop.getIncrement(), newLoopCounter);
+
+        return loop;
+    }
+
+    private static void replaceLoopCounterInCondition(Expr condition, String newLoopCounter) {
+        BinaryExpr binaryExpr = (BinaryExpr) condition;
+        VariableIdentifierExpr toReplace;
+        if (binaryExpr.getLhs() instanceof VariableIdentifierExpr) {
+            toReplace = (VariableIdentifierExpr) binaryExpr.getLhs();
+        } else {
+            toReplace = (VariableIdentifierExpr) binaryExpr.getRhs();
+        }
+        toReplace.setName(newLoopCounter);
+    }
+
+    private static void replaceLoopCounterInIncrement(Expr increment, String newLoopCounter) {
+        ((VariableIdentifierExpr) ((UnaryExpr) increment).getExpr()).setName(newLoopCounter);
+    }
+
+    private static void replaceLoopCounterInInitializer(Stmt init, String newLoopCounter) {
+        ((DeclarationStmt) init).getVariablesDeclaration().getDeclInfo(0).setName(newLoopCounter);
+    }
 
 }

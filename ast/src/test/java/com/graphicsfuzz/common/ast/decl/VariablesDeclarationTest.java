@@ -24,25 +24,25 @@ import org.junit.Test;
 
 public class VariablesDeclarationTest {
 
-  @Test
-  public void testSetDeclInfo() throws Exception {
-    final String program = "int x, y; int main() { int y, z, w; }";
-    final TranslationUnit tu = ParseHelper.parse(program);
-    new StandardVisitor() {
-      @Override
-      public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
-        super.visitVariablesDeclaration(variablesDeclaration);
-        for (int i = 0; i < variablesDeclaration.getNumDecls(); i++) {
-          final VariableDeclInfo vdi = variablesDeclaration.getDeclInfo(i);
-          variablesDeclaration.setDeclInfo(i, new VariableDeclInfo(vdi.getName() + "_modified",
-              vdi.getArrayInfo(), vdi.getInitializer()));
-        }
-      }
-    }.visit(tu);
-    CompareAstsDuplicate.assertEqualAsts(
-        "int x_modified, y_modified; int main() { int y_modified, z_modified, w_modified; }",
-        tu);
-  }
+    @Test
+    public void testSetDeclInfo() throws Exception {
+        final String program = "int x, y; int main() { int y, z, w; }";
+        final TranslationUnit tu = ParseHelper.parse(program);
+        new StandardVisitor() {
+            @Override
+            public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
+                super.visitVariablesDeclaration(variablesDeclaration);
+                for (int i = 0; i < variablesDeclaration.getNumDecls(); i++) {
+                    final VariableDeclInfo vdi = variablesDeclaration.getDeclInfo(i);
+                    variablesDeclaration.setDeclInfo(i, new VariableDeclInfo(vdi.getName() + "_modified",
+                            vdi.getArrayInfo(), vdi.getInitializer()));
+                }
+            }
+        }.visit(tu);
+        CompareAstsDuplicate.assertEqualAsts(
+                "int x_modified, y_modified; int main() { int y_modified, z_modified, w_modified; }",
+                tu);
+    }
 
 
 }

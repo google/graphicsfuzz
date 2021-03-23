@@ -18,15 +18,15 @@ package com.graphicsfuzz.common.ast.type;
 
 public class LocationLayoutQualifier implements LayoutQualifier {
 
-  private final int locationValue;
+    private final int locationValue;
 
-  public LocationLayoutQualifier(int locationValue) {
-    this.locationValue = locationValue;
-  }
+    public LocationLayoutQualifier(int locationValue) {
+        this.locationValue = locationValue;
+    }
 
-  @Override
-  public String toString() {
-    return "location = " + locationValue;
-  }
+    @Override
+    public String toString() {
+        return "location = " + locationValue;
+    }
 
 }

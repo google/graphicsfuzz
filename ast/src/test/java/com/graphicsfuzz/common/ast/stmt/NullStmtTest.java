@@ -16,18 +16,18 @@
 
 package com.graphicsfuzz.common.ast.stmt;
 
+import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 
-import org.junit.Test;
-
 public class NullStmtTest {
 
-  @Test
-  public void testNullStmt() {
-    assertEquals(";\n", new NullStmt().getText());
-    final NullStmt nullStmt = new NullStmt();
-    assertNotSame(nullStmt, nullStmt.clone());
-  }
+    @Test
+    public void testNullStmt() {
+        assertEquals(";\n", new NullStmt().getText());
+        final NullStmt nullStmt = new NullStmt();
+        assertNotSame(nullStmt, nullStmt.clone());
+    }
 
 }

@@ -18,41 +18,41 @@ package com.graphicsfuzz.common.glslversion;
 
 final class Glsl120 extends CompositeShadingLanguageVersion {
 
-  static final ShadingLanguageVersion INSTANCE = new Glsl120(Glsl110.INSTANCE);
+    static final ShadingLanguageVersion INSTANCE = new Glsl120(Glsl110.INSTANCE);
 
-  private Glsl120(ShadingLanguageVersion prototype) {
-    super(prototype);
-    // Singleton
-  }
+    private Glsl120(ShadingLanguageVersion prototype) {
+        super(prototype);
+        // Singleton
+    }
 
-  @Override
-  public String getVersionString() {
-    return "120";
-  }
+    @Override
+    public String getVersionString() {
+        return "120";
+    }
 
-  @Override
-  public boolean supportedArrayConstructors() {
-    return true;
-  }
+    @Override
+    public boolean supportedArrayConstructors() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedMatrixCompMultNonSquare() {
-    return true;
-  }
+    @Override
+    public boolean supportedMatrixCompMultNonSquare() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedNonSquareMatrices() {
-    return true;
-  }
+    @Override
+    public boolean supportedNonSquareMatrices() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedOuterProduct() {
-    return true;
-  }
+    @Override
+    public boolean supportedOuterProduct() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedTranspose() {
-    return true;
-  }
+    @Override
+    public boolean supportedTranspose() {
+        return true;
+    }
 
 }

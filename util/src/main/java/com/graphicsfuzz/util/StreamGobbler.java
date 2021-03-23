@@ -25,28 +25,27 @@ import org.slf4j.LoggerFactory;
 
 public abstract class StreamGobbler extends Thread {
 
-  private final InputStream inputStream;
+    private static final Logger LOGGER = LoggerFactory.getLogger(StreamGobbler.class);
+    private final InputStream inputStream;
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(StreamGobbler.class);
-
-  public StreamGobbler(InputStream inputStream) {
-    this.inputStream = inputStream;
-  }
-
-  public void run() {
-    try {
-      BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
-      String line;
-      while ((line = br.readLine()) != null) {
-        handleLine(line);
-      }
-    } catch (IOException exception) {
-      LOGGER.error("Exception while gobbling stream", exception);
+    public StreamGobbler(InputStream inputStream) {
+        this.inputStream = inputStream;
     }
-  }
 
-  protected abstract void handleLine(String line);
+    public abstract StringBuffer getResult();
 
-  public abstract StringBuffer getResult();
+    protected abstract void handleLine(String line);
+
+    public void run() {
+        try {
+            BufferedReader br = new BufferedReader(new InputStreamReader(inputStream));
+            String line;
+            while ((line = br.readLine()) != null) {
+                handleLine(line);
+            }
+        } catch (IOException exception) {
+            LOGGER.error("Exception while gobbling stream", exception);
+        }
+    }
 
 }

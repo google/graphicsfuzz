@@ -16,51 +16,51 @@
 
 package com.graphicsfuzz.common.ast.expr;
 
-import static org.junit.Assert.assertEquals;
-
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+
 public class IntConstantExprTest {
 
-  @Test
-  public void getValue() throws Exception {
-    IntConstantExpr ec = new IntConstantExpr("-1");
-    assertEquals("-1", ec.getValue());
-  }
+    @Test
+    public void accept() throws Exception {
+        new StandardVisitor() {
+            @Override
+            public void visitIntConstantExpr(IntConstantExpr intConstantExpr) {
+                super.visitIntConstantExpr(intConstantExpr);
+                assertEquals("42", intConstantExpr.getValue());
+            }
+        }.visit(new IntConstantExpr("42"));
+    }
 
-  @Test
-  public void accept() throws Exception {
-    new StandardVisitor() {
-      @Override
-      public void visitIntConstantExpr(IntConstantExpr intConstantExpr) {
-        super.visitIntConstantExpr(intConstantExpr);
-        assertEquals("42", intConstantExpr.getValue());
-      }
-    }.visit(new IntConstantExpr("42"));
-  }
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void getChild() throws Exception {
+        new IntConstantExpr("2").getChild(0);
+    }
 
-  @Test
-  public void testClone() throws Exception {
-    IntConstantExpr ec1 = new IntConstantExpr("10");
-    IntConstantExpr ec2 = ec1.clone();
-    assertEquals(ec1.getValue(), ec2.getValue());
-  }
+    @Test
+    public void getNumChildren() throws Exception {
+        assertEquals(0, new IntConstantExpr("2").getNumChildren());
+    }
 
-  @Test(expected = IndexOutOfBoundsException.class)
-  public void getChild() throws Exception {
-    new IntConstantExpr("2").getChild(0);
-  }
+    @Test
+    public void getValue() throws Exception {
+        IntConstantExpr ec = new IntConstantExpr("-1");
+        assertEquals("-1", ec.getValue());
+    }
 
-  @Test(expected = IndexOutOfBoundsException.class)
-  public void setChild() throws Exception {
-    new IntConstantExpr("2").setChild(0,
-        new IntConstantExpr("3"));
-  }
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void setChild() throws Exception {
+        new IntConstantExpr("2").setChild(0,
+                new IntConstantExpr("3"));
+    }
 
-  @Test
-  public void getNumChildren() throws Exception {
-    assertEquals(0, new IntConstantExpr("2").getNumChildren());
-  }
+    @Test
+    public void testClone() throws Exception {
+        IntConstantExpr ec1 = new IntConstantExpr("10");
+        IntConstantExpr ec2 = ec1.clone();
+        assertEquals(ec1.getValue(), ec2.getValue());
+    }
 
 }

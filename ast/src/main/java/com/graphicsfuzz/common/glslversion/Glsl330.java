@@ -18,36 +18,36 @@ package com.graphicsfuzz.common.glslversion;
 
 final class Glsl330 extends CompositeShadingLanguageVersion {
 
-  static final ShadingLanguageVersion INSTANCE = new Glsl330(Glsl150.INSTANCE);
+    static final ShadingLanguageVersion INSTANCE = new Glsl330(Glsl150.INSTANCE);
 
-  private Glsl330(ShadingLanguageVersion prototype) {
-    super(prototype);
-    // Singleton
-  }
+    private Glsl330(ShadingLanguageVersion prototype) {
+        super(prototype);
+        // Singleton
+    }
 
-  @Override
-  public String getVersionString() {
-    return "330";
-  }
+    @Override
+    public String getVersionString() {
+        return "330";
+    }
 
-  @Override
-  public boolean supportedFloatBitsToInt() {
-    return true;
-  }
+    @Override
+    public boolean supportedFloatBitsToInt() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedFloatBitsToUint() {
-    return true;
-  }
+    @Override
+    public boolean supportedFloatBitsToUint() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedIntBitsToFloat() {
-    return true;
-  }
+    @Override
+    public boolean supportedIntBitsToFloat() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedUintBitsToFloat() {
-    return true;
-  }
+    @Override
+    public boolean supportedUintBitsToFloat() {
+        return true;
+    }
 
 }

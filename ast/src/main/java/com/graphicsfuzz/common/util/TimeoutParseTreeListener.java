@@ -23,35 +23,35 @@ import org.antlr.v4.runtime.tree.TerminalNode;
 
 public class TimeoutParseTreeListener implements ParseTreeListener {
 
-  private final long timeToStop;
+    private final long timeToStop;
 
-  public TimeoutParseTreeListener(long timeToStop) {
-    this.timeToStop = timeToStop;
-  }
-
-  private void checkTime() {
-    if (System.currentTimeMillis() > timeToStop) {
-      throw new ParseTimeoutRuntimeException();
+    public TimeoutParseTreeListener(long timeToStop) {
+        this.timeToStop = timeToStop;
     }
-  }
 
-  @Override
-  public void visitTerminal(TerminalNode terminalNode) {
-    checkTime();
-  }
+    @Override
+    public void enterEveryRule(ParserRuleContext parserRuleContext) {
+        checkTime();
+    }
 
-  @Override
-  public void visitErrorNode(ErrorNode errorNode) {
-    checkTime();
-  }
+    @Override
+    public void exitEveryRule(ParserRuleContext parserRuleContext) {
+        checkTime();
+    }
 
-  @Override
-  public void enterEveryRule(ParserRuleContext parserRuleContext) {
-    checkTime();
-  }
+    @Override
+    public void visitErrorNode(ErrorNode errorNode) {
+        checkTime();
+    }
 
-  @Override
-  public void exitEveryRule(ParserRuleContext parserRuleContext) {
-    checkTime();
-  }
+    @Override
+    public void visitTerminal(TerminalNode terminalNode) {
+        checkTime();
+    }
+
+    private void checkTime() {
+        if (System.currentTimeMillis() > timeToStop) {
+            throw new ParseTimeoutRuntimeException();
+        }
+    }
 }

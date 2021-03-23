@@ -28,54 +28,55 @@ import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 
 public class AddInitializers {
 
-  /**
-   * Adds an at-declaration initializer to every uninitialized variable in the given shader job,
-   * unless it is not legitimate to initialize a variable (e.g. this is true for a uniform), or if
-   * there is no way to make a canonical constant for the the variable's type (e.g., there is no
-   * way to initialize a nameless struct at declaration).
-   * @param shaderJob The shader job in which variables are to be initialized.
-   */
-  public static void addInitializers(ShaderJob shaderJob) {
+    /**
+     * Adds an at-declaration initializer to every uninitialized variable in the given shader job,
+     * unless it is not legitimate to initialize a variable (e.g. this is true for a uniform), or if
+     * there is no way to make a canonical constant for the the variable's type (e.g., there is no
+     * way to initialize a nameless struct at declaration).
+     *
+     * @param shaderJob The shader job in which variables are to be initialized.
+     */
+    public static void addInitializers(ShaderJob shaderJob) {
 
-    // Consider every shader in the shader job.
-    for (TranslationUnit tu : shaderJob.getShaders()) {
+        // Consider every shader in the shader job.
+        for (TranslationUnit tu : shaderJob.getShaders()) {
 
-      new ScopeTrackingVisitor() {
+            new ScopeTrackingVisitor() {
 
-        @Override
-        public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
-          super.visitVariablesDeclaration(variablesDeclaration);
+                @Override
+                public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
+                    super.visitVariablesDeclaration(variablesDeclaration);
 
-          // Do not initialize shader input/output variables, or uniforms.
-          if (variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.SHADER_INPUT)
-              || variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.SHADER_OUTPUT)
-              || variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.UNIFORM)) {
-            return;
-          }
-          for (VariableDeclInfo vdi : variablesDeclaration.getDeclInfos()) {
-            if (vdi.hasInitializer()) {
-              // There is already an initializer; nothing to do.
-              continue;
-            }
-            // Work out the type of the variable.
-            Type variableType = variablesDeclaration.getBaseType().getWithoutQualifiers();
-            if (vdi.hasArrayInfo()) {
-              variableType = new ArrayType(variableType, vdi.getArrayInfo());
-            }
-            if (!variableType.hasCanonicalConstant(getCurrentScope())) {
-              // We don't know how to make a constant for this type, so we cannot add an
-              // initializer.
-              return;
-            }
-            // Add an initializer for this variable.
-            vdi.setInitializer(new Initializer(
-                variableType.getCanonicalConstant(getCurrentScope())));
-          }
+                    // Do not initialize shader input/output variables, or uniforms.
+                    if (variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.SHADER_INPUT)
+                            || variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.SHADER_OUTPUT)
+                            || variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.UNIFORM)) {
+                        return;
+                    }
+                    for (VariableDeclInfo vdi : variablesDeclaration.getDeclInfos()) {
+                        if (vdi.hasInitializer()) {
+                            // There is already an initializer; nothing to do.
+                            continue;
+                        }
+                        // Work out the type of the variable.
+                        Type variableType = variablesDeclaration.getBaseType().getWithoutQualifiers();
+                        if (vdi.hasArrayInfo()) {
+                            variableType = new ArrayType(variableType, vdi.getArrayInfo());
+                        }
+                        if (!variableType.hasCanonicalConstant(getCurrentScope())) {
+                            // We don't know how to make a constant for this type, so we cannot add an
+                            // initializer.
+                            return;
+                        }
+                        // Add an initializer for this variable.
+                        vdi.setInitializer(new Initializer(
+                                variableType.getCanonicalConstant(getCurrentScope())));
+                    }
+                }
+            }.visit(tu);
+
         }
-      }.visit(tu);
 
     }
-
-  }
 
 }

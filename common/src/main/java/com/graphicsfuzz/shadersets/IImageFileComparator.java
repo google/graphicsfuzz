@@ -20,6 +20,6 @@ import java.io.File;
 import java.io.IOException;
 
 public interface IImageFileComparator {
-  boolean areFilesInteresting(File shaderResultFileReference, File shaderResultFileVariant)
-      throws IOException;
+    boolean areFilesInteresting(File shaderResultFileReference, File shaderResultFileVariant)
+            throws IOException;
 }

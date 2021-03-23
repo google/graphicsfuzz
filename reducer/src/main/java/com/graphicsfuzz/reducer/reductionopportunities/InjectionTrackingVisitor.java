@@ -35,113 +35,113 @@ import com.graphicsfuzz.util.Constants;
  */
 public class InjectionTrackingVisitor extends ScopeTrackingVisitor {
 
-  // Used to track e.g. whether traversal is under a dead block or fuzzed macro.
-  final InjectionTracker injectionTracker;
+    // Used to track e.g. whether traversal is under a dead block or fuzzed macro.
+    final InjectionTracker injectionTracker;
 
-  // Provides parent information for the AST.
-  final IParentMap parentMap;
+    // Provides parent information for the AST.
+    final IParentMap parentMap;
 
-  // Records whether functions are referenced from possibly reachable code.
-  private final NotReferencedFromLiveContext notReferencedFromLiveContext;
+    // Records whether functions are referenced from possibly reachable code.
+    private final NotReferencedFromLiveContext notReferencedFromLiveContext;
 
-  public InjectionTrackingVisitor(TranslationUnit tu) {
-    this.injectionTracker = new InjectionTracker();
-    this.parentMap = IParentMap.createParentMap(tu);
-    this.notReferencedFromLiveContext = new NotReferencedFromLiveContext(tu);
-  }
-
-  @Override
-  public void visitSwitchStmt(SwitchStmt switchStmt) {
-    injectionTracker.enterSwitch(MacroNames.isSwitch(switchStmt.getExpr()));
-    super.visitSwitchStmt(switchStmt);
-    injectionTracker.leaveSwitch(MacroNames.isSwitch(switchStmt.getExpr()));
-  }
-
-  @Override
-  public void visitBlockStmt(BlockStmt block) {
-    enterBlockStmt(block);
-
-    for (int i = 0; i < block.getNumStmts(); i++) {
-
-      final Stmt child = block.getStmt(i);
-
-      if (child instanceof ExprCaseLabel) {
-        // It is important to notify the injection tracker of a switch case *before* we visit the
-        // switch case so that we can identify when we have entered the reachable part of an
-        // injected switch statement.
-        injectionTracker.notifySwitchCase((ExprCaseLabel) child);
-      }
-
-      visitChildOfBlock(block, i);
-
-      if (child instanceof BreakStmt && parentMap.getParent(block) instanceof SwitchStmt) {
-        injectionTracker.notifySwitchBreak();
-      }
-
-      visit(child);
-
+    public InjectionTrackingVisitor(TranslationUnit tu) {
+        this.injectionTracker = new InjectionTracker();
+        this.parentMap = IParentMap.createParentMap(tu);
+        this.notReferencedFromLiveContext = new NotReferencedFromLiveContext(tu);
     }
-    leaveBlockStmt(block);
-  }
 
-  @Override
-  public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
-    final boolean isFuzzedMacro = MacroNames.isFuzzed(functionCallExpr);
-    if (isFuzzedMacro) {
-      injectionTracker.enterFuzzedMacro();
+    static boolean isDeadCodeInjection(Stmt stmt) {
+        return stmt instanceof IfStmt && MacroNames
+                .isDeadByConstruction(((IfStmt) stmt).getCondition());
     }
-    super.visitFunctionCallExpr(functionCallExpr);
-    if (isFuzzedMacro) {
-      injectionTracker.exitFuzzedMacro();
+
+    boolean currentProgramPointIsDeadCode() {
+        return injectionTracker.enclosedByDeadCodeInjection()
+                || injectionTracker.underUnreachableSwitchCase()
+                || enclosingFunctionIsDead();
     }
-  }
 
-  @Override
-  public void visitIfStmt(IfStmt ifStmt) {
-    // This method is overridden in order to allow tracking of when we are inside a dead code
-    // injection.
+    @Override
+    public void visitBlockStmt(BlockStmt block) {
+        enterBlockStmt(block);
 
-    // Even for an "if(_GLF_DEAD(...))", the condition itself is not inside the dead code injection,
-    // so we visit it as usual first.
-    visitChildFromParent(ifStmt.getCondition(), ifStmt);
+        for (int i = 0; i < block.getNumStmts(); i++) {
 
-    if (isDeadCodeInjection(ifStmt)) {
-      // This is a dead code injection, so update the injection tracker appropriately before
-      // visiting the 'then' and (possibly) 'else' branches.
-      injectionTracker.enterDeadCodeInjection();
+            final Stmt child = block.getStmt(i);
+
+            if (child instanceof ExprCaseLabel) {
+                // It is important to notify the injection tracker of a switch case *before* we visit the
+                // switch case so that we can identify when we have entered the reachable part of an
+                // injected switch statement.
+                injectionTracker.notifySwitchCase((ExprCaseLabel) child);
+            }
+
+            visitChildOfBlock(block, i);
+
+            if (child instanceof BreakStmt && parentMap.getParent(block) instanceof SwitchStmt) {
+                injectionTracker.notifySwitchBreak();
+            }
+
+            visit(child);
+
+        }
+        leaveBlockStmt(block);
     }
-    visit(ifStmt.getThenStmt());
-    if (ifStmt.hasElseStmt()) {
-      visit(ifStmt.getElseStmt());
+
+    void visitChildOfBlock(BlockStmt block, int childIndex) {
+        // Override in subclass if needed
     }
-    if (isDeadCodeInjection(ifStmt)) {
-      // Update the injection tracker to indicate that we have left this dead code injection.
-      injectionTracker.exitDeadCodeInjection();
+
+    @Override
+    public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+        final boolean isFuzzedMacro = MacroNames.isFuzzed(functionCallExpr);
+        if (isFuzzedMacro) {
+            injectionTracker.enterFuzzedMacro();
+        }
+        super.visitFunctionCallExpr(functionCallExpr);
+        if (isFuzzedMacro) {
+            injectionTracker.exitFuzzedMacro();
+        }
     }
-  }
 
-  void visitChildOfBlock(BlockStmt block, int childIndex) {
-    // Override in subclass if needed
-  }
+    @Override
+    public void visitIfStmt(IfStmt ifStmt) {
+        // This method is overridden in order to allow tracking of when we are inside a dead code
+        // injection.
 
-  boolean currentProgramPointIsDeadCode() {
-    return injectionTracker.enclosedByDeadCodeInjection()
-        || injectionTracker.underUnreachableSwitchCase()
-        || enclosingFunctionIsDead();
-  }
+        // Even for an "if(_GLF_DEAD(...))", the condition itself is not inside the dead code injection,
+        // so we visit it as usual first.
+        visitChildFromParent(ifStmt.getCondition(), ifStmt);
 
-  private boolean enclosingFunctionIsDead() {
-    if (atGlobalScope()) {
-      return false;
+        if (isDeadCodeInjection(ifStmt)) {
+            // This is a dead code injection, so update the injection tracker appropriately before
+            // visiting the 'then' and (possibly) 'else' branches.
+            injectionTracker.enterDeadCodeInjection();
+        }
+        visit(ifStmt.getThenStmt());
+        if (ifStmt.hasElseStmt()) {
+            visit(ifStmt.getElseStmt());
+        }
+        if (isDeadCodeInjection(ifStmt)) {
+            // Update the injection tracker to indicate that we have left this dead code injection.
+            injectionTracker.exitDeadCodeInjection();
+        }
     }
-    final String enclosingFunctionName = getEnclosingFunction().getPrototype().getName();
-    return enclosingFunctionName.startsWith(Constants.DEAD_PREFIX)
-        || notReferencedFromLiveContext.neverCalledFromLiveContext(enclosingFunctionName);
-  }
 
-  static boolean isDeadCodeInjection(Stmt stmt) {
-    return stmt instanceof IfStmt && MacroNames
-        .isDeadByConstruction(((IfStmt) stmt).getCondition());
-  }
+    @Override
+    public void visitSwitchStmt(SwitchStmt switchStmt) {
+        injectionTracker.enterSwitch(MacroNames.isSwitch(switchStmt.getExpr()));
+        super.visitSwitchStmt(switchStmt);
+        injectionTracker.leaveSwitch(MacroNames.isSwitch(switchStmt.getExpr()));
+    }
+
+    private boolean enclosingFunctionIsDead() {
+        if (atGlobalScope()) {
+            return false;
+        }
+        final String enclosingFunctionName = getEnclosingFunction().getPrototype().getName();
+        return enclosingFunctionName.startsWith(Constants.DEAD_PREFIX)
+                || notReferencedFromLiveContext.neverCalledFromLiveContext(enclosingFunctionName);
+    }
 
 }

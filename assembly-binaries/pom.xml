@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <artifactId>assembly-binaries</artifactId>
   <name>assembly-binaries</name>
@@ -231,13 +231,16 @@ limitations under the License.
             </goals>
             <configuration>
               <target>
-                <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${ant-contrib:ant-contrib:jar}"/>
+                <taskdef resource="net/sf/antcontrib/antcontrib.properties"
+                         classpath="${ant-contrib:ant-contrib:jar}"/>
 
                 <property name="shaders-zip" value="${com.graphicsfuzz:shaders:zip}"/>
 
 
-                <property name="assembly-zip" value="${project.build.directory}/${project.artifactId}-${project.version}.zip"/>
-                <property name="assembly-dir" value="${project.build.directory}/${project.artifactId}-${project.version}"/>
+                <property name="assembly-zip"
+                          value="${project.build.directory}/${project.artifactId}-${project.version}.zip"/>
+                <property name="assembly-dir"
+                          value="${project.build.directory}/${project.artifactId}-${project.version}"/>
 
                 <property name="touched-file" value="${project.build.directory}/touched.txt"/>
 
@@ -400,7 +403,7 @@ limitations under the License.
 
                     </java>
                     <unzip src="${assembly-zip}" dest="${assembly-dir}"/>
-                    <chmod perm="ugo+x" dir="${assembly-dir}/bin" includes="**" />
+                    <chmod perm="ugo+x" dir="${assembly-dir}/bin" includes="**"/>
                     <touch file="${touched-file}"/>
                   </sequential>
                 </outofdate>

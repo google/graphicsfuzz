@@ -18,8 +18,8 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 public class FailedReductionException extends RuntimeException {
 
-  public FailedReductionException(String message) {
-    super(message);
-  }
+    public FailedReductionException(String message) {
+        super(message);
+    }
 
 }

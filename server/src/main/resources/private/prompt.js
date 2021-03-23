@@ -15,18 +15,18 @@
  */
 
 function promptForInfo(msg, url, current, urlEmpty, newTab) {
-  var value = prompt(msg, current);
-  var finUrl;
-  if (value == null) {
-    return;
-  } else if (value === "") {
-    finUrl = urlEmpty;
-  } else {
-    finUrl = url + value;
-  }
-  if (newTab) {
-    window.open(finUrl);
-  } else {
-    window.location.assign(finUrl);
-  }
+    var value = prompt(msg, current);
+    var finUrl;
+    if (value == null) {
+        return;
+    } else if (value === "") {
+        finUrl = urlEmpty;
+    } else {
+        finUrl = url + value;
+    }
+    if (newTab) {
+        window.open(finUrl);
+    } else {
+        window.location.assign(finUrl);
+    }
 }

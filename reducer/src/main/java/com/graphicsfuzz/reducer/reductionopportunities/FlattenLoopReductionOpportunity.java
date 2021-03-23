@@ -25,34 +25,34 @@ import java.util.List;
 
 public abstract class FlattenLoopReductionOpportunity extends AbstractReductionOpportunity {
 
-  private final IAstNode parent;
-  private final LoopStmt loopStmt;
+    private final IAstNode parent;
+    private final LoopStmt loopStmt;
 
-  FlattenLoopReductionOpportunity(IAstNode parent, LoopStmt loopStmt,
-                                            VisitationDepth depth) {
-    super(depth);
-    this.parent = parent;
-    this.loopStmt = loopStmt;
-  }
-
-  LoopStmt getLoopStmt() {
-    return loopStmt;
-  }
-
-  void doReplacement(List<Stmt> newStmts) {
-    parent.replaceChild(loopStmt, new BlockStmt(newStmts, true));
-  }
-
-  void addLoopBody(List<Stmt> newStmts) {
-    if (loopStmt.getBody() instanceof BlockStmt) {
-      newStmts.addAll(((BlockStmt) loopStmt.getBody()).getStmts());
-    } else {
-      newStmts.add(loopStmt.getBody());
+    FlattenLoopReductionOpportunity(IAstNode parent, LoopStmt loopStmt,
+                                    VisitationDepth depth) {
+        super(depth);
+        this.parent = parent;
+        this.loopStmt = loopStmt;
     }
-  }
 
-  @Override
-  public final boolean preconditionHolds() {
-    return parent.hasChild(loopStmt);
-  }
+    void addLoopBody(List<Stmt> newStmts) {
+        if (loopStmt.getBody() instanceof BlockStmt) {
+            newStmts.addAll(((BlockStmt) loopStmt.getBody()).getStmts());
+        } else {
+            newStmts.add(loopStmt.getBody());
+        }
+    }
+
+    void doReplacement(List<Stmt> newStmts) {
+        parent.replaceChild(loopStmt, new BlockStmt(newStmts, true));
+    }
+
+    LoopStmt getLoopStmt() {
+        return loopStmt;
+    }
+
+    @Override
+    public final boolean preconditionHolds() {
+        return parent.hasChild(loopStmt);
+    }
 }

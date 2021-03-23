@@ -29,109 +29,107 @@ import java.util.ArrayList;
 import java.util.List;
 
 public abstract class ReductionOpportunitiesBase
-      <ReductionOpportunityT extends IReductionOpportunity>
-      extends InjectionTrackingVisitor {
+        <ReductionOpportunityT extends IReductionOpportunity>
+        extends InjectionTrackingVisitor {
 
-  private final List<ReductionOpportunityT> opportunities;
+    protected final ReducerContext context;
+    final ShaderKind shaderKind;
+    private final List<ReductionOpportunityT> opportunities;
+    private int numEnclosingLValues;
 
-  protected final ReducerContext context;
-
-  final ShaderKind shaderKind;
-
-  private int numEnclosingLValues;
-
-  /**
-   * Construct base class for finding reduction opportunities, with respect to a translation unit.
-   * @param tu Translation unit that will subsequently be visited
-   * @param context Includes information such as whether reductions should be sought everywhere or
-   *                only to reverse transformations
-   */
-  public ReductionOpportunitiesBase(TranslationUnit tu, ReducerContext context) {
-    super(tu);
-    this.opportunities = new ArrayList<>();
-    this.context = context;
-    this.shaderKind = tu.getShaderKind();
-    this.numEnclosingLValues = 0;
-  }
-
-  @Override
-  public void visitExprCaseLabel(ExprCaseLabel exprCaseLabel) {
-    // Do *not* invoke super.visitExprCaseLabel(...), as we do not wish to look for opportunities
-    // to simplify the literal expression that is used as a case label.  Literals are simple enough
-    // already, and attempting to change the value of a case label literal runs the risk of
-    // introducing duplicate case labels.
-  }
-
-  @Override
-  public void visitBinaryExpr(BinaryExpr binaryExpr) {
-    boolean isSideEffecting = binaryExpr.getOp().isSideEffecting();
-    if (isSideEffecting) {
-      enterLValueContext();
+    /**
+     * Construct base class for finding reduction opportunities, with respect to a translation unit.
+     *
+     * @param tu      Translation unit that will subsequently be visited
+     * @param context Includes information such as whether reductions should be sought everywhere or
+     *                only to reverse transformations
+     */
+    public ReductionOpportunitiesBase(TranslationUnit tu, ReducerContext context) {
+        super(tu);
+        this.opportunities = new ArrayList<>();
+        this.context = context;
+        this.shaderKind = tu.getShaderKind();
+        this.numEnclosingLValues = 0;
     }
-    visitChildFromParent(binaryExpr.getLhs(), binaryExpr);
-    if (isSideEffecting) {
-      exitLValueContext();
+
+    final void addOpportunity(
+            ReductionOpportunityT opportunity) {
+        if (opportunity.preconditionHolds()) {
+            // Guard against the possibility of us adding a reduction opportunity whose precondition
+            // does not hold -- this would lead to a reduction loop.
+            opportunities.add(opportunity);
+        }
     }
-    visitChildFromParent(binaryExpr.getRhs(), binaryExpr);
-  }
 
-  @Override
-  public void visitUnaryExpr(UnaryExpr unaryExpr) {
-    if (unaryExpr.getOp().isSideEffecting()) {
-      enterLValueContext();
+    public final List<ReductionOpportunityT> getOpportunities() {
+        return opportunities;
     }
-    super.visitUnaryExpr(unaryExpr);
-    if (unaryExpr.getOp().isSideEffecting()) {
-      exitLValueContext();
+
+    void identifyReductionOpportunitiesForChild(IAstNode parent, Expr child) {
+        // Override in subclass if needed
     }
-  }
 
-  @Override
-  protected void visitChildFromParent(IAstNode child, IAstNode parent) {
-    super.visitChildFromParent(child, parent);
-    if (child instanceof Expr) {
-      identifyReductionOpportunitiesForChild(parent, (Expr) child);
+    boolean inLValueContext() {
+        return numEnclosingLValues > 0;
     }
-  }
 
-  void identifyReductionOpportunitiesForChild(IAstNode parent, Expr child) {
-    // Override in subclass if needed
-  }
-
-  private void enterLValueContext() {
-    numEnclosingLValues++;
-  }
-
-  private void exitLValueContext() {
-    assert numEnclosingLValues > 0;
-    numEnclosingLValues--;
-  }
-
-  boolean inLValueContext() {
-    return numEnclosingLValues > 0;
-  }
-
-  boolean initializerIsScalarAndSideEffectFree(VariableDeclInfo variableDeclInfo) {
-    if (!variableDeclInfo.hasInitializer()) {
-      return false;
+    boolean initializerIsScalarAndSideEffectFree(VariableDeclInfo variableDeclInfo) {
+        if (!variableDeclInfo.hasInitializer()) {
+            return false;
+        }
+        return SideEffectChecker.isSideEffectFree(
+                (variableDeclInfo.getInitializer()).getExpr(),
+                context.getShadingLanguageVersion(),
+                shaderKind);
     }
-    return SideEffectChecker.isSideEffectFree(
-        (variableDeclInfo.getInitializer()).getExpr(),
-        context.getShadingLanguageVersion(),
-        shaderKind);
-  }
 
-  public final List<ReductionOpportunityT> getOpportunities() {
-    return opportunities;
-  }
-
-  final void addOpportunity(
-        ReductionOpportunityT opportunity) {
-    if (opportunity.preconditionHolds()) {
-      // Guard against the possibility of us adding a reduction opportunity whose precondition
-      // does not hold -- this would lead to a reduction loop.
-      opportunities.add(opportunity);
+    @Override
+    public void visitBinaryExpr(BinaryExpr binaryExpr) {
+        boolean isSideEffecting = binaryExpr.getOp().isSideEffecting();
+        if (isSideEffecting) {
+            enterLValueContext();
+        }
+        visitChildFromParent(binaryExpr.getLhs(), binaryExpr);
+        if (isSideEffecting) {
+            exitLValueContext();
+        }
+        visitChildFromParent(binaryExpr.getRhs(), binaryExpr);
     }
-  }
+
+    @Override
+    protected void visitChildFromParent(IAstNode child, IAstNode parent) {
+        super.visitChildFromParent(child, parent);
+        if (child instanceof Expr) {
+            identifyReductionOpportunitiesForChild(parent, (Expr) child);
+        }
+    }
+
+    @Override
+    public void visitExprCaseLabel(ExprCaseLabel exprCaseLabel) {
+        // Do *not* invoke super.visitExprCaseLabel(...), as we do not wish to look for opportunities
+        // to simplify the literal expression that is used as a case label.  Literals are simple enough
+        // already, and attempting to change the value of a case label literal runs the risk of
+        // introducing duplicate case labels.
+    }
+
+    @Override
+    public void visitUnaryExpr(UnaryExpr unaryExpr) {
+        if (unaryExpr.getOp().isSideEffecting()) {
+            enterLValueContext();
+        }
+        super.visitUnaryExpr(unaryExpr);
+        if (unaryExpr.getOp().isSideEffecting()) {
+            exitLValueContext();
+        }
+    }
+
+    private void enterLValueContext() {
+        numEnclosingLValues++;
+    }
+
+    private void exitLValueContext() {
+        assert numEnclosingLValues > 0;
+        numEnclosingLValues--;
+    }
 
 }

@@ -22,21 +22,21 @@ import org.slf4j.LoggerFactory;
 
 public class StreamGobblerLogger extends StreamGobbler {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(StreamGobblerLogger.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(StreamGobblerLogger.class);
 
-  private final String prefix;
+    private final String prefix;
 
-  public StreamGobblerLogger(InputStream inputStream, String prefix) {
-    super(inputStream);
-    this.prefix = prefix;
-  }
+    public StreamGobblerLogger(InputStream inputStream, String prefix) {
+        super(inputStream);
+        this.prefix = prefix;
+    }
 
-  @Override
-  protected void handleLine(String line) {
-    LOGGER.info(prefix + line);
-  }
+    public StringBuffer getResult() {
+        return null;
+    }
 
-  public StringBuffer getResult() {
-    return null;
-  }
+    @Override
+    protected void handleLine(String line) {
+        LOGGER.info(prefix + line);
+    }
 }

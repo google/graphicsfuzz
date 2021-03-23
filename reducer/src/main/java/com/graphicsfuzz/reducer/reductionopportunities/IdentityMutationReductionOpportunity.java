@@ -24,63 +24,63 @@ import com.graphicsfuzz.common.util.MacroNames;
 
 public final class IdentityMutationReductionOpportunity extends AbstractReductionOpportunity {
 
-  private IAstNode parent;
-  private Expr childToReduce;
-  private OpaqueFunctionType function;
+    private IAstNode parent;
+    private Expr childToReduce;
+    private OpaqueFunctionType function;
 
-  IdentityMutationReductionOpportunity(IAstNode parent, Expr childToReduce,
-                                       OpaqueFunctionType function,
-                                       VisitationDepth depth) {
-    super(depth);
-    this.parent = parent;
-    this.childToReduce = childToReduce;
-    this.function = function;
-  }
-
-  private Expr extractExpr(Expr exprToReduce) {
-    switch (function) {
-      case FALSE:
-        assert MacroNames.isFalse(exprToReduce);
-        break;
-      case IDENTITY:
-        assert MacroNames.isIdentity(exprToReduce);
-        break;
-      case ONE:
-        assert MacroNames.isOne(exprToReduce);
-        break;
-      case TRUE:
-        assert MacroNames.isTrue(exprToReduce);
-        break;
-      case ZERO:
-        assert MacroNames.isZero(exprToReduce);
-        break;
-      default:
-        throw new FailedReductionException("Unknown mutation");
+    IdentityMutationReductionOpportunity(IAstNode parent, Expr childToReduce,
+                                         OpaqueFunctionType function,
+                                         VisitationDepth depth) {
+        super(depth);
+        this.parent = parent;
+        this.childToReduce = childToReduce;
+        this.function = function;
     }
-    return ((FunctionCallExpr) exprToReduce).getArg(0);
-  }
 
-  @Override
-  public void applyReductionImpl() {
-    parent.replaceChild(childToReduce, getReducedExpr());
-  }
-
-  private Expr getReducedExpr() {
-    return extractExpr(childToReduce);
-  }
-
-  @Override
-  public String toString() {
-    return "IdentityMutationReductionOpportunity(" + childToReduce.getText()
-        + " -> " + getReducedExpr().getText() + ")";
-  }
-
-  @Override
-  public boolean preconditionHolds() {
-    if (!parent.hasChild(childToReduce)) {
-      return false;
+    @Override
+    public void applyReductionImpl() {
+        parent.replaceChild(childToReduce, getReducedExpr());
     }
-    return true;
-  }
+
+    @Override
+    public boolean preconditionHolds() {
+        if (!parent.hasChild(childToReduce)) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return "IdentityMutationReductionOpportunity(" + childToReduce.getText()
+                + " -> " + getReducedExpr().getText() + ")";
+    }
+
+    private Expr extractExpr(Expr exprToReduce) {
+        switch (function) {
+            case FALSE:
+                assert MacroNames.isFalse(exprToReduce);
+                break;
+            case IDENTITY:
+                assert MacroNames.isIdentity(exprToReduce);
+                break;
+            case ONE:
+                assert MacroNames.isOne(exprToReduce);
+                break;
+            case TRUE:
+                assert MacroNames.isTrue(exprToReduce);
+                break;
+            case ZERO:
+                assert MacroNames.isZero(exprToReduce);
+                break;
+            default:
+                throw new FailedReductionException("Unknown mutation");
+        }
+        return ((FunctionCallExpr) exprToReduce).getArg(0);
+    }
+
+    private Expr getReducedExpr() {
+        return extractExpr(childToReduce);
+    }
 
 }

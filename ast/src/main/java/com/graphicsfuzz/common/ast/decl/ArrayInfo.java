@@ -25,110 +25,117 @@ import java.util.Optional;
 
 public class ArrayInfo implements IAstNode {
 
-  /**
-   * Size, set after folding.
-   */
-  private Optional<Integer> constantSize;
-  /**
-   * Original size expression before folding, for pretty printing.
-   */
-  private Optional<Expr> sizeExpr;
+    /**
+     * Size, set after folding.
+     */
+    private Optional<Integer> constantSize;
+    /**
+     * Original size expression before folding, for pretty printing.
+     */
+    private Optional<Expr> sizeExpr;
 
-  /**
-   * "originalSize" is the expression in the original shader representing the array size,
-   * and is empty if no size was given. If "originalSize" is present, constant folding can
-   * be used to turn the expression into an integer value, which can be stored in
-   * "constantSize". It is useful to keep "originalSize" around to allow the shader to
-   * be pretty-printed in its original form.
-   * @param originalSize Array size expression
-   */
-  public ArrayInfo(Expr originalSize) {
-    this.constantSize = Optional.empty();
-    this.sizeExpr = Optional.of(originalSize);
-  }
-
-  /**
-   * Private constructor for cloning, needed since the constant size expression may have been
-   * folded by the time the expression is cloned.
-   * @param constantSize Possible constant-folded size
-   * @param originalSize Original size, for pretty printing
-   */
-  private ArrayInfo(Optional<Integer> constantSize, Optional<Expr> originalSize) {
-    this.constantSize = constantSize;
-    this.sizeExpr = originalSize;
-  }
-
-  /**
-   * Default constructor, for arrays with no size definition.
-   */
-  public ArrayInfo() {
-    this.constantSize = Optional.empty();
-    this.sizeExpr = Optional.empty();
-  }
-
-  /**
-   * Query for whether this array has a size definition.
-   * @return true if size definition is available
-   */
-  public boolean hasConstantSize() {
-    return constantSize.isPresent();
-  }
-
-  /**
-   * Query whether this array has a size expression.
-   * @return Size expression
-   */
-  public boolean hasSizeExpr() {
-    return sizeExpr.isPresent();
-  }
-
-  /**
-   * Get the constant size.
-   * If constant folding was not performed yet (for example, the AST is stil being built) or if
-   * the array has no size declaration, calling this function will throw an exception.
-   * @return Integer value of the array size
-   * @throws UnsupportedLanguageFeatureException if folding was not done
-   */
-  public Integer getConstantSize() throws UnsupportedLanguageFeatureException {
-    if (hasConstantSize()) {
-      return constantSize.get();
+    /**
+     * "originalSize" is the expression in the original shader representing the array size,
+     * and is empty if no size was given. If "originalSize" is present, constant folding can
+     * be used to turn the expression into an integer value, which can be stored in
+     * "constantSize". It is useful to keep "originalSize" around to allow the shader to
+     * be pretty-printed in its original form.
+     *
+     * @param originalSize Array size expression
+     */
+    public ArrayInfo(Expr originalSize) {
+        this.constantSize = Optional.empty();
+        this.sizeExpr = Optional.of(originalSize);
     }
-    throw new UnsupportedLanguageFeatureException("Not a constant expression");
-  }
 
-  /**
-   * Set constant expression after folding.
-   * @param foldedSize Completely folded size
-   */
-  public void setConstantSizeExpr(int foldedSize) {
-    constantSize = Optional.of(foldedSize);
-  }
+    /**
+     * Private constructor for cloning, needed since the constant size expression may have been
+     * folded by the time the expression is cloned.
+     *
+     * @param constantSize Possible constant-folded size
+     * @param originalSize Original size, for pretty printing
+     */
+    private ArrayInfo(Optional<Integer> constantSize, Optional<Expr> originalSize) {
+        this.constantSize = constantSize;
+        this.sizeExpr = originalSize;
+    }
 
-  /**
-   * Get the original expression for pretty printing.
-   * @return Original, non-folded size expression
-   */
-  public Expr getSizeExpr() {
-    return sizeExpr.get();
-  }
+    /**
+     * Default constructor, for arrays with no size definition.
+     */
+    public ArrayInfo() {
+        this.constantSize = Optional.empty();
+        this.sizeExpr = Optional.empty();
+    }
 
-  /**
-   * Requires that there is a constant size, and sets the size expression to a constant expression
-   * of exactly this size.
-   */
-  public void resetSizeExprToConstant() {
-    assert hasConstantSize();
-    this.sizeExpr = Optional.of(new IntConstantExpr(Integer.toString(getConstantSize())));
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitArrayInfo(this);
+    }
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitArrayInfo(this);
-  }
+    @Override
+    public ArrayInfo clone() {
+        return new ArrayInfo(constantSize, sizeExpr.flatMap(item -> Optional.of(item.clone())));
+    }
 
-  @Override
-  public ArrayInfo clone() {
-    return new ArrayInfo(constantSize, sizeExpr.flatMap(item -> Optional.of(item.clone())));
-  }
+    /**
+     * Get the constant size.
+     * If constant folding was not performed yet (for example, the AST is stil being built) or if
+     * the array has no size declaration, calling this function will throw an exception.
+     *
+     * @return Integer value of the array size
+     * @throws UnsupportedLanguageFeatureException if folding was not done
+     */
+    public Integer getConstantSize() throws UnsupportedLanguageFeatureException {
+        if (hasConstantSize()) {
+            return constantSize.get();
+        }
+        throw new UnsupportedLanguageFeatureException("Not a constant expression");
+    }
+
+    /**
+     * Get the original expression for pretty printing.
+     *
+     * @return Original, non-folded size expression
+     */
+    public Expr getSizeExpr() {
+        return sizeExpr.get();
+    }
+
+    /**
+     * Query for whether this array has a size definition.
+     *
+     * @return true if size definition is available
+     */
+    public boolean hasConstantSize() {
+        return constantSize.isPresent();
+    }
+
+    /**
+     * Query whether this array has a size expression.
+     *
+     * @return Size expression
+     */
+    public boolean hasSizeExpr() {
+        return sizeExpr.isPresent();
+    }
+
+    /**
+     * Requires that there is a constant size, and sets the size expression to a constant expression
+     * of exactly this size.
+     */
+    public void resetSizeExprToConstant() {
+        assert hasConstantSize();
+        this.sizeExpr = Optional.of(new IntConstantExpr(Integer.toString(getConstantSize())));
+    }
+
+    /**
+     * Set constant expression after folding.
+     *
+     * @param foldedSize Completely folded size
+     */
+    public void setConstantSizeExpr(int foldedSize) {
+        constantSize = Optional.of(foldedSize);
+    }
 
 }

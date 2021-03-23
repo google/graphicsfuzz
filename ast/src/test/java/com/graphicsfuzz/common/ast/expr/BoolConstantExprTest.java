@@ -16,25 +16,25 @@
 
 package com.graphicsfuzz.common.ast.expr;
 
+import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Test;
-
 public class BoolConstantExprTest {
 
-  @Test
-  public void testClone() throws Exception {
-    final BoolConstantExpr trueExpr = new BoolConstantExpr(true);
-    final BoolConstantExpr falseExpr = new BoolConstantExpr(false);
-    assertNotSame(trueExpr, trueExpr.clone());
-    assertNotSame(falseExpr, falseExpr.clone());
-    assertEquals(trueExpr.getIsTrue(), trueExpr.clone().getIsTrue());
-    assertEquals(falseExpr.getIsTrue(), falseExpr.clone().getIsTrue());
-    assertTrue(trueExpr.getIsTrue());
-    assertFalse(falseExpr.getIsTrue());
-  }
+    @Test
+    public void testClone() throws Exception {
+        final BoolConstantExpr trueExpr = new BoolConstantExpr(true);
+        final BoolConstantExpr falseExpr = new BoolConstantExpr(false);
+        assertNotSame(trueExpr, trueExpr.clone());
+        assertNotSame(falseExpr, falseExpr.clone());
+        assertEquals(trueExpr.getIsTrue(), trueExpr.clone().getIsTrue());
+        assertEquals(falseExpr.getIsTrue(), falseExpr.clone().getIsTrue());
+        assertTrue(trueExpr.getIsTrue());
+        assertFalse(falseExpr.getIsTrue());
+    }
 
 }

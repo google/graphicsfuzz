@@ -39,101 +39,98 @@ import java.util.stream.Collectors;
  * <p>It does not try to remove an argument of a function if that function is overloaded.
  * This is to avoid the problem of creating an overload collision.  We could be less
  * conservative about this.</p>
- *
- *
  */
 public class RemoveUnusedParameterReductionOpportunities
-    extends ReductionOpportunitiesBase<RemoveUnusedParameterReductionOpportunity> {
+        extends ReductionOpportunitiesBase<RemoveUnusedParameterReductionOpportunity> {
 
-  static List<RemoveUnusedParameterReductionOpportunity> findOpportunities(
-      ShaderJob shaderJob,
-      ReducerContext context) {
-    return shaderJob.getShaders()
-        .stream()
-        .map(item -> findOpportunitiesForShader(item, context))
-        .reduce(Arrays.asList(), ListConcat::concatenate);
-  }
+    /**
+     * Maps each function definition to the set of parameters that it does not reference.
+     */
+    private Map<FunctionDefinition, List<ParameterDecl>> functionsToUnusedParameters;
+    /**
+     * Tracks which parameters a function references as the function is being traversed.
+     * Null between function traversals.
+     */
+    private List<ParameterDecl> unusedParametersForCurrentFunction;
 
-  private static List<RemoveUnusedParameterReductionOpportunity> findOpportunitiesForShader(
-      TranslationUnit tu,
-      ReducerContext context) {
-    RemoveUnusedParameterReductionOpportunities finder =
-        new RemoveUnusedParameterReductionOpportunities(tu, context);
-    finder.visit(tu);
-    return finder.getOpportunities();
-  }
-
-  /**
-   * Maps each function definition to the set of parameters that it does not reference.
-   */
-  private Map<FunctionDefinition, List<ParameterDecl>> functionsToUnusedParameters;
-
-  /**
-   * Tracks which parameters a function references as the function is being traversed.
-   * Null between function traversals.
-   */
-  private List<ParameterDecl> unusedParametersForCurrentFunction;
-
-  private RemoveUnusedParameterReductionOpportunities(TranslationUnit tu,
-                                                      ReducerContext context) {
-    super(tu, context);
-    this.functionsToUnusedParameters = new HashMap<>();
-    this.unusedParametersForCurrentFunction = null;
-  }
-
-  @Override
-  public void visitTranslationUnit(TranslationUnit translationUnit) {
-
-    if (!context.reduceEverywhere()) {
-      // If we are not reducing everywhere, do not consider these reduction opportunities at all.
-      // The rationale for this is that reducing a parameter can change semantics if an actual
-      // parameter expression is side-effecting.
-      return;
+    private RemoveUnusedParameterReductionOpportunities(TranslationUnit tu,
+                                                        ReducerContext context) {
+        super(tu, context);
+        this.functionsToUnusedParameters = new HashMap<>();
+        this.unusedParametersForCurrentFunction = null;
     }
 
-    super.visitTranslationUnit(translationUnit);
-    Map<String, Long> functionNameToCount = functionsToUnusedParameters.keySet()
-        .stream()
-        .map(item -> item.getPrototype().getName())
-        .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
-    for (FunctionDefinition funDef : functionsToUnusedParameters.keySet()) {
-      if (functionNameToCount.get(funDef.getPrototype().getName()) > 1) {
-        // The function is overloaded, so do not consider removing its unused parameters.
-        continue;
-      }
-      for (ParameterDecl parameterDecl : functionsToUnusedParameters.get(funDef)) {
-        addOpportunity(new RemoveUnusedParameterReductionOpportunity(translationUnit,
-            funDef,
-            parameterDecl,
-            getVistitationDepth()));
-      }
+    static List<RemoveUnusedParameterReductionOpportunity> findOpportunities(
+            ShaderJob shaderJob,
+            ReducerContext context) {
+        return shaderJob.getShaders()
+                .stream()
+                .map(item -> findOpportunitiesForShader(item, context))
+                .reduce(Arrays.asList(), ListConcat::concatenate);
     }
 
-  }
-
-  @Override
-  public void visitFunctionDefinition(FunctionDefinition functionDefinition) {
-    assert unusedParametersForCurrentFunction == null;
-    unusedParametersForCurrentFunction = new ArrayList<>();
-    unusedParametersForCurrentFunction.addAll(functionDefinition.getPrototype().getParameters());
-    super.visitFunctionDefinition(functionDefinition);
-    functionsToUnusedParameters.put(functionDefinition, unusedParametersForCurrentFunction);
-    unusedParametersForCurrentFunction = null;
-  }
-
-  @Override
-  public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
-    super.visitVariableIdentifierExpr(variableIdentifierExpr);
-    final ScopeEntry scopeEntry = getCurrentScope().lookupScopeEntry(variableIdentifierExpr
-        .getName());
-    if (scopeEntry != null && scopeEntry.hasParameterDecl()) {
-      unusedParametersForCurrentFunction.remove(scopeEntry.getParameterDecl());
+    @Override
+    public void visitFunctionDefinition(FunctionDefinition functionDefinition) {
+        assert unusedParametersForCurrentFunction == null;
+        unusedParametersForCurrentFunction = new ArrayList<>();
+        unusedParametersForCurrentFunction.addAll(functionDefinition.getPrototype().getParameters());
+        super.visitFunctionDefinition(functionDefinition);
+        functionsToUnusedParameters.put(functionDefinition, unusedParametersForCurrentFunction);
+        unusedParametersForCurrentFunction = null;
     }
-  }
 
-  @Override
-  public void visitFunctionPrototype(FunctionPrototype functionPrototype) {
-    super.visitFunctionPrototype(functionPrototype);
-  }
+    @Override
+    public void visitFunctionPrototype(FunctionPrototype functionPrototype) {
+        super.visitFunctionPrototype(functionPrototype);
+    }
+
+    @Override
+    public void visitTranslationUnit(TranslationUnit translationUnit) {
+
+        if (!context.reduceEverywhere()) {
+            // If we are not reducing everywhere, do not consider these reduction opportunities at all.
+            // The rationale for this is that reducing a parameter can change semantics if an actual
+            // parameter expression is side-effecting.
+            return;
+        }
+
+        super.visitTranslationUnit(translationUnit);
+        Map<String, Long> functionNameToCount = functionsToUnusedParameters.keySet()
+                .stream()
+                .map(item -> item.getPrototype().getName())
+                .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()));
+        for (FunctionDefinition funDef : functionsToUnusedParameters.keySet()) {
+            if (functionNameToCount.get(funDef.getPrototype().getName()) > 1) {
+                // The function is overloaded, so do not consider removing its unused parameters.
+                continue;
+            }
+            for (ParameterDecl parameterDecl : functionsToUnusedParameters.get(funDef)) {
+                addOpportunity(new RemoveUnusedParameterReductionOpportunity(translationUnit,
+                        funDef,
+                        parameterDecl,
+                        getVistitationDepth()));
+            }
+        }
+
+    }
+
+    @Override
+    public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
+        super.visitVariableIdentifierExpr(variableIdentifierExpr);
+        final ScopeEntry scopeEntry = getCurrentScope().lookupScopeEntry(variableIdentifierExpr
+                .getName());
+        if (scopeEntry != null && scopeEntry.hasParameterDecl()) {
+            unusedParametersForCurrentFunction.remove(scopeEntry.getParameterDecl());
+        }
+    }
+
+    private static List<RemoveUnusedParameterReductionOpportunity> findOpportunitiesForShader(
+            TranslationUnit tu,
+            ReducerContext context) {
+        RemoveUnusedParameterReductionOpportunities finder =
+                new RemoveUnusedParameterReductionOpportunities(tu, context);
+        finder.visit(tu);
+        return finder.getOpportunities();
+    }
 
 }

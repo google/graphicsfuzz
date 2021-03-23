@@ -22,8 +22,8 @@ package com.graphicsfuzz.reducer.reductionopportunities;
  */
 enum SwitchTraversalStatus {
 
-  NO_LABEL_YET, // Indicates that traversal has not yet reached any case label.
-  IN_ORIGINAL_CODE, // Traversal is inside the original code.
-  OUTSIDE_ORIGINAL_CODE // Traversal is outside the original code.
+    NO_LABEL_YET, // Indicates that traversal has not yet reached any case label.
+    IN_ORIGINAL_CODE, // Traversal is inside the original code.
+    OUTSIDE_ORIGINAL_CODE // Traversal is outside the original code.
 
 }

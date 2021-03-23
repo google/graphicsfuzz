@@ -16,33 +16,33 @@
 
 package com.graphicsfuzz.common.ast;
 
-import static org.junit.Assert.assertEquals;
-
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.util.CheckUtilityClass;
 import com.graphicsfuzz.common.util.ParseHelper;
 import java.util.List;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+
 public class AstUtilTest {
 
-  @Test
-  public void checkUtilityClass() throws Exception {
-    CheckUtilityClass.assertUtilityClassWellDefined(AstUtil.class);
-  }
+    @Test
+    public void checkUtilityClass() throws Exception {
+        CheckUtilityClass.assertUtilityClassWellDefined(AstUtil.class);
+    }
 
-  @Test
-  public void getFunctionPrototypesFromShader() throws Exception {
-    String program = "int bar(int x) { return 2; }\n"
-        + "void foo();\n"
-        + "void foo() { }\n"
-        + "int foo(int x) { return 3; }\n"
-        + "void main() { }\n";
+    @Test
+    public void getFunctionPrototypesFromShader() throws Exception {
+        String program = "int bar(int x) { return 2; }\n"
+                + "void foo();\n"
+                + "void foo() { }\n"
+                + "int foo(int x) { return 3; }\n"
+                + "void main() { }\n";
 
-    TranslationUnit tu = ParseHelper.parse(program);
-    List<FunctionPrototype> prototypes = AstUtil.getFunctionPrototypesFromShader(tu);
-    assertEquals(4, prototypes.size());
+        TranslationUnit tu = ParseHelper.parse(program);
+        List<FunctionPrototype> prototypes = AstUtil.getFunctionPrototypesFromShader(tu);
+        assertEquals(4, prototypes.size());
 
-  }
+    }
 
 }

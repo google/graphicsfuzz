@@ -16,9 +16,6 @@
 
 package com.graphicsfuzz.common.ast.stmt;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import com.graphicsfuzz.common.ast.CompareAstsDuplicate;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
@@ -27,144 +24,147 @@ import com.graphicsfuzz.common.util.ParseHelper;
 import java.util.ArrayList;
 import org.junit.Test;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 public class ForStmtTest {
 
-  @Test
-  public void replaceChild() {
-    final ExprStmt init = new ExprStmt(new IntConstantExpr("0"));
-    final IntConstantExpr condition = new IntConstantExpr("1");
-    final IntConstantExpr increment = new IntConstantExpr("2");
-    final BlockStmt body = new BlockStmt(new ArrayList<>(), false);
-    final ForStmt forStmt = new ForStmt(
-        init,
-        condition,
-        increment,
-        body);
-    final ExprStmt newInit = new ExprStmt(new IntConstantExpr("3"));
-    final IntConstantExpr newCondition = new IntConstantExpr("4");
-    final IntConstantExpr newIncrement = new IntConstantExpr("5");
-    final BlockStmt newBody = new BlockStmt(new ArrayList<>(), false);
+    @Test
+    public void replaceChild() {
+        final ExprStmt init = new ExprStmt(new IntConstantExpr("0"));
+        final IntConstantExpr condition = new IntConstantExpr("1");
+        final IntConstantExpr increment = new IntConstantExpr("2");
+        final BlockStmt body = new BlockStmt(new ArrayList<>(), false);
+        final ForStmt forStmt = new ForStmt(
+                init,
+                condition,
+                increment,
+                body);
+        final ExprStmt newInit = new ExprStmt(new IntConstantExpr("3"));
+        final IntConstantExpr newCondition = new IntConstantExpr("4");
+        final IntConstantExpr newIncrement = new IntConstantExpr("5");
+        final BlockStmt newBody = new BlockStmt(new ArrayList<>(), false);
 
-    forStmt.replaceChild(init, newInit);
-    forStmt.replaceChild(condition, newCondition);
-    forStmt.replaceChild(increment, newIncrement);
-    forStmt.replaceChild(body, newBody);
+        forStmt.replaceChild(init, newInit);
+        forStmt.replaceChild(condition, newCondition);
+        forStmt.replaceChild(increment, newIncrement);
+        forStmt.replaceChild(body, newBody);
 
-    assertTrue(newInit == forStmt.getInit());
-    assertTrue(newCondition == forStmt.getCondition());
-    assertTrue(newIncrement == forStmt.getIncrement());
-    assertTrue(newBody == forStmt.getBody());
+        assertTrue(newInit == forStmt.getInit());
+        assertTrue(newCondition == forStmt.getCondition());
+        assertTrue(newIncrement == forStmt.getIncrement());
+        assertTrue(newBody == forStmt.getBody());
 
-  }
+    }
 
-  @Test
-  public void testInitIsNullStmt() throws Exception {
-    // Tests that the init of a for loop with essentially no initializer is a null statement,
-    // rather than actually being null.
-    final TranslationUnit tu = ParseHelper.parse("void main() { for( ; 1; 1) { } }");
-    final ForStmt stmt =
-        (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
-        .getStmt(0);
-    assertTrue(stmt.getInit() instanceof NullStmt);
-  }
+    @Test
+    public void testCloneEmptyFor() throws Exception {
+        final TranslationUnit tu = ParseHelper.parse("void main() { for (;;) ; }");
+        final TranslationUnit tu2 = tu.clone();
+        CompareAstsDuplicate.assertEqualAsts(tu, tu2);
+    }
 
-  @Test
-  public void testHasIncrementButNoCond() throws Exception {
-    final TranslationUnit tu = ParseHelper.parse("void main() { for( 1; ; 1) { } }");
-    final ForStmt stmt =
-        (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
-        .getStmt(0);
-    assertFalse(stmt
-        .hasCondition());
-    assertFalse(stmt
-        .hasCondition());
-    assertTrue(stmt
-        .hasIncrement());
+    @Test
+    public void testEmptyFor() throws Exception {
+        final TranslationUnit tu = ParseHelper.parse("void main() { for (;;) ; }");
+        final ForStmt stmt =
+                (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
+                        .getStmt(0);
+        assertTrue(stmt.getInit() instanceof NullStmt);
+        assertFalse(stmt
+                .hasCondition());
+        assertFalse(stmt
+                .hasIncrement());
+    }
 
-  }
+    @Test
+    public void testHasAllFields() throws Exception {
+        final TranslationUnit tu = ParseHelper.parse("void main() { for (1; 1; 1) { } }");
+        final ForStmt stmt =
+                (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
+                        .getStmt(0);
+        assertFalse(stmt.getInit() instanceof NullStmt);
+        assertTrue(stmt
+                .hasCondition());
+        assertTrue(stmt
+                .hasIncrement());
+    }
 
-  @Test
-  public void testHasCondButNoIncrement() throws Exception {
-    final TranslationUnit tu = ParseHelper.parse("void main() { for( 1; 1; ) { } }");
-    final ForStmt stmt =
-        (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
-        .getStmt(0);
-    assertTrue(stmt
-        .hasCondition());
-    assertFalse(stmt
-        .hasIncrement());
-  }
+    @Test
+    public void testHasCondButNoIncrement() throws Exception {
+        final TranslationUnit tu = ParseHelper.parse("void main() { for( 1; 1; ) { } }");
+        final ForStmt stmt =
+                (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
+                        .getStmt(0);
+        assertTrue(stmt
+                .hasCondition());
+        assertFalse(stmt
+                .hasIncrement());
+    }
 
-  @Test
-  public void testCloneEmptyFor() throws Exception {
-    final TranslationUnit tu = ParseHelper.parse("void main() { for (;;) ; }");
-    final TranslationUnit tu2 = tu.clone();
-    CompareAstsDuplicate.assertEqualAsts(tu, tu2);
-  }
+    @Test
+    public void testHasIncrementButNoCond() throws Exception {
+        final TranslationUnit tu = ParseHelper.parse("void main() { for( 1; ; 1) { } }");
+        final ForStmt stmt =
+                (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
+                        .getStmt(0);
+        assertFalse(stmt
+                .hasCondition());
+        assertFalse(stmt
+                .hasCondition());
+        assertTrue(stmt
+                .hasIncrement());
 
-  @Test
-  public void testEmptyFor() throws Exception {
-    final TranslationUnit tu = ParseHelper.parse("void main() { for (;;) ; }");
-    final ForStmt stmt =
-        (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
-        .getStmt(0);
-    assertTrue(stmt.getInit() instanceof NullStmt);
-    assertFalse(stmt
-        .hasCondition());
-    assertFalse(stmt
-        .hasIncrement());
-  }
+    }
 
-  @Test
-  public void testOnlyHasInit() throws Exception {
-    final TranslationUnit tu = ParseHelper.parse("void main() { for (1; ; ) { } }");
-    final ForStmt stmt =
-        (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
-            .getStmt(0);
-    assertFalse(stmt.getInit() instanceof NullStmt);
-    assertFalse(stmt
-        .hasCondition());
-    assertFalse(stmt
-        .hasIncrement());
-  }
+    @Test
+    public void testInitIsNullStmt() throws Exception {
+        // Tests that the init of a for loop with essentially no initializer is a null statement,
+        // rather than actually being null.
+        final TranslationUnit tu = ParseHelper.parse("void main() { for( ; 1; 1) { } }");
+        final ForStmt stmt =
+                (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
+                        .getStmt(0);
+        assertTrue(stmt.getInit() instanceof NullStmt);
+    }
 
-  @Test
-  public void testOnlyHasCondition() throws Exception {
-    final TranslationUnit tu = ParseHelper.parse("void main() { for (; 1; ) { } }");
-    final ForStmt stmt =
-        (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
-            .getStmt(0);
-    assertTrue(stmt.getInit() instanceof NullStmt);
-    assertTrue(stmt
-        .hasCondition());
-    assertFalse(stmt
-        .hasIncrement());
-  }
+    @Test
+    public void testOnlyHasCondition() throws Exception {
+        final TranslationUnit tu = ParseHelper.parse("void main() { for (; 1; ) { } }");
+        final ForStmt stmt =
+                (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
+                        .getStmt(0);
+        assertTrue(stmt.getInit() instanceof NullStmt);
+        assertTrue(stmt
+                .hasCondition());
+        assertFalse(stmt
+                .hasIncrement());
+    }
 
-  @Test
-  public void testOnlyHasIncrement() throws Exception {
-    final TranslationUnit tu = ParseHelper.parse("void main() { for (; ; 1) { } }");
-    final ForStmt stmt =
-        (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
-            .getStmt(0);
-    assertTrue(stmt.getInit() instanceof NullStmt);
-    assertFalse(stmt
-        .hasCondition());
-    assertTrue(stmt
-        .hasIncrement());
-  }
+    @Test
+    public void testOnlyHasIncrement() throws Exception {
+        final TranslationUnit tu = ParseHelper.parse("void main() { for (; ; 1) { } }");
+        final ForStmt stmt =
+                (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
+                        .getStmt(0);
+        assertTrue(stmt.getInit() instanceof NullStmt);
+        assertFalse(stmt
+                .hasCondition());
+        assertTrue(stmt
+                .hasIncrement());
+    }
 
-  @Test
-  public void testHasAllFields() throws Exception {
-    final TranslationUnit tu = ParseHelper.parse("void main() { for (1; 1; 1) { } }");
-    final ForStmt stmt =
-        (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
-            .getStmt(0);
-    assertFalse(stmt.getInit() instanceof NullStmt);
-    assertTrue(stmt
-        .hasCondition());
-    assertTrue(stmt
-        .hasIncrement());
-  }
+    @Test
+    public void testOnlyHasInit() throws Exception {
+        final TranslationUnit tu = ParseHelper.parse("void main() { for (1; ; ) { } }");
+        final ForStmt stmt =
+                (ForStmt) ((FunctionDefinition) tu.getTopLevelDeclarations().get(0)).getBody()
+                        .getStmt(0);
+        assertFalse(stmt.getInit() instanceof NullStmt);
+        assertFalse(stmt
+                .hasCondition());
+        assertFalse(stmt
+                .hasIncrement());
+    }
 
 }

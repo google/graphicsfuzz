@@ -18,37 +18,37 @@ package com.graphicsfuzz.common.util;
 
 public class SameValueRandom implements IRandom {
 
-  private final boolean boolValue;
-  private final int intValue;
+    private final boolean boolValue;
+    private final int intValue;
 
-  public SameValueRandom(boolean boolValue, int intValue) {
-    this.boolValue = boolValue;
-    this.intValue = intValue;
-  }
+    public SameValueRandom(boolean boolValue, int intValue) {
+        this.boolValue = boolValue;
+        this.intValue = intValue;
+    }
 
-  @Override
-  public int nextInt(int bound) {
-    assert intValue < bound;
-    return intValue;
-  }
+    @Override
+    public String getDescription() {
+        return "SameValueRandom: " + intValue + " " + boolValue;
+    }
 
-  @Override
-  public Float nextFloat() {
-    throw new RuntimeException("Not yet supported.");
-  }
+    @Override
+    public boolean nextBoolean() {
+        return boolValue;
+    }
 
-  @Override
-  public boolean nextBoolean() {
-    return boolValue;
-  }
+    @Override
+    public Float nextFloat() {
+        throw new RuntimeException("Not yet supported.");
+    }
 
-  @Override
-  public IRandom spawnChild() {
-    throw new UnsupportedOperationException("Child spawning not available");
-  }
+    @Override
+    public int nextInt(int bound) {
+        assert intValue < bound;
+        return intValue;
+    }
 
-  @Override
-  public String getDescription() {
-    return "SameValueRandom: " + intValue + " " + boolValue;
-  }
+    @Override
+    public IRandom spawnChild() {
+        throw new UnsupportedOperationException("Child spawning not available");
+    }
 }

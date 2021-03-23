@@ -21,77 +21,77 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class ArrayIndexExpr extends Expr {
 
-  private Expr array;
-  private Expr index;
+    private Expr array;
+    private Expr index;
 
-  public ArrayIndexExpr(Expr array, Expr index) {
-    // Motivation for this exception:
-    // vec2 v;
-    // v[0]; // fine
-    // v + vec2(0.0)[0]; // not fine - the following was probably intended:
-    // (v + vec2(0.0))[0]; // fine
-    if (array instanceof BinaryExpr) {
-      throw new IllegalArgumentException("Array index into binary expression "
-          + array.getText() + " not allowed.");
+    public ArrayIndexExpr(Expr array, Expr index) {
+        // Motivation for this exception:
+        // vec2 v;
+        // v[0]; // fine
+        // v + vec2(0.0)[0]; // not fine - the following was probably intended:
+        // (v + vec2(0.0))[0]; // fine
+        if (array instanceof BinaryExpr) {
+            throw new IllegalArgumentException("Array index into binary expression "
+                    + array.getText() + " not allowed.");
+        }
+        this.array = array;
+        this.index = index;
     }
-    this.array = array;
-    this.index = index;
-  }
 
-  public Expr getArray() {
-    return array;
-  }
-
-  public Expr getIndex() {
-    return index;
-  }
-
-  public void setIndex(Expr index) {
-    this.index = index;
-  }
-
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitArrayIndexExpr(this);
-  }
-
-  @Override
-  public ArrayIndexExpr clone() {
-    return new ArrayIndexExpr(array.clone(), index.clone());
-  }
-
-  @Override
-  public boolean hasChild(IAstNode candidateChild) {
-    return candidateChild == array || candidateChild == index;
-  }
-
-  @Override
-  public Expr getChild(int index) {
-    if (index == 0) {
-      return array;
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitArrayIndexExpr(this);
     }
-    if (index == 1) {
-      return this.index;
-    }
-    throw new IndexOutOfBoundsException("Index for ArrayIndexExpr must be 0 or 1");
-  }
 
-  @Override
-  public void setChild(int index, Expr expr) {
-    if (index == 0) {
-      array = expr;
-      return;
+    @Override
+    public ArrayIndexExpr clone() {
+        return new ArrayIndexExpr(array.clone(), index.clone());
     }
-    if (index == 1) {
-      this.index = expr;
-      return;
-    }
-    throw new IndexOutOfBoundsException("Index for ArrayIndexExpr must be 0 or 1");
-  }
 
-  @Override
-  public int getNumChildren() {
-    return 2;
-  }
+    public Expr getArray() {
+        return array;
+    }
+
+    @Override
+    public Expr getChild(int index) {
+        if (index == 0) {
+            return array;
+        }
+        if (index == 1) {
+            return this.index;
+        }
+        throw new IndexOutOfBoundsException("Index for ArrayIndexExpr must be 0 or 1");
+    }
+
+    public Expr getIndex() {
+        return index;
+    }
+
+    public void setIndex(Expr index) {
+        this.index = index;
+    }
+
+    @Override
+    public int getNumChildren() {
+        return 2;
+    }
+
+    @Override
+    public boolean hasChild(IAstNode candidateChild) {
+        return candidateChild == array || candidateChild == index;
+    }
+
+    @Override
+    public void setChild(int index, Expr expr) {
+        if (index == 0) {
+            array = expr;
+            return;
+        }
+        if (index == 1) {
+            this.index = expr;
+            return;
+        }
+        throw new IndexOutOfBoundsException("Index for ArrayIndexExpr must be 0 or 1");
+    }
 
 }

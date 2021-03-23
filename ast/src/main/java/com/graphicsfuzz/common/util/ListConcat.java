@@ -21,16 +21,16 @@ import java.util.List;
 
 public final class ListConcat {
 
-  private ListConcat() {
-    // Utility class
-  }
+    private ListConcat() {
+        // Utility class
+    }
 
-  public static <T> List<T> concatenate(List<T> first, List<T> second) {
-    List<T> result = new ArrayList<>();
-    result.addAll(first);
-    result.addAll(second);
-    return result;
-  }
+    public static <T> List<T> concatenate(List<T> first, List<T> second) {
+        List<T> result = new ArrayList<>();
+        result.addAll(first);
+        result.addAll(second);
+        return result;
+    }
 
 
 }

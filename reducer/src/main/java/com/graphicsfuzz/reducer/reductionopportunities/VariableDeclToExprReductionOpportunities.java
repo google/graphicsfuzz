@@ -42,64 +42,64 @@ import java.util.List;
  */
 
 public class VariableDeclToExprReductionOpportunities
-    extends ReductionOpportunitiesBase<VariableDeclToExprReductionOpportunity> {
+        extends ReductionOpportunitiesBase<VariableDeclToExprReductionOpportunity> {
 
-  private VariableDeclToExprReductionOpportunities(TranslationUnit tu, ReducerContext context) {
-    super(tu, context);
-  }
-
-  /**
-   * Find all initialized variable declaration opportunities for the given translation unit.
-   *
-   * @param shaderJob The shader job to be searched.
-   * @param context   Includes info such as whether we reduce everywhere or only reduce injections
-   * @return The opportunities that can be reduced
-   */
-  static List<VariableDeclToExprReductionOpportunity> findOpportunities(
-      ShaderJob shaderJob,
-      ReducerContext context) {
-    return shaderJob.getShaders()
-        .stream()
-        .map(item -> findOpportunitiesForShader(item, context))
-        .reduce(Arrays.asList(), ListConcat::concatenate);
-  }
-
-  private static List<VariableDeclToExprReductionOpportunity> findOpportunitiesForShader(
-      TranslationUnit tu,
-      ReducerContext context) {
-    VariableDeclToExprReductionOpportunities finder =
-        new VariableDeclToExprReductionOpportunities(tu, context);
-    finder.visit(tu);
-    return finder.getOpportunities();
-  }
-
-  @Override
-  public void visitDeclarationStmt(DeclarationStmt declarationStmt) {
-    super.visitDeclarationStmt(declarationStmt);
-    if (!context.reduceEverywhere()) {
-      // Replacing initializers with a new assignment statement might have a side-effect,
-      // do not consider these reduction opportunities if we are not reducing everywhere.
-      return;
+    private VariableDeclToExprReductionOpportunities(TranslationUnit tu, ReducerContext context) {
+        super(tu, context);
     }
 
-    if (declarationStmt.getVariablesDeclaration().getBaseType().hasQualifier(TypeQualifier.CONST)) {
-      // A constant must always be initialized, so do not consider variable declarations that
-      // have const qualifier (i.e., const int a = 1).
-      return;
+    /**
+     * Find all initialized variable declaration opportunities for the given translation unit.
+     *
+     * @param shaderJob The shader job to be searched.
+     * @param context   Includes info such as whether we reduce everywhere or only reduce injections
+     * @return The opportunities that can be reduced
+     */
+    static List<VariableDeclToExprReductionOpportunity> findOpportunities(
+            ShaderJob shaderJob,
+            ReducerContext context) {
+        return shaderJob.getShaders()
+                .stream()
+                .map(item -> findOpportunitiesForShader(item, context))
+                .reduce(Arrays.asList(), ListConcat::concatenate);
     }
-    final List<VariableDeclInfo> declInfos =
-        declarationStmt.getVariablesDeclaration().getDeclInfos();
-    // We iterate backwards so that when applying reduction the new expression is inserted at the
-    // correct order with respect to its original order in the variable declaration info list.
-    for (int i = declInfos.size() - 1; i >= 0; i--) {
-      final VariableDeclInfo variableDeclInfo = declInfos.get(i);
-      if (variableDeclInfo.hasInitializer()) {
-        addOpportunity(new VariableDeclToExprReductionOpportunity(
-            variableDeclInfo,
-            currentBlock(),
-            declarationStmt,
-            getVistitationDepth()));
-      }
+
+    @Override
+    public void visitDeclarationStmt(DeclarationStmt declarationStmt) {
+        super.visitDeclarationStmt(declarationStmt);
+        if (!context.reduceEverywhere()) {
+            // Replacing initializers with a new assignment statement might have a side-effect,
+            // do not consider these reduction opportunities if we are not reducing everywhere.
+            return;
+        }
+
+        if (declarationStmt.getVariablesDeclaration().getBaseType().hasQualifier(TypeQualifier.CONST)) {
+            // A constant must always be initialized, so do not consider variable declarations that
+            // have const qualifier (i.e., const int a = 1).
+            return;
+        }
+        final List<VariableDeclInfo> declInfos =
+                declarationStmt.getVariablesDeclaration().getDeclInfos();
+        // We iterate backwards so that when applying reduction the new expression is inserted at the
+        // correct order with respect to its original order in the variable declaration info list.
+        for (int i = declInfos.size() - 1; i >= 0; i--) {
+            final VariableDeclInfo variableDeclInfo = declInfos.get(i);
+            if (variableDeclInfo.hasInitializer()) {
+                addOpportunity(new VariableDeclToExprReductionOpportunity(
+                        variableDeclInfo,
+                        currentBlock(),
+                        declarationStmt,
+                        getVistitationDepth()));
+            }
+        }
     }
-  }
+
+    private static List<VariableDeclToExprReductionOpportunity> findOpportunitiesForShader(
+            TranslationUnit tu,
+            ReducerContext context) {
+        VariableDeclToExprReductionOpportunities finder =
+                new VariableDeclToExprReductionOpportunities(tu, context);
+        finder.visit(tu);
+        return finder.getOpportunities();
+    }
 }

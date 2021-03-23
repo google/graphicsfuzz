@@ -20,14 +20,14 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class NullStmt extends Stmt {
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitNullStmt(this);
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitNullStmt(this);
+    }
 
-  @Override
-  public NullStmt clone() {
-    return new NullStmt();
-  }
+    @Override
+    public NullStmt clone() {
+        return new NullStmt();
+    }
 
 }

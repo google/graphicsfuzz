@@ -20,27 +20,27 @@ import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 import com.graphicsfuzz.common.util.PipelineInfo;
 
 public class RemoveRedundantUniformMetadataReductionOpportunity
-    extends AbstractReductionOpportunity {
+        extends AbstractReductionOpportunity {
 
-  private final PipelineInfo pipelineInfo;
-  private final String uniformName;
+    private final PipelineInfo pipelineInfo;
+    private final String uniformName;
 
-  RemoveRedundantUniformMetadataReductionOpportunity(String uniformName,
-                                                     PipelineInfo pipelineInfo,
-                                                     VisitationDepth depth) {
-    super(depth);
-    this.pipelineInfo = pipelineInfo;
-    this.uniformName = uniformName;
-  }
+    RemoveRedundantUniformMetadataReductionOpportunity(String uniformName,
+                                                       PipelineInfo pipelineInfo,
+                                                       VisitationDepth depth) {
+        super(depth);
+        this.pipelineInfo = pipelineInfo;
+        this.uniformName = uniformName;
+    }
 
-  @Override
-  void applyReductionImpl() {
-    pipelineInfo.removeUniform(uniformName);
-  }
+    @Override
+    void applyReductionImpl() {
+        pipelineInfo.removeUniform(uniformName);
+    }
 
-  @Override
-  public boolean preconditionHolds() {
-    return pipelineInfo.getUniformNames().contains(uniformName);
-  }
+    @Override
+    public boolean preconditionHolds() {
+        return pipelineInfo.getUniformNames().contains(uniformName);
+    }
 
 }

@@ -18,8 +18,8 @@ package com.graphicsfuzz.common.ast.expr;
 
 public interface Op {
 
-  boolean isSideEffecting();
+    String getText();
 
-  String getText();
+    boolean isSideEffecting();
 
 }

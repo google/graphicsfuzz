@@ -23,20 +23,20 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 
 public class FuzzyImageComparisonTool {
 
-  public static void main(String[] args) throws IOException {
-    try {
-      FuzzyImageComparison.MainResult result = FuzzyImageComparison.mainHelper(args);
-      System.out.println(result.outputsString());
-      System.exit(result.exitStatus);
+    public static void main(String[] args) throws IOException {
+        try {
+            FuzzyImageComparison.MainResult result = FuzzyImageComparison.mainHelper(args);
+            System.out.println(result.outputsString());
+            System.exit(result.exitStatus);
 
-    } catch (ArgumentParserException exception) {
-      System.err.println(exception.getMessage());
-      exception.getParser().printHelp(new PrintWriter(System.err, true));
-      System.exit(3);
-    } catch (Throwable throwable) {
-      throwable.printStackTrace();
-      System.exit(2);
+        } catch (ArgumentParserException exception) {
+            System.err.println(exception.getMessage());
+            exception.getParser().printHelp(new PrintWriter(System.err, true));
+            System.exit(3);
+        } catch (Throwable throwable) {
+            throwable.printStackTrace();
+            System.exit(2);
+        }
     }
-  }
 
 }

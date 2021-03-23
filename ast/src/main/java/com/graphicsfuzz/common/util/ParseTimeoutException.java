@@ -17,23 +17,23 @@
 package com.graphicsfuzz.common.util;
 
 public class ParseTimeoutException extends Exception {
-  public ParseTimeoutException() {
-  }
+    public ParseTimeoutException() {
+    }
 
-  public ParseTimeoutException(String message) {
-    super(message);
-  }
+    public ParseTimeoutException(String message) {
+        super(message);
+    }
 
-  public ParseTimeoutException(String message, Throwable cause) {
-    super(message, cause);
-  }
+    public ParseTimeoutException(String message, Throwable cause) {
+        super(message, cause);
+    }
 
-  public ParseTimeoutException(Throwable cause) {
-    super(cause);
-  }
+    public ParseTimeoutException(Throwable cause) {
+        super(cause);
+    }
 
-  public ParseTimeoutException(String message, Throwable cause, boolean enableSuppression,
-      boolean writableStackTrace) {
-    super(message, cause, enableSuppression, writableStackTrace);
-  }
+    public ParseTimeoutException(String message, Throwable cause, boolean enableSuppression,
+                                 boolean writableStackTrace) {
+        super(message, cause, enableSuppression, writableStackTrace);
+    }
 }

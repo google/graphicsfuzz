@@ -25,34 +25,34 @@ import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 
 public final class ContainsTopLevelContinue {
 
-  private ContainsTopLevelContinue() {
-    // Utility class
-  }
+    private ContainsTopLevelContinue() {
+        // Utility class
+    }
 
-  public static boolean check(Stmt stmt) {
-    return new CheckPredicateVisitor() {
+    public static boolean check(Stmt stmt) {
+        return new CheckPredicateVisitor() {
 
-      @Override
-      public void visitForStmt(ForStmt forStmt) {
-        // Block visitation
-      }
+            @Override
+            public void visitContinueStmt(ContinueStmt continueStmt) {
+                predicateHolds();
+            }
 
-      @Override
-      public void visitDoStmt(DoStmt doStmt) {
-        // Block visitation
-      }
+            @Override
+            public void visitDoStmt(DoStmt doStmt) {
+                // Block visitation
+            }
 
-      @Override
-      public void visitWhileStmt(WhileStmt whileStmt) {
-        // Block visitation
-      }
+            @Override
+            public void visitForStmt(ForStmt forStmt) {
+                // Block visitation
+            }
 
-      @Override
-      public void visitContinueStmt(ContinueStmt continueStmt) {
-        predicateHolds();
-      }
+            @Override
+            public void visitWhileStmt(WhileStmt whileStmt) {
+                // Block visitation
+            }
 
-    }.test(stmt);
-  }
+        }.test(stmt);
+    }
 
 }

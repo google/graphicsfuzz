@@ -18,27 +18,27 @@ package com.graphicsfuzz.common.glslversion;
 
 final class WebGlSl extends CompositeShadingLanguageVersion {
 
-  static final ShadingLanguageVersion INSTANCE = new WebGlSl(Essl100.INSTANCE);
+    static final ShadingLanguageVersion INSTANCE = new WebGlSl(Essl100.INSTANCE);
 
-  private WebGlSl(ShadingLanguageVersion prototype) {
-    super(prototype);
-    // Singleton
-  }
+    private WebGlSl(ShadingLanguageVersion prototype) {
+        super(prototype);
+        // Singleton
+    }
 
-  @Override
-  public String getVersionString() {
-    return "100";
-  }
+    @Override
+    public String getVersionString() {
+        return "100";
+    }
 
-  @Override
-  public boolean isWebGl() {
-    return true;
-  }
+    @Override
+    public boolean isWebGl() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedDoStmt() {
-    // do ... while loops are not supported in WebGL 1.0
-    return false;
-  }
+    @Override
+    public boolean supportedDoStmt() {
+        // do ... while loops are not supported in WebGL 1.0
+        return false;
+    }
 
 }

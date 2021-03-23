@@ -18,76 +18,76 @@ package com.graphicsfuzz.common.glslversion;
 
 final class Essl310 extends CompositeShadingLanguageVersion {
 
-  static final ShadingLanguageVersion INSTANCE = new Essl310(Essl300.INSTANCE);
+    static final ShadingLanguageVersion INSTANCE = new Essl310(Essl300.INSTANCE);
 
-  private Essl310(ShadingLanguageVersion prototype) {
-    super(prototype);
-    // Singleton
-  }
+    private Essl310(ShadingLanguageVersion prototype) {
+        super(prototype);
+        // Singleton
+    }
 
-  @Override
-  public String getVersionString() {
-    return "310 es";
-  }
+    @Override
+    public String getVersionString() {
+        return "310 es";
+    }
 
-  @Override
-  public boolean supportedComputeShaders() {
-    return true;
-  }
+    @Override
+    public boolean supportedAtomicMemoryFunctions() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedIntegerFunctions() {
-    return true;
-  }
+    @Override
+    public boolean supportedComputeShaders() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedMixNonfloatBool() {
-    return true;
-  }
+    @Override
+    public boolean supportedFrexp() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedPackSnorm4x8() {
-    return true;
-  }
+    @Override
+    public boolean supportedIntegerFunctions() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedPackUnorm4x8() {
-    return true;
-  }
+    @Override
+    public boolean supportedLdexp() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedUnpackSnorm4x8() {
-    return true;
-  }
+    @Override
+    public boolean supportedMixNonfloatBool() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedUnpackUnorm4x8() {
-    return true;
-  }
+    @Override
+    public boolean supportedPackSnorm4x8() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedFrexp() {
-    return true;
-  }
+    @Override
+    public boolean supportedPackUnorm4x8() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedLdexp() {
-    return true;
-  }
+    @Override
+    public boolean supportedShaderInvocationControlFunctions() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedAtomicMemoryFunctions() {
-    return true;
-  }
+    @Override
+    public boolean supportedShaderMemoryControlFunctions() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedShaderInvocationControlFunctions() {
-    return true;
-  }
+    @Override
+    public boolean supportedUnpackSnorm4x8() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedShaderMemoryControlFunctions() {
-    return true;
-  }
+    @Override
+    public boolean supportedUnpackUnorm4x8() {
+        return true;
+    }
 
 }

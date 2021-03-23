@@ -27,22 +27,22 @@ import org.apache.commons.io.FileUtils;
 
 public class FuzzingFileJudge implements IFileJudge {
 
-  private final File crashes;
-  private final IShaderDispatcher imageGenerator;
+    private final File crashes;
+    private final IShaderDispatcher imageGenerator;
 
-  private int canonicalHash = 256;
+    private int canonicalHash = 256;
 
-  public FuzzingFileJudge(File corpus, IShaderDispatcher imageGenerator) {
-    this.crashes = new File(corpus, "crashes");
-    this.imageGenerator = imageGenerator;
-  }
+    public FuzzingFileJudge(File corpus, IShaderDispatcher imageGenerator) {
+        this.crashes = new File(corpus, "crashes");
+        this.imageGenerator = imageGenerator;
+    }
 
-  @Override
-  public boolean isInteresting(
-      File shaderJobFile,
-      File shaderResultFileOutput
-  ) {
-    throw new RuntimeException();
+    @Override
+    public boolean isInteresting(
+            File shaderJobFile,
+            File shaderResultFileOutput
+    ) {
+        throw new RuntimeException();
     /*
     try {
       ExecResult res = ToolHelper.runValidatorOnShader(ExecHelper.RedirectType.TO_LOG, file);
@@ -83,32 +83,32 @@ public class FuzzingFileJudge implements IFileJudge {
       throw new FileJudgeException(ex);
     }
     */
-  }
-
-  private int classifyContents(byte[] imageContents) {
-    return this.sha1(imageContents)[0] & 0xff;
-  }
-
-  private byte[] sha1(byte[] imageContents) {
-    MessageDigest crypt;
-    try {
-      crypt = MessageDigest.getInstance("SHA-1");
-    } catch (NoSuchAlgorithmException ex) {
-      throw new AssertionError(ex);
     }
-    crypt.reset();
-    crypt.update(imageContents);
-    return crypt.digest();
-  }
 
-  private void recordCrash(File file) throws IOException {
-    if (!this.crashes.isDirectory()) {
-      this.crashes.mkdirs();
+    private int classifyContents(byte[] imageContents) {
+        return this.sha1(imageContents)[0] & 0xff;
     }
-    String hash = Hex.encodeHexString(this.sha1(FileUtils.readFileToByteArray(file)));
-    FileUtils.copyFile(
-          file,
-          new File(crashes, file.getName() + "." + hash.substring(0, 8))
-    );
-  }
+
+    private void recordCrash(File file) throws IOException {
+        if (!this.crashes.isDirectory()) {
+            this.crashes.mkdirs();
+        }
+        String hash = Hex.encodeHexString(this.sha1(FileUtils.readFileToByteArray(file)));
+        FileUtils.copyFile(
+                file,
+                new File(crashes, file.getName() + "." + hash.substring(0, 8))
+        );
+    }
+
+    private byte[] sha1(byte[] imageContents) {
+        MessageDigest crypt;
+        try {
+            crypt = MessageDigest.getInstance("SHA-1");
+        } catch (NoSuchAlgorithmException ex) {
+            throw new AssertionError(ex);
+        }
+        crypt.reset();
+        crypt.update(imageContents);
+        return crypt.digest();
+    }
 }

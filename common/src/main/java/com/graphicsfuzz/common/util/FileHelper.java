@@ -22,34 +22,34 @@ import org.apache.commons.io.FilenameUtils;
 
 public class FileHelper {
 
-  public static String removeEnd(String file, String endsWith) {
-    if (!file.endsWith(endsWith)) {
-      throw new IllegalArgumentException("Expected " + file + " to end with " + endsWith);
+    public static void checkExists(File file) throws FileNotFoundException {
+        if (!file.exists()) {
+            throw new FileNotFoundException("Could not find: " + file);
+        }
     }
-    return file.substring(0, file.length() - endsWith.length());
-  }
 
-  public static String removeStart(String file, String startsWith) {
-    if (!file.startsWith(startsWith)) {
-      throw new IllegalArgumentException("Expected " + file + " to start with " + startsWith);
+    public static void checkExistsOrNull(File file) throws FileNotFoundException {
+        if (file != null) {
+            checkExists(file);
+        }
     }
-    return file.substring(startsWith.length());
-  }
 
-  public static File replaceExtension(File file, String ext) {
-    return new File(FilenameUtils.removeExtension(file.toString()) + ext);
-  }
-
-  public static void checkExists(File file) throws FileNotFoundException {
-    if (!file.exists()) {
-      throw new FileNotFoundException("Could not find: " + file);
+    public static String removeEnd(String file, String endsWith) {
+        if (!file.endsWith(endsWith)) {
+            throw new IllegalArgumentException("Expected " + file + " to end with " + endsWith);
+        }
+        return file.substring(0, file.length() - endsWith.length());
     }
-  }
 
-  public static void checkExistsOrNull(File file) throws FileNotFoundException {
-    if (file != null) {
-      checkExists(file);
+    public static String removeStart(String file, String startsWith) {
+        if (!file.startsWith(startsWith)) {
+            throw new IllegalArgumentException("Expected " + file + " to start with " + startsWith);
+        }
+        return file.substring(startsWith.length());
     }
-  }
+
+    public static File replaceExtension(File file, String ext) {
+        return new File(FilenameUtils.removeExtension(file.toString()) + ext);
+    }
 
 }

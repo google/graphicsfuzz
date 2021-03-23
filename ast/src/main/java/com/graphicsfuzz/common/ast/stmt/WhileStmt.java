@@ -21,23 +21,23 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class WhileStmt extends LoopStmt {
 
-  public WhileStmt(Expr condition, Stmt body) {
-    super(condition, body);
-  }
+    public WhileStmt(Expr condition, Stmt body) {
+        super(condition, body);
+    }
 
-  @Override
-  public boolean hasCondition() {
-    return true;
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitWhileStmt(this);
+    }
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitWhileStmt(this);
-  }
+    @Override
+    public WhileStmt clone() {
+        return new WhileStmt(getCondition().clone(), getBody().clone());
+    }
 
-  @Override
-  public WhileStmt clone() {
-    return new WhileStmt(getCondition().clone(), getBody().clone());
-  }
+    @Override
+    public boolean hasCondition() {
+        return true;
+    }
 
 }

@@ -21,34 +21,34 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class BoolConstantExpr extends ConstantExpr {
 
-  private final boolean isTrue;
+    private final boolean isTrue;
 
-  public BoolConstantExpr(boolean isTrue) {
-    this.isTrue = isTrue;
-  }
+    public BoolConstantExpr(boolean isTrue) {
+        this.isTrue = isTrue;
+    }
 
-  @Override
-  public boolean hasChild(IAstNode child) {
-    return false;
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitBoolConstantExpr(this);
+    }
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitBoolConstantExpr(this);
-  }
+    @Override
+    public BoolConstantExpr clone() {
+        return new BoolConstantExpr(isTrue);
+    }
 
-  @Override
-  public BoolConstantExpr clone() {
-    return new BoolConstantExpr(isTrue);
-  }
+    public boolean getIsTrue() {
+        return isTrue;
+    }
 
-  @Override
-  public String toString() {
-    return isTrue ? "true" : "false";
-  }
+    @Override
+    public boolean hasChild(IAstNode child) {
+        return false;
+    }
 
-  public boolean getIsTrue() {
-    return isTrue;
-  }
+    @Override
+    public String toString() {
+        return isTrue ? "true" : "false";
+    }
 
 }

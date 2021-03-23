@@ -16,8 +16,6 @@
 
 package com.graphicsfuzz.tester;
 
-import static org.junit.Assert.assertEquals;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
@@ -41,52 +39,54 @@ import java.util.List;
 import java.util.Optional;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+
 public class MiscellaneousGenerateThenReduceTest {
 
-  // TODO: Use ShaderJobFileOperations everywhere.
-  private final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+    // TODO: Use ShaderJobFileOperations everywhere.
+    private final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
-  @Test
-  public void testControlFlowWrapElimination1() throws Exception {
-    checkControlFlowWrapElimination("int x; void main() { x = 2; }");
-  }
-
-  @Test
-  public void testControlFlowWrapElimination3() throws Exception {
-    checkControlFlowWrapElimination("int x; void main() { if (x > 0) { x = 2; } }");
-  }
-
-  @Test
-  public void testControlFlowWrapElimination4() throws Exception {
-    checkControlFlowWrapElimination("int x; void main() { if (x > 0) { x = 2; } else { x = 3; } }");
-  }
-
-  private void checkControlFlowWrapElimination(String program)
-      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
-    TranslationUnit tu = ParseHelper.parse(program);
-
-    final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.GLSL_440;
-    new AddWrappingConditionalTransformation().apply(tu,
-        TransformationProbabilities.onlyWrap(),
-        new SameValueRandom(false, 0),
-        GenerationParams.normal(ShaderKind.FRAGMENT, true));
-
-    System.out.println(PrettyPrinterVisitor.prettyPrintAsString(tu));
-
-    while (true) {
-      List<IReductionOpportunity> ops = ReductionOpportunities
-          .getReductionOpportunities(new GlslShaderJob(Optional.empty(),
-                  new PipelineInfo(), tu),
-                new ReducerContext(false, shadingLanguageVersion,
-              new SameValueRandom(false, 0), new IdGenerator()), fileOps);
-      if (ops.isEmpty()) {
-        break;
-      }
-      ops.get(0).applyReduction();
+    @Test
+    public void testControlFlowWrapElimination1() throws Exception {
+        checkControlFlowWrapElimination("int x; void main() { x = 2; }");
     }
 
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program)),
-        PrettyPrinterVisitor.prettyPrintAsString(tu));
-  }
+    @Test
+    public void testControlFlowWrapElimination3() throws Exception {
+        checkControlFlowWrapElimination("int x; void main() { if (x > 0) { x = 2; } }");
+    }
+
+    @Test
+    public void testControlFlowWrapElimination4() throws Exception {
+        checkControlFlowWrapElimination("int x; void main() { if (x > 0) { x = 2; } else { x = 3; } }");
+    }
+
+    private void checkControlFlowWrapElimination(String program)
+            throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
+        TranslationUnit tu = ParseHelper.parse(program);
+
+        final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.GLSL_440;
+        new AddWrappingConditionalTransformation().apply(tu,
+                TransformationProbabilities.onlyWrap(),
+                new SameValueRandom(false, 0),
+                GenerationParams.normal(ShaderKind.FRAGMENT, true));
+
+        System.out.println(PrettyPrinterVisitor.prettyPrintAsString(tu));
+
+        while (true) {
+            List<IReductionOpportunity> ops = ReductionOpportunities
+                    .getReductionOpportunities(new GlslShaderJob(Optional.empty(),
+                                    new PipelineInfo(), tu),
+                            new ReducerContext(false, shadingLanguageVersion,
+                                    new SameValueRandom(false, 0), new IdGenerator()), fileOps);
+            if (ops.isEmpty()) {
+                break;
+            }
+            ops.get(0).applyReduction();
+        }
+
+        assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(program)),
+                PrettyPrinterVisitor.prettyPrintAsString(tu));
+    }
 
 }

@@ -21,49 +21,49 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class IntConstantExpr extends ConstantExpr {
 
-  private final String value;
+    private final String value;
 
-  public IntConstantExpr(String text) {
-    // Check that someone hasn't passed an unsigned by mistake
-    assert !text.contains("u");
-    this.value = text;
-  }
-
-  @Override
-  public boolean hasChild(IAstNode child) {
-    return false;
-  }
-
-  public String getValue() {
-    return value;
-  }
-
-  public int getNumericValue() {
-    if (isOctal()) {
-      return Integer.parseInt(getValue(), 8);
+    public IntConstantExpr(String text) {
+        // Check that someone hasn't passed an unsigned by mistake
+        assert !text.contains("u");
+        this.value = text;
     }
-    if (isHex()) {
-      return Integer.parseInt(getValue().substring("0x".length()), 16);
+
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitIntConstantExpr(this);
     }
-    return Integer.parseInt(getValue());
-  }
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitIntConstantExpr(this);
-  }
+    @Override
+    public IntConstantExpr clone() {
+        return new IntConstantExpr(value);
+    }
 
-  @Override
-  public IntConstantExpr clone() {
-    return new IntConstantExpr(value);
-  }
+    public int getNumericValue() {
+        if (isOctal()) {
+            return Integer.parseInt(getValue(), 8);
+        }
+        if (isHex()) {
+            return Integer.parseInt(getValue().substring("0x".length()), 16);
+        }
+        return Integer.parseInt(getValue());
+    }
 
-  private boolean isOctal() {
-    return getValue().startsWith("0") && getValue().length() > 1 && !isHex();
-  }
+    public String getValue() {
+        return value;
+    }
 
-  private boolean isHex() {
-    return getValue().startsWith("0x");
-  }
+    @Override
+    public boolean hasChild(IAstNode child) {
+        return false;
+    }
+
+    private boolean isHex() {
+        return getValue().startsWith("0x");
+    }
+
+    private boolean isOctal() {
+        return getValue().startsWith("0") && getValue().length() > 1 && !isHex();
+    }
 
 }

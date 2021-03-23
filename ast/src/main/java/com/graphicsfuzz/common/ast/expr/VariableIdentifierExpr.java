@@ -21,48 +21,48 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class VariableIdentifierExpr extends Expr {
 
-  private String name;
+    private String name;
 
-  public VariableIdentifierExpr(String name) {
-    this.name = name;
-  }
+    public VariableIdentifierExpr(String name) {
+        this.name = name;
+    }
 
-  public String getName() {
-    return name;
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitVariableIdentifierExpr(this);
+    }
 
-  public void setName(String name) {
-    this.name = name;
-  }
+    @Override
+    public VariableIdentifierExpr clone() {
+        return new VariableIdentifierExpr(name);
+    }
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitVariableIdentifierExpr(this);
-  }
+    @Override
+    public Expr getChild(int index) {
+        throw new IndexOutOfBoundsException("VariableIdentifierExpr has no children");
+    }
 
-  @Override
-  public VariableIdentifierExpr clone() {
-    return new VariableIdentifierExpr(name);
-  }
+    public String getName() {
+        return name;
+    }
 
-  @Override
-  public boolean hasChild(IAstNode child) {
-    return false;
-  }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-  @Override
-  public Expr getChild(int index) {
-    throw new IndexOutOfBoundsException("VariableIdentifierExpr has no children");
-  }
+    @Override
+    public int getNumChildren() {
+        return 0;
+    }
 
-  @Override
-  public void setChild(int index, Expr expr) {
-    throw new IndexOutOfBoundsException("VariableIdentifierExpr has no children");
-  }
+    @Override
+    public boolean hasChild(IAstNode child) {
+        return false;
+    }
 
-  @Override
-  public int getNumChildren() {
-    return 0;
-  }
+    @Override
+    public void setChild(int index, Expr expr) {
+        throw new IndexOutOfBoundsException("VariableIdentifierExpr has no children");
+    }
 
 }

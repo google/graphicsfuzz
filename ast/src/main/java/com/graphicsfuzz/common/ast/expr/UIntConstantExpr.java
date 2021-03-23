@@ -21,54 +21,54 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class UIntConstantExpr extends ConstantExpr {
 
-  private String value;
+    private String value;
 
-  public UIntConstantExpr(String text) {
-    assert text.endsWith("u");
-    this.value = text;
-  }
-
-  @Override
-  public boolean hasChild(IAstNode child) {
-    return false;
-  }
-
-  public String getValue() {
-    return value;
-  }
-
-  public int getNumericValue() {
-    if (isOctal()) {
-      return Integer.parseInt(getValueWithoutSuffix(), 8);
+    public UIntConstantExpr(String text) {
+        assert text.endsWith("u");
+        this.value = text;
     }
-    if (isHex()) {
-      return Integer.parseInt(getValueWithoutSuffix().substring("0x".length()), 16);
+
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitUIntConstantExpr(this);
     }
-    return Integer.parseInt(getValueWithoutSuffix());
-  }
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitUIntConstantExpr(this);
-  }
+    @Override
+    public UIntConstantExpr clone() {
+        return new UIntConstantExpr(value);
+    }
 
-  @Override
-  public UIntConstantExpr clone() {
-    return new UIntConstantExpr(value);
-  }
+    public int getNumericValue() {
+        if (isOctal()) {
+            return Integer.parseInt(getValueWithoutSuffix(), 8);
+        }
+        if (isHex()) {
+            return Integer.parseInt(getValueWithoutSuffix().substring("0x".length()), 16);
+        }
+        return Integer.parseInt(getValueWithoutSuffix());
+    }
 
-  private String getValueWithoutSuffix() {
-    assert value.endsWith("u");
-    return value.substring(0, value.length() - 1);
-  }
+    public String getValue() {
+        return value;
+    }
 
-  private boolean isOctal() {
-    return getValueWithoutSuffix().startsWith("0") && getValueWithoutSuffix().length() > 1
-        && !isHex();
-  }
+    @Override
+    public boolean hasChild(IAstNode child) {
+        return false;
+    }
 
-  private boolean isHex() {
-    return getValueWithoutSuffix().startsWith("0x");
-  }
+    private String getValueWithoutSuffix() {
+        assert value.endsWith("u");
+        return value.substring(0, value.length() - 1);
+    }
+
+    private boolean isHex() {
+        return getValueWithoutSuffix().startsWith("0x");
+    }
+
+    private boolean isOctal() {
+        return getValueWithoutSuffix().startsWith("0") && getValueWithoutSuffix().length() > 1
+                && !isHex();
+    }
 
 }

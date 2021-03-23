@@ -16,70 +16,70 @@
 
 package com.graphicsfuzz.common.ast.expr;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
 public class ArrayIndexExprTest {
 
-  private ArrayIndexExpr expr;
+    private ArrayIndexExpr expr;
 
-  @Before
-  public void setup() {
-    expr = new ArrayIndexExpr(new VariableIdentifierExpr("A"),
-        new IntConstantExpr("0"));
-  }
+    @Test
+    public void getArray() throws Exception {
+        assertEquals("A", expr.getArray().getText());
+    }
 
-  @Test
-  public void getArray() throws Exception {
-    assertEquals("A", expr.getArray().getText());
-  }
+    @Test
+    public void getChild() throws Exception {
+        assertEquals("A", expr.getChild(0).getText());
+        assertEquals("0", expr.getChild(1).getText());
+    }
 
-  @Test
-  public void getIndex() throws Exception {
-    assertEquals("0", expr.getIndex().getText());
-  }
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void getChildBad() {
+        expr.getChild(2);
+    }
 
-  @Test
-  public void testClone() throws Exception {
-    ArrayIndexExpr theClone = expr.clone();
-    assertFalse(expr == theClone);
-    assertEquals(theClone.getText(), expr.getText());
-  }
+    @Test
+    public void getIndex() throws Exception {
+        assertEquals("0", expr.getIndex().getText());
+    }
 
-  @Test
-  public void getChild() throws Exception {
-    assertEquals("A", expr.getChild(0).getText());
-    assertEquals("0", expr.getChild(1).getText());
-  }
+    @Test
+    public void getNumChildren() throws Exception {
+        assertEquals(2, expr.getNumChildren());
+    }
 
-  @Test
-  public void setChild() throws Exception {
-    assertEquals("A", expr.getChild(0).getText());
-    assertEquals("0", expr.getChild(1).getText());
-    expr.setChild(0, new VariableIdentifierExpr("B"));
-    assertEquals("B", expr.getChild(0).getText());
-    assertEquals("0", expr.getChild(1).getText());
-    expr.setChild(1, new IntConstantExpr("3"));
-    assertEquals("B", expr.getChild(0).getText());
-    assertEquals("3", expr.getChild(1).getText());
-  }
+    @Test
+    public void setChild() throws Exception {
+        assertEquals("A", expr.getChild(0).getText());
+        assertEquals("0", expr.getChild(1).getText());
+        expr.setChild(0, new VariableIdentifierExpr("B"));
+        assertEquals("B", expr.getChild(0).getText());
+        assertEquals("0", expr.getChild(1).getText());
+        expr.setChild(1, new IntConstantExpr("3"));
+        assertEquals("B", expr.getChild(0).getText());
+        assertEquals("3", expr.getChild(1).getText());
+    }
 
-  @Test(expected = IndexOutOfBoundsException.class)
-  public void getChildBad() {
-    expr.getChild(2);
-  }
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void setChildBad() {
+        expr.setChild(-1, new VariableIdentifierExpr("T"));
+    }
 
-  @Test(expected = IndexOutOfBoundsException.class)
-  public void setChildBad() {
-    expr.setChild(-1, new VariableIdentifierExpr("T"));
-  }
+    @Before
+    public void setup() {
+        expr = new ArrayIndexExpr(new VariableIdentifierExpr("A"),
+                new IntConstantExpr("0"));
+    }
 
-  @Test
-  public void getNumChildren() throws Exception {
-    assertEquals(2, expr.getNumChildren());
-  }
+    @Test
+    public void testClone() throws Exception {
+        ArrayIndexExpr theClone = expr.clone();
+        assertFalse(expr == theClone);
+        assertEquals(theClone.getText(), expr.getText());
+    }
 
 }

@@ -36,121 +36,121 @@ import java.util.Optional;
 
 public class LoopMergeReductionOpportunities extends ScopeTrackingVisitor {
 
-  private final List<LoopMergeReductionOpportunity> opportunities;
+    private final List<LoopMergeReductionOpportunity> opportunities;
 
-  private LoopMergeReductionOpportunities() {
-    this.opportunities = new LinkedList<>();
-  }
-
-  static List<LoopMergeReductionOpportunity> findOpportunities(
-        ShaderJob shaderJob,
-        ReducerContext context) {
-    return shaderJob.getShaders()
-        .stream()
-        .map(item -> findOpportunitiesForShader(item))
-        .reduce(Arrays.asList(), ListConcat::concatenate);
-  }
-
-  private static List<LoopMergeReductionOpportunity> findOpportunitiesForShader(
-      TranslationUnit tu) {
-    LoopMergeReductionOpportunities finder = new LoopMergeReductionOpportunities();
-    finder.visit(tu);
-    return finder.opportunities;
-  }
-
-  @Override
-  public void visitBlockStmt(BlockStmt block) {
-    enterBlockStmt(block);
-    checkForLoopMergeReductionOpportunities(block);
-    for (Stmt child : block.getStmts()) {
-      visit(child);
-    }
-    leaveBlockStmt(block);
-  }
-
-  private void checkForLoopMergeReductionOpportunities(BlockStmt block) {
-    Optional<Stmt> prev = Optional.empty();
-    for (Stmt current : block.getStmts()) {
-      if (prev.isPresent() && canMergeLoops(prev.get(), current)) {
-        opportunities.add(new LoopMergeReductionOpportunity((ForStmt) prev.get(), (ForStmt) current,
-              block, getVistitationDepth()));
-      }
-      prev = Optional.of(current);
+    private LoopMergeReductionOpportunities() {
+        this.opportunities = new LinkedList<>();
     }
 
-  }
-
-  private boolean canMergeLoops(Stmt first, Stmt second) {
-    if (!(first instanceof ForStmt && second instanceof ForStmt)) {
-      return false;
-    }
-    ForStmt firstLoop = (ForStmt) first;
-    ForStmt secondLoop = (ForStmt) second;
-    Optional<String> commonLoopCounter = checkForCommonLoopCounter(firstLoop, secondLoop);
-    if (!commonLoopCounter.isPresent()) {
-      return false;
-    }
-    if (!commonLoopCounter.get().startsWith(Constants.SPLIT_LOOP_COUNTER_PREFIX)) {
-      return false;
-    }
-    if (!hasRegularLoopGuard(firstLoop, commonLoopCounter.get())) {
-      return false;
-    }
-    if (!hasRegularLoopGuard(secondLoop, commonLoopCounter.get())) {
-      return false;
+    static List<LoopMergeReductionOpportunity> findOpportunities(
+            ShaderJob shaderJob,
+            ReducerContext context) {
+        return shaderJob.getShaders()
+                .stream()
+                .map(item -> findOpportunitiesForShader(item))
+                .reduce(Arrays.asList(), ListConcat::concatenate);
     }
 
-    final Integer firstLoopEnd = new Integer(((IntConstantExpr)
-          ((BinaryExpr) firstLoop.getCondition()).getRhs()).getValue());
+    @Override
+    public void visitBlockStmt(BlockStmt block) {
+        enterBlockStmt(block);
+        checkForLoopMergeReductionOpportunities(block);
+        for (Stmt child : block.getStmts()) {
+            visit(child);
+        }
+        leaveBlockStmt(block);
+    }
 
-    final BinOp firstLoopOp = ((BinaryExpr) firstLoop.getCondition()).getOp();
+    private static List<LoopMergeReductionOpportunity> findOpportunitiesForShader(
+            TranslationUnit tu) {
+        LoopMergeReductionOpportunities finder = new LoopMergeReductionOpportunities();
+        finder.visit(tu);
+        return finder.opportunities;
+    }
 
-    final Integer secondLoopStart = new Integer(((IntConstantExpr) (
-          (DeclarationStmt) secondLoop.getInit()).getVariablesDeclaration().getDeclInfo(0)
+    private boolean canMergeLoops(Stmt first, Stmt second) {
+        if (!(first instanceof ForStmt && second instanceof ForStmt)) {
+            return false;
+        }
+        ForStmt firstLoop = (ForStmt) first;
+        ForStmt secondLoop = (ForStmt) second;
+        Optional<String> commonLoopCounter = checkForCommonLoopCounter(firstLoop, secondLoop);
+        if (!commonLoopCounter.isPresent()) {
+            return false;
+        }
+        if (!commonLoopCounter.get().startsWith(Constants.SPLIT_LOOP_COUNTER_PREFIX)) {
+            return false;
+        }
+        if (!hasRegularLoopGuard(firstLoop, commonLoopCounter.get())) {
+            return false;
+        }
+        if (!hasRegularLoopGuard(secondLoop, commonLoopCounter.get())) {
+            return false;
+        }
+
+        final Integer firstLoopEnd = new Integer(((IntConstantExpr)
+                ((BinaryExpr) firstLoop.getCondition()).getRhs()).getValue());
+
+        final BinOp firstLoopOp = ((BinaryExpr) firstLoop.getCondition()).getOp();
+
+        final Integer secondLoopStart = new Integer(((IntConstantExpr) (
+                (DeclarationStmt) secondLoop.getInit()).getVariablesDeclaration().getDeclInfo(0)
                 .getInitializer().getExpr()).getValue());
 
-    assert firstLoopOp == BinOp.LT || firstLoopOp == BinOp.GT
-          : "Unexpected operator in split loops.";
+        assert firstLoopOp == BinOp.LT || firstLoopOp == BinOp.GT
+                : "Unexpected operator in split loops.";
 
-    return firstLoopEnd.equals(secondLoopStart);
+        return firstLoopEnd.equals(secondLoopStart);
 
-  }
+    }
 
-  private boolean hasRegularLoopGuard(ForStmt loop, String counterName) {
-    if (!(loop.getCondition() instanceof BinaryExpr)) {
-      return false;
+    private Optional<String> checkForCommonLoopCounter(ForStmt firstLoop, ForStmt secondLoop) {
+        Optional<String> firstLoopCounter = extractLoopCounter(firstLoop);
+        Optional<String> secondLoopCounter = extractLoopCounter(secondLoop);
+        return firstLoopCounter.isPresent() && secondLoopCounter.isPresent()
+                && firstLoopCounter.get().equals(secondLoopCounter.get())
+                ? firstLoopCounter
+                : Optional.empty();
     }
-    final BinaryExpr guard = (BinaryExpr) loop.getCondition();
-    if (!(guard.getOp() == BinOp.LT || guard.getOp() == BinOp.GT)) {
-      return false;
-    }
-    if (!(guard.getLhs() instanceof VariableIdentifierExpr)) {
-      return false;
-    }
-    if (!(guard.getRhs() instanceof IntConstantExpr)) {
-      return false;
-    }
-    return ((VariableIdentifierExpr) guard.getLhs()).getName().equals(counterName);
-  }
 
-  private Optional<String> checkForCommonLoopCounter(ForStmt firstLoop, ForStmt secondLoop) {
-    Optional<String> firstLoopCounter = extractLoopCounter(firstLoop);
-    Optional<String> secondLoopCounter = extractLoopCounter(secondLoop);
-    return firstLoopCounter.isPresent() && secondLoopCounter.isPresent()
-          && firstLoopCounter.get().equals(secondLoopCounter.get())
-          ? firstLoopCounter
-          : Optional.empty();
-  }
+    private void checkForLoopMergeReductionOpportunities(BlockStmt block) {
+        Optional<Stmt> prev = Optional.empty();
+        for (Stmt current : block.getStmts()) {
+            if (prev.isPresent() && canMergeLoops(prev.get(), current)) {
+                opportunities.add(new LoopMergeReductionOpportunity((ForStmt) prev.get(), (ForStmt) current,
+                        block, getVistitationDepth()));
+            }
+            prev = Optional.of(current);
+        }
 
-  private Optional<String> extractLoopCounter(ForStmt loop) {
-    if (!(loop.getInit() instanceof DeclarationStmt)) {
-      return Optional.empty();
     }
-    final DeclarationStmt init = (DeclarationStmt) loop.getInit();
-    if (init.getVariablesDeclaration().getNumDecls() != 1) {
-      return Optional.empty();
+
+    private Optional<String> extractLoopCounter(ForStmt loop) {
+        if (!(loop.getInit() instanceof DeclarationStmt)) {
+            return Optional.empty();
+        }
+        final DeclarationStmt init = (DeclarationStmt) loop.getInit();
+        if (init.getVariablesDeclaration().getNumDecls() != 1) {
+            return Optional.empty();
+        }
+        return Optional.of(init.getVariablesDeclaration().getDeclInfo(0).getName());
     }
-    return Optional.of(init.getVariablesDeclaration().getDeclInfo(0).getName());
-  }
+
+    private boolean hasRegularLoopGuard(ForStmt loop, String counterName) {
+        if (!(loop.getCondition() instanceof BinaryExpr)) {
+            return false;
+        }
+        final BinaryExpr guard = (BinaryExpr) loop.getCondition();
+        if (!(guard.getOp() == BinOp.LT || guard.getOp() == BinOp.GT)) {
+            return false;
+        }
+        if (!(guard.getLhs() instanceof VariableIdentifierExpr)) {
+            return false;
+        }
+        if (!(guard.getRhs() instanceof IntConstantExpr)) {
+            return false;
+        }
+        return ((VariableIdentifierExpr) guard.getLhs()).getName().equals(counterName);
+    }
 
 }

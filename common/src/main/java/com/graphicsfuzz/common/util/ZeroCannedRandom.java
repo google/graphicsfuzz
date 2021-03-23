@@ -18,29 +18,29 @@ package com.graphicsfuzz.common.util;
 
 public class ZeroCannedRandom implements IRandom {
 
-  @Override
-  public int nextInt(int bound) {
-    return 0;
-  }
+    @Override
+    public String getDescription() {
+        return "ZeroCannedRandom";
+    }
 
-  @Override
-  public Float nextFloat() {
-    return 0.0f;
-  }
+    @Override
+    public boolean nextBoolean() {
+        return false;
+    }
 
-  @Override
-  public boolean nextBoolean() {
-    return false;
-  }
+    @Override
+    public Float nextFloat() {
+        return 0.0f;
+    }
 
-  @Override
-  public IRandom spawnChild() {
-    throw new UnsupportedOperationException();
-  }
+    @Override
+    public int nextInt(int bound) {
+        return 0;
+    }
 
-  @Override
-  public String getDescription() {
-    return "ZeroCannedRandom";
-  }
+    @Override
+    public IRandom spawnChild() {
+        throw new UnsupportedOperationException();
+    }
 
 }

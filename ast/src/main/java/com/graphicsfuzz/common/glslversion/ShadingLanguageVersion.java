@@ -22,356 +22,361 @@ import java.util.List;
 
 public interface ShadingLanguageVersion {
 
-  ShadingLanguageVersion ESSL_100 = Essl100.INSTANCE;
-  ShadingLanguageVersion ESSL_300 = Essl300.INSTANCE;
-  ShadingLanguageVersion ESSL_310 = Essl310.INSTANCE;
-  ShadingLanguageVersion ESSL_320 = Essl320.INSTANCE;
+    ShadingLanguageVersion ESSL_100 = Essl100.INSTANCE;
+    ShadingLanguageVersion ESSL_300 = Essl300.INSTANCE;
+    ShadingLanguageVersion ESSL_310 = Essl310.INSTANCE;
+    ShadingLanguageVersion ESSL_320 = Essl320.INSTANCE;
 
-  ShadingLanguageVersion GLSL_110 = Glsl110.INSTANCE;
-  ShadingLanguageVersion GLSL_120 = Glsl120.INSTANCE;
-  ShadingLanguageVersion GLSL_130 = Glsl130.INSTANCE;
-  ShadingLanguageVersion GLSL_140 = Glsl140.INSTANCE;
-  ShadingLanguageVersion GLSL_150 = Glsl150.INSTANCE;
-  ShadingLanguageVersion GLSL_330 = Glsl330.INSTANCE;
-  ShadingLanguageVersion GLSL_400 = Glsl400.INSTANCE;
-  ShadingLanguageVersion GLSL_410 = Glsl410.INSTANCE;
-  ShadingLanguageVersion GLSL_420 = Glsl420.INSTANCE;
-  ShadingLanguageVersion GLSL_430 = Glsl430.INSTANCE;
-  ShadingLanguageVersion GLSL_440 = Glsl440.INSTANCE;
-  ShadingLanguageVersion GLSL_450 = Glsl450.INSTANCE;
-  ShadingLanguageVersion GLSL_460 = Glsl460.INSTANCE;
+    ShadingLanguageVersion GLSL_110 = Glsl110.INSTANCE;
+    ShadingLanguageVersion GLSL_120 = Glsl120.INSTANCE;
+    ShadingLanguageVersion GLSL_130 = Glsl130.INSTANCE;
+    ShadingLanguageVersion GLSL_140 = Glsl140.INSTANCE;
+    ShadingLanguageVersion GLSL_150 = Glsl150.INSTANCE;
+    ShadingLanguageVersion GLSL_330 = Glsl330.INSTANCE;
+    ShadingLanguageVersion GLSL_400 = Glsl400.INSTANCE;
+    ShadingLanguageVersion GLSL_410 = Glsl410.INSTANCE;
+    ShadingLanguageVersion GLSL_420 = Glsl420.INSTANCE;
+    ShadingLanguageVersion GLSL_430 = Glsl430.INSTANCE;
+    ShadingLanguageVersion GLSL_440 = Glsl440.INSTANCE;
+    ShadingLanguageVersion GLSL_450 = Glsl450.INSTANCE;
+    ShadingLanguageVersion GLSL_460 = Glsl460.INSTANCE;
 
-  ShadingLanguageVersion WEBGL_SL = WebGlSl.INSTANCE;
-  ShadingLanguageVersion WEBGL2_SL = WebGl2Sl.INSTANCE;
+    ShadingLanguageVersion WEBGL_SL = WebGlSl.INSTANCE;
+    ShadingLanguageVersion WEBGL2_SL = WebGl2Sl.INSTANCE;
 
-  static ShadingLanguageVersion getGlslVersionFromFirstTwoLines(String[] lines) {
-    String[] components = lines[0].trim().split(" ");
-    if (!lines[0].startsWith("#version") || components.length < 2) {
-      // The default shading language version is 100 es.
-      return ESSL_100;
+    static List<ShadingLanguageVersion> allEsslVersions() {
+        return Arrays.asList(
+                ESSL_100,
+                ESSL_300,
+                ESSL_310,
+                ESSL_320);
     }
-    String version = components[1];
-    for (int i = 2; i < components.length; i++) {
-      version += " " + components[i];
+
+    static List<ShadingLanguageVersion> allGlslVersions() {
+        return Arrays.asList(
+                GLSL_110,
+                GLSL_120,
+                GLSL_130,
+                GLSL_140,
+                GLSL_150,
+                GLSL_330,
+                GLSL_400,
+                GLSL_410,
+                GLSL_420,
+                GLSL_430,
+                GLSL_440,
+                GLSL_450,
+                GLSL_460);
     }
-    if (isWebGlHint(lines[1])) {
-      return webGlFromVersionString(version);
+
+    static List<ShadingLanguageVersion> allShadingLanguageVersions() {
+        final List<ShadingLanguageVersion> versions = new ArrayList<>();
+        versions.addAll(allGlslVersions());
+        versions.addAll(allEsslVersions());
+        versions.addAll(allWebGlSlVersions());
+        return versions;
     }
-    return fromVersionString(version);
-  }
 
-  static boolean isWebGlHint(String line) {
-    return line.startsWith("//WebGL");
-  }
-
-  static List<ShadingLanguageVersion> allGlslVersions() {
-    return Arrays.asList(
-        GLSL_110,
-        GLSL_120,
-        GLSL_130,
-        GLSL_140,
-        GLSL_150,
-        GLSL_330,
-        GLSL_400,
-        GLSL_410,
-        GLSL_420,
-        GLSL_430,
-        GLSL_440,
-        GLSL_450,
-        GLSL_460);
-  }
-
-  static List<ShadingLanguageVersion> allEsslVersions() {
-    return Arrays.asList(
-        ESSL_100,
-        ESSL_300,
-        ESSL_310,
-        ESSL_320);
-  }
-
-  static List<ShadingLanguageVersion> allWebGlSlVersions() {
-    return Arrays.asList(
-        WEBGL_SL,
-        WEBGL2_SL);
-  }
-
-  static List<ShadingLanguageVersion> allShadingLanguageVersions() {
-    final List<ShadingLanguageVersion> versions = new ArrayList<>();
-    versions.addAll(allGlslVersions());
-    versions.addAll(allEsslVersions());
-    versions.addAll(allWebGlSlVersions());
-    return versions;
-  }
-
-  static ShadingLanguageVersion fromVersionString(String versionString) {
-    final List<ShadingLanguageVersion> versions = new ArrayList<>();
-    versions.addAll(allGlslVersions());
-    versions.addAll(allEsslVersions());
-    for (ShadingLanguageVersion shadingLanguageVersion : versions) {
-      if (shadingLanguageVersion.getVersionString().equals(versionString)) {
-        return shadingLanguageVersion;
-      }
+    static List<ShadingLanguageVersion> allWebGlSlVersions() {
+        return Arrays.asList(
+                WEBGL_SL,
+                WEBGL2_SL);
     }
-    throw new RuntimeException("Unknown version string " + versionString);
-  }
 
-  static ShadingLanguageVersion fromVersionString(String versionString, boolean webGlHint) {
-    final ShadingLanguageVersion regularVersion = fromVersionString(versionString);
-    if (webGlHint) {
-      if (regularVersion == ESSL_100) {
-        return WEBGL_SL;
-      }
-      if (regularVersion == ESSL_300) {
-        return WEBGL2_SL;
-      }
+    static ShadingLanguageVersion fromVersionString(String versionString) {
+        final List<ShadingLanguageVersion> versions = new ArrayList<>();
+        versions.addAll(allGlslVersions());
+        versions.addAll(allEsslVersions());
+        for (ShadingLanguageVersion shadingLanguageVersion : versions) {
+            if (shadingLanguageVersion.getVersionString().equals(versionString)) {
+                return shadingLanguageVersion;
+            }
+        }
+        throw new RuntimeException("Unknown version string " + versionString);
     }
-    return regularVersion;
-  }
 
-  static boolean isWebGlCompatible(String versionString) {
-    return allWebGlSlVersions().stream().map(item -> item.getVersionString())
-        .anyMatch(item -> item.equals(versionString));
-  }
-
-  static ShadingLanguageVersion webGlFromVersionString(String versionString) {
-    if (!isWebGlCompatible(versionString)) {
-      throw new RuntimeException("Unknown WebGL shading language version string " + versionString);
+    static ShadingLanguageVersion fromVersionString(String versionString, boolean webGlHint) {
+        final ShadingLanguageVersion regularVersion = fromVersionString(versionString);
+        if (webGlHint) {
+            if (regularVersion == ESSL_100) {
+                return WEBGL_SL;
+            }
+            if (regularVersion == ESSL_300) {
+                return WEBGL2_SL;
+            }
+        }
+        return regularVersion;
     }
-    return allWebGlSlVersions()
-        .stream()
-        .filter(item -> item.getVersionString().equals(versionString))
-        .findAny().get();
-  }
 
-  String getVersionString();
+    static ShadingLanguageVersion getGlslVersionFromFirstTwoLines(String[] lines) {
+        String[] components = lines[0].trim().split(" ");
+        if (!lines[0].startsWith("#version") || components.length < 2) {
+            // The default shading language version is 100 es.
+            return ESSL_100;
+        }
+        String version = components[1];
+        for (int i = 2; i < components.length; i++) {
+            version += " " + components[i];
+        }
+        if (isWebGlHint(lines[1])) {
+            return webGlFromVersionString(version);
+        }
+        return fromVersionString(version);
+    }
 
-  boolean globalVariableInitializersMustBeConst();
+    static boolean isWebGlCompatible(String versionString) {
+        return allWebGlSlVersions().stream().map(item -> item.getVersionString())
+                .anyMatch(item -> item.equals(versionString));
+    }
 
-  boolean initializersOfConstMustBeConst();
+    static boolean isWebGlHint(String line) {
+        return line.startsWith("//WebGL");
+    }
 
-  // Returns true if and only if this is an ES shading language.
-  boolean isEssl();
+    static ShadingLanguageVersion webGlFromVersionString(String versionString) {
+        if (!isWebGlCompatible(versionString)) {
+            throw new RuntimeException("Unknown WebGL shading language version string " + versionString);
+        }
+        return allWebGlSlVersions()
+                .stream()
+                .filter(item -> item.getVersionString().equals(versionString))
+                .findAny().get();
+    }
 
-  boolean isWebGl();
+    String getVersionString();
 
-  /**
-   * GLSL versions 1.2+ and ESSL versions 3.0+ support array constructors.
-   * @return true if and only if array constructors are supported.
-   */
-  boolean supportedArrayConstructors();
+    boolean globalVariableInitializersMustBeConst();
 
-  boolean restrictedForLoops();
+    boolean initializersOfConstMustBeConst();
 
-  boolean supportedAbsInt();
+    // Returns true if and only if this is an ES shading language.
+    boolean isEssl();
 
-  boolean supportedBitwiseOperations();
+    boolean isWebGl();
 
-  boolean supportedClampInt();
+    boolean restrictedForLoops();
 
-  boolean supportedClampUint();
+    boolean supportedAbsInt();
 
-  /**
-   * GLSL versions 4.3+ and ESSL versions 3.1+ support compute shaders.
-   * @return true if the shading language version allows compute shaders - false otherwise.
-   */
-  boolean supportedComputeShaders();
+    /**
+     * Angle and Trigonometric Functions are a set of built-in functions related to the calculation
+     * of an angle. For example, sin(angle) - computes the sine value of the angle provided.
+     * GLSL versions 1.1+ and ESSL versions 1.0+ support these functions.
+     *
+     * @return true if Angle and Trigonometric Functions are supported - false otherwise.
+     */
+    boolean supportedAngleAndTrigonometricFunctions();
 
-  /**
-   * Derivative Functions are a subset of fragment processing functions that compute
-   * the rate of change between pixels in a given fragment.
-   * GLSL versions 1.1+ and ESSL versions 3.0+ support these functions.
-   *
-   * @return true if explicit derivative functions are supported - false otherwise.
-   */
-  boolean supportedDerivativeFunctions();
+    /**
+     * GLSL versions 1.2+ and ESSL versions 3.0+ support array constructors.
+     *
+     * @return true if and only if array constructors are supported.
+     */
+    boolean supportedArrayConstructors();
 
-  /**
-   * Determinant Function calculates the determinant of a given square matrix.
-   * GLSL versions 1.5+ and ESSL versions 3.0+ support this function.
-   *
-   * @return true if Determinant Function is supported - false otherwise.
-   */
-  boolean supportedDeterminant();
+    /**
+     * Atomic Memory Functions are a set of built-in functions that perform read-modify-write atomic
+     * operations.  For example, atomicAdd() - atomically increment an integer and return its old
+     * value.
+     * GLSL versions 4.3+ and ESSL versions 3.1+ support these functions.
+     *
+     * @return true if Atomic Memory Functions are supported - false otherwise.
+     */
+    boolean supportedAtomicMemoryFunctions();
 
-  boolean supportedDoStmt();
+    boolean supportedBitwiseOperations();
 
-  /**
-   * In recent GLSL specifications, new derivative functions were added that allow a user to
-   * specify how much precision the user wants in the calculation, instead of leaving the choice
-   * to the compiler.
-   * GLSL versions 4.5+ support these explicit derivative functions.
-   *
-   * @return true if explicit derivative functions are supported - false otherwise.
-   */
-  boolean supportedExplicitDerivativeFunctions();
+    boolean supportedClampInt();
 
-  boolean supportedFloatBitsToInt();
+    boolean supportedClampUint();
 
-  boolean supportedFloatBitsToUint();
+    /**
+     * GLSL versions 4.3+ and ESSL versions 3.1+ support compute shaders.
+     *
+     * @return true if the shading language version allows compute shaders - false otherwise.
+     */
+    boolean supportedComputeShaders();
 
-  boolean supportedFma();
+    /**
+     * Derivative Functions are a subset of fragment processing functions that compute
+     * the rate of change between pixels in a given fragment.
+     * GLSL versions 1.1+ and ESSL versions 3.0+ support these functions.
+     *
+     * @return true if explicit derivative functions are supported - false otherwise.
+     */
+    boolean supportedDerivativeFunctions();
 
-  boolean supportedGlFragColor();
+    /**
+     * Determinant Function calculates the determinant of a given square matrix.
+     * GLSL versions 1.5+ and ESSL versions 3.0+ support this function.
+     *
+     * @return true if Determinant Function is supported - false otherwise.
+     */
+    boolean supportedDeterminant();
 
-  boolean supportedIntBitsToFloat();
+    boolean supportedDoStmt();
 
-  /**
-   * Integer Functions are a set of built-in functions that allow manipulation of integers and
-   * their corresponding vectors in ways difficult or impossible with normal GLSL syntax - for
-   * example, summing two unsigned integers where the result causes an overflow.
-   * GLSL versions 4.0+ and ESSL versions 3.1+ support these functions.
-   *
-   * @return true if Integer Functions are supported - false otherwise.
-   */
-  boolean supportedIntegerFunctions();
+    /**
+     * In recent GLSL specifications, new derivative functions were added that allow a user to
+     * specify how much precision the user wants in the calculation, instead of leaving the choice
+     * to the compiler.
+     * GLSL versions 4.5+ support these explicit derivative functions.
+     *
+     * @return true if explicit derivative functions are supported - false otherwise.
+     */
+    boolean supportedExplicitDerivativeFunctions();
 
-  /**
-   * Interpolation Functions are a subset of fragment processing functions that
-   * compute an interpolated value of a fragment shader input variable at a specific location.
-   * GLSL versions 4.0+ and ESSL versions 3.2+ support these functions.
-   *
-   * @return true if Interpolation Functions are supported - false otherwise.
-   */
-  boolean supportedInterpolationFunctions();
+    boolean supportedFloatBitsToInt();
 
-  /**
-   * Inverse Function returns the matrix that is the inverse of the given square matrix.
-   * GLSL versions 1.5+ and ESSL versions 3.0+ support this function.
-   *
-   * @return true if Inverse Function is supported - false otherwise.
-   */
-  boolean supportedInverse();
+    boolean supportedFloatBitsToUint();
 
-  boolean supportedIsinf();
+    boolean supportedFma();
 
-  boolean supportedIsnan();
+    boolean supportedFrexp();
 
-  boolean supportedMatrixCompMultNonSquare();
+    boolean supportedGlFragColor();
 
-  boolean supportedMaxInt();
+    /**
+     * Hyperbolic Angle and Trigonometric Functions are a set of built-in functions that
+     * computes the hyperbolic trigonometric functions. For example, sinh() - calculate the
+     * hyperbolic sine function of the given value.
+     * GLSL versions 1.3+ and ESSL versions 3.0+ support these functions.
+     *
+     * @return true if Hyperbolic Angle and Trigonometric Functions are supported - false otherwise.
+     */
+    boolean supportedHyperbolicAngleAndTrigonometricFunctions();
 
-  boolean supportedMaxUint();
+    boolean supportedIntBitsToFloat();
 
-  boolean supportedMinInt();
+    /**
+     * Integer Functions are a set of built-in functions that allow manipulation of integers and
+     * their corresponding vectors in ways difficult or impossible with normal GLSL syntax - for
+     * example, summing two unsigned integers where the result causes an overflow.
+     * GLSL versions 4.0+ and ESSL versions 3.1+ support these functions.
+     *
+     * @return true if Integer Functions are supported - false otherwise.
+     */
+    boolean supportedIntegerFunctions();
 
-  boolean supportedMinUint();
+    /**
+     * Interpolation Functions are a subset of fragment processing functions that
+     * compute an interpolated value of a fragment shader input variable at a specific location.
+     * GLSL versions 4.0+ and ESSL versions 3.2+ support these functions.
+     *
+     * @return true if Interpolation Functions are supported - false otherwise.
+     */
+    boolean supportedInterpolationFunctions();
 
-  boolean supportedMixFloatBool();
+    /**
+     * Inverse Function returns the matrix that is the inverse of the given square matrix.
+     * GLSL versions 1.5+ and ESSL versions 3.0+ support this function.
+     *
+     * @return true if Inverse Function is supported - false otherwise.
+     */
+    boolean supportedInverse();
 
-  boolean supportedMixNonfloatBool();
+    boolean supportedIsinf();
 
-  boolean supportedNonSquareMatrices();
+    boolean supportedIsnan();
 
-  /**
-   * OuterProduct Function does a linear algebraic matrix multiplication of two given vectors.
-   * GLSL versions 1.2+ and ESSL versions 3.0+ support this function.
-   *
-   * @return true if OuterProduct Function is supported - false otherwise.
-   */
-  boolean supportedOuterProduct();
+    boolean supportedLdexp();
 
-  boolean supportedPackHalf2x16();
+    boolean supportedMatrixCompMultNonSquare();
 
-  boolean supportedPackSnorm2x16();
+    boolean supportedMaxInt();
 
-  boolean supportedPackSnorm4x8();
+    boolean supportedMaxUint();
 
-  boolean supportedPackUnorm2x16();
+    boolean supportedMinInt();
 
-  boolean supportedPackUnorm4x8();
+    boolean supportedMinUint();
 
-  boolean supportedRound();
+    boolean supportedMixFloatBool();
 
-  boolean supportedRoundEven();
+    boolean supportedMixNonfloatBool();
 
-  boolean supportedSignInt();
+    boolean supportedModf();
 
-  boolean supportedSwitchStmt();
+    boolean supportedNonSquareMatrices();
 
-  /**
-   * Transpose Function returns the transposed matrix of the given matrix.
-   * GLSL versions 1.2+ and ESSL versions 3.0+ support this function.
-   *
-   * @return true if Transpose Function is supported - false otherwise.
-   */
-  boolean supportedTranspose();
+    /**
+     * OuterProduct Function does a linear algebraic matrix multiplication of two given vectors.
+     * GLSL versions 1.2+ and ESSL versions 3.0+ support this function.
+     *
+     * @return true if OuterProduct Function is supported - false otherwise.
+     */
+    boolean supportedOuterProduct();
 
-  boolean supportedTrunc();
+    boolean supportedPackHalf2x16();
 
-  boolean supportedUintBitsToFloat();
+    boolean supportedPackSnorm2x16();
 
-  boolean supportedUnpackHalf2x16();
+    boolean supportedPackSnorm4x8();
 
-  boolean supportedUnpackSnorm2x16();
+    boolean supportedPackUnorm2x16();
 
-  boolean supportedUnpackSnorm4x8();
+    boolean supportedPackUnorm4x8();
 
-  boolean supportedUnpackUnorm2x16();
+    /**
+     * GLSL versions 4.6+ and ESSL versions 3.2+ support push_constants for Vulkan.
+     *
+     * @return true if and only if push constants are supported.
+     */
+    boolean supportedPushConstants();
 
-  boolean supportedUnpackUnorm4x8();
+    boolean supportedRound();
 
-  boolean supportedUnsigned();
+    boolean supportedRoundEven();
 
-  boolean supportedModf();
+    /**
+     * GLSL versions 4.0+ and ESSL versions 3.1+ support a barrier function to synchronize a
+     * workgroup in a compute shader.
+     *
+     * @return true if and only if shader invocation control functions are supported.
+     */
+    boolean supportedShaderInvocationControlFunctions();
 
-  boolean supportedFrexp();
+    /**
+     * GLSL versions 4.0+ and ESSL versions 3.1+ support various memory barrier functions, such as
+     * memoryBarrier(), in compute shaders.
+     *
+     * @return true if and only if shader memory control functions are supported.
+     */
+    boolean supportedShaderMemoryControlFunctions();
 
-  boolean supportedLdexp();
+    boolean supportedSignInt();
 
-  /**
-   * Angle and Trigonometric Functions are a set of built-in functions related to the calculation
-   * of an angle. For example, sin(angle) - computes the sine value of the angle provided.
-   * GLSL versions 1.1+ and ESSL versions 1.0+ support these functions.
-   *
-   * @return true if Angle and Trigonometric Functions are supported - false otherwise.
-   */
-  boolean supportedAngleAndTrigonometricFunctions();
+    boolean supportedSwitchStmt();
 
-  /**
-   * Hyperbolic Angle and Trigonometric Functions are a set of built-in functions that
-   * computes the hyperbolic trigonometric functions. For example, sinh() - calculate the
-   * hyperbolic sine function of the given value.
-   * GLSL versions 1.3+ and ESSL versions 3.0+ support these functions.
-   *
-   * @return true if Hyperbolic Angle and Trigonometric Functions are supported - false otherwise.
-   */
-  boolean supportedHyperbolicAngleAndTrigonometricFunctions();
+    /**
+     * Indicates whether the shading language supports basic 'texture' functions that were introduced
+     * in GLSL 1.30 and ESSL 3.0.
+     *
+     * @return true if basic texture functions are supported.
+     */
+    boolean supportedTexture();
 
-  /**
-   * Atomic Memory Functions are a set of built-in functions that perform read-modify-write atomic
-   * operations.  For example, atomicAdd() - atomically increment an integer and return its old
-   * value.
-   * GLSL versions 4.3+ and ESSL versions 3.1+ support these functions.
-   *
-   * @return true if Atomic Memory Functions are supported - false otherwise.
-   */
-  boolean supportedAtomicMemoryFunctions();
+    /**
+     * Transpose Function returns the transposed matrix of the given matrix.
+     * GLSL versions 1.2+ and ESSL versions 3.0+ support this function.
+     *
+     * @return true if Transpose Function is supported - false otherwise.
+     */
+    boolean supportedTranspose();
 
-  /**
-   * Indicates whether the shading language supports basic 'texture' functions that were introduced
-   * in GLSL 1.30 and ESSL 3.0.
-   *
-   * @return true if basic texture functions are supported.
-   */
-  boolean supportedTexture();
+    boolean supportedTrunc();
 
-  /**
-   * GLSL versions 4.0+ and ESSL versions 3.1+ support a barrier function to synchronize a
-   * workgroup in a compute shader.
-   * @return true if and only if shader invocation control functions are supported.
-   */
-  boolean supportedShaderInvocationControlFunctions();
+    boolean supportedUintBitsToFloat();
 
-  /**
-   * GLSL versions 4.0+ and ESSL versions 3.1+ support various memory barrier functions, such as
-   * memoryBarrier(), in compute shaders.
-   * @return true if and only if shader memory control functions are supported.
-   */
-  boolean supportedShaderMemoryControlFunctions();
+    boolean supportedUnpackHalf2x16();
 
-  /**
-   * GLSL versions 4.6+ and ESSL versions 3.2+ support push_constants for Vulkan.
-   * @return true if and only if push constants are supported.
-   */
-  boolean supportedPushConstants();
+    boolean supportedUnpackSnorm2x16();
+
+    boolean supportedUnpackSnorm4x8();
+
+    boolean supportedUnpackUnorm2x16();
+
+    boolean supportedUnpackUnorm4x8();
+
+    boolean supportedUnsigned();
 }

@@ -23,45 +23,45 @@ import com.graphicsfuzz.common.util.StatsVisitor;
 
 public class SimplifyExprReductionOpportunity extends AbstractReductionOpportunity {
 
-  private final IAstNode parent;
-  private final Expr newChild;
-  private final Expr originalChild;
+    private final IAstNode parent;
+    private final Expr newChild;
+    private final Expr originalChild;
 
-  // This tracks the number of nodes that will be removed by applying the opportunity at its
-  // time of creation (this number may be different when the opportunity is actually applied,
-  // due to the effects of other opportunities).
-  private final int numRemovableNodes;
+    // This tracks the number of nodes that will be removed by applying the opportunity at its
+    // time of creation (this number may be different when the opportunity is actually applied,
+    // due to the effects of other opportunities).
+    private final int numRemovableNodes;
 
-  public SimplifyExprReductionOpportunity(IAstNode parent, Expr newChild, Expr originalChild,
-        VisitationDepth depth) {
-    super(depth);
-    this.parent = parent;
-    this.newChild = newChild;
-    this.originalChild = originalChild;
-    this.numRemovableNodes =
-        new StatsVisitor(originalChild).getNumNodes() - new StatsVisitor(newChild).getNumNodes();
-  }
-
-  @Override
-  public void applyReductionImpl() {
-    parent.replaceChild(originalChild, newChild);
-  }
-
-  @Override
-  public String toString() {
-    return getClass().getName() + ": " + originalChild;
-  }
-
-  @Override
-  public boolean preconditionHolds() {
-    if (!parent.hasChild(originalChild)) {
-      return false;
+    public SimplifyExprReductionOpportunity(IAstNode parent, Expr newChild, Expr originalChild,
+                                            VisitationDepth depth) {
+        super(depth);
+        this.parent = parent;
+        this.newChild = newChild;
+        this.originalChild = originalChild;
+        this.numRemovableNodes =
+                new StatsVisitor(originalChild).getNumNodes() - new StatsVisitor(newChild).getNumNodes();
     }
-    return true;
-  }
 
-  public int getNumRemovableNodes() {
-    return numRemovableNodes;
-  }
+    @Override
+    public void applyReductionImpl() {
+        parent.replaceChild(originalChild, newChild);
+    }
+
+    public int getNumRemovableNodes() {
+        return numRemovableNodes;
+    }
+
+    @Override
+    public boolean preconditionHolds() {
+        if (!parent.hasChild(originalChild)) {
+            return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString() {
+        return getClass().getName() + ": " + originalChild;
+    }
 
 }

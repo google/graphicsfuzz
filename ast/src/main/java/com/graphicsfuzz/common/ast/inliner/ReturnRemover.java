@@ -53,223 +53,223 @@ import java.util.List;
 
 public class ReturnRemover {
 
-  private final FunctionDefinition fd;
-  private final ShadingLanguageVersion shadingLanguageVersion;
-  private final IParentMap parentMap;
-  private boolean removedAReturn;
+    private final FunctionDefinition fd;
+    private final ShadingLanguageVersion shadingLanguageVersion;
+    private final IParentMap parentMap;
+    private boolean removedAReturn;
 
-  private ReturnRemover(FunctionDefinition fd, ShadingLanguageVersion shadingLanguageVersion) {
-    this.fd = fd;
-    this.shadingLanguageVersion = shadingLanguageVersion;
-    this.parentMap = IParentMap.createParentMap(fd);
-    this.removedAReturn = false;
-  }
-
-  public static void removeReturns(FunctionDefinition fd, ShadingLanguageVersion
-      shadingLanguageVersion)
-        throws CannotRemoveReturnsException {
-    new ReturnRemover(fd, shadingLanguageVersion).doRemoveReturns();
-  }
-
-  private void doRemoveReturns() throws CannotRemoveReturnsException {
-    if (!containsReturn(fd.getBody())) {
-      // No return to remove
-      return;
+    private ReturnRemover(FunctionDefinition fd, ShadingLanguageVersion shadingLanguageVersion) {
+        this.fd = fd;
+        this.shadingLanguageVersion = shadingLanguageVersion;
+        this.parentMap = IParentMap.createParentMap(fd);
+        this.removedAReturn = false;
     }
-    if (numReturnStmts(fd.getBody()) == 1 && fd.getBody()
-          .getStmt(fd.getBody().getNumStmts() - 1) instanceof ReturnStmt) {
-      // Only one return at end -- removing it doesn't simplify things
-      return;
+
+    public static void removeReturns(FunctionDefinition fd, ShadingLanguageVersion
+            shadingLanguageVersion)
+            throws CannotRemoveReturnsException {
+        new ReturnRemover(fd, shadingLanguageVersion).doRemoveReturns();
     }
-    if (containsSwitch(fd)) {
-      throw new CannotRemoveReturnsException("Switch statements not yet supported.");
+
+    private void addReturnInstrumentation() {
+        new StandardVisitor() {
+            @Override
+            public void visitBlockStmt(BlockStmt blockStmt) {
+                super.visitBlockStmt(blockStmt);
+                final List<List<Stmt>> regionStack = new ArrayList<>();
+                regionStack.add(new ArrayList<>());
+                for (Stmt stmt : blockStmt.getStmts()) {
+                    addToCurrentRegion(regionStack, stmt);
+                    if (containsReturn(stmt)) {
+                        regionStack.add(new ArrayList<>());
+                    }
+                }
+                blockStmt.setStmts(regionStackToStmts(regionStack));
+            }
+
+            private void addToCurrentRegion(List<List<Stmt>> regionStack, Stmt stmt) {
+                regionStack.get(regionStack.size() - 1).add(stmt);
+            }
+
+            private List<Stmt> regionStackToStmts(List<List<Stmt>> regionStack) {
+                if (regionStack.size() == 1) {
+                    return regionStack.get(0);
+                }
+                final List<Stmt> result = new ArrayList<>();
+                result.addAll(regionStack.get(0));
+
+                // Check that the remainder actually contains some statements
+                if (regionStack.subList(1, regionStack.size()).stream().anyMatch(item -> !item.isEmpty())) {
+                    result.add(new IfStmt(
+                            new UnaryExpr(makeHasReturned(), UnOp.LNOT),
+                            new BlockStmt(regionStackToStmts(
+                                    regionStack.subList(1, regionStack.size())),
+                                    true),
+                            null));
+                }
+                return result;
+            }
+
+        }.visit(fd);
     }
-    addReturnInstrumentation();
-    replaceReturnStatements();
-    addSpecialDeclarations();
-  }
 
-  private void replaceReturnStatements() {
-    final IParentMap parentMap = IParentMap.createParentMap(fd);
-    new StandardVisitor() {
-      @Override
-      public void visitReturnStmt(ReturnStmt returnStmt) {
-        if (returnStmt.hasExpr()) {
-          parentMap.getParent(returnStmt).replaceChild(returnStmt,
-                new BlockStmt(Arrays.asList(
-                      new ExprStmt(new BinaryExpr(makeReturnValue(), returnStmt.getExpr(),
-                            BinOp.ASSIGN)),
-                      setHasReturned()), true));
-        } else {
-          parentMap.getParent(returnStmt).replaceChild(returnStmt,
-                setHasReturned());
-
+    private void addSpecialDeclarations() {
+        if (fd.getPrototype().getReturnType().getWithoutQualifiers() != VoidType.VOID) {
+            fd.getBody().insertStmt(0, new DeclarationStmt(
+                    new VariablesDeclaration(fd.getPrototype().getReturnType().getWithoutQualifiers(),
+                            new VariableDeclInfo(makeReturnValueName(), null, null))));
+            fd.getBody().addStmt(new ReturnStmt(makeReturnValue()));
         }
-      }
-
-      @Override
-      public void visitForStmt(ForStmt forStmt) {
-        if (shadingLanguageVersion.restrictedForLoops()) {
-          handleRestrictedForLoop(forStmt);
-        } else {
-          handleLoop(forStmt);
-        }
-        super.visitForStmt(forStmt);
-      }
-
-      @Override
-      public void visitWhileStmt(WhileStmt whileStmt) {
-        handleLoop(whileStmt);
-        super.visitWhileStmt(whileStmt);
-      }
-
-      @Override
-      public void visitDoStmt(DoStmt doStmt) {
-        handleLoop(doStmt);
-        super.visitDoStmt(doStmt);
-      }
-
-      private void handleLoop(LoopStmt loopStmt) {
-        if (containsReturn(loopStmt)) {
-          loopStmt.setCondition(
-                new BinaryExpr(
-                      new ParenExpr(new UnaryExpr(makeHasReturned(), UnOp.LNOT)),
-                      loopStmt.hasCondition() ? loopStmt.getCondition() :
-                          new BoolConstantExpr(true),
-                    BinOp.LAND));
-        }
-      }
-
-      private void handleRestrictedForLoop(ForStmt forStmt) {
-        if (containsReturn(forStmt)) {
-          forStmt.setBody(new BlockStmt(
-                Arrays.asList(
-                      new IfStmt(
-                        makeHasReturned(),
-                        new BlockStmt(Arrays.asList(new BreakStmt()), true),
-                        null),
-                      forStmt.getBody()),
-                false));
-        }
-      }
-
-      private ExprStmt setHasReturned() {
-        return new ExprStmt(new BinaryExpr(makeHasReturned(), new BoolConstantExpr(true),
-            BinOp.ASSIGN));
-      }
-    }.visit(fd);
-  }
-
-  private void addSpecialDeclarations() {
-    if (fd.getPrototype().getReturnType().getWithoutQualifiers() != VoidType.VOID) {
-      fd.getBody().insertStmt(0, new DeclarationStmt(
-            new VariablesDeclaration(fd.getPrototype().getReturnType().getWithoutQualifiers(),
-                  new VariableDeclInfo(makeReturnValueName(), null, null))));
-      fd.getBody().addStmt(new ReturnStmt(makeReturnValue()));
+        fd.getBody().insertStmt(0, new DeclarationStmt(
+                new VariablesDeclaration(BasicType.BOOL,
+                        new VariableDeclInfo(makeHasReturnedName(), null,
+                                new Initializer(new BoolConstantExpr(false))))));
     }
-    fd.getBody().insertStmt(0, new DeclarationStmt(
-          new VariablesDeclaration(BasicType.BOOL,
-                new VariableDeclInfo(makeHasReturnedName(), null,
-                      new Initializer(new BoolConstantExpr(false))))));
-  }
 
-  private void addReturnInstrumentation() {
-    new StandardVisitor() {
-      @Override
-      public void visitBlockStmt(BlockStmt blockStmt) {
-        super.visitBlockStmt(blockStmt);
-        final List<List<Stmt>> regionStack = new ArrayList<>();
-        regionStack.add(new ArrayList<>());
-        for (Stmt stmt : blockStmt.getStmts()) {
-          addToCurrentRegion(regionStack, stmt);
-          if (containsReturn(stmt)) {
-            regionStack.add(new ArrayList<>());
-          }
+    private boolean containsReturn(Stmt stmt) {
+        return new CheckPredicateVisitor() {
+            @Override
+            public void visitReturnStmt(ReturnStmt returnStmt) {
+                predicateHolds();
+            }
+        }.test(stmt);
+    }
+
+    private boolean containsSwitch(FunctionDefinition fd) {
+        return new CheckPredicateVisitor() {
+            @Override
+            public void visitSwitchStmt(SwitchStmt switchStmt) {
+                predicateHolds();
+            }
+        }.test(fd);
+    }
+
+    private void doRemoveReturns() throws CannotRemoveReturnsException {
+        if (!containsReturn(fd.getBody())) {
+            // No return to remove
+            return;
         }
-        blockStmt.setStmts(regionStackToStmts(regionStack));
-      }
-
-      private List<Stmt> regionStackToStmts(List<List<Stmt>> regionStack) {
-        if (regionStack.size() == 1) {
-          return regionStack.get(0);
+        if (numReturnStmts(fd.getBody()) == 1 && fd.getBody()
+                .getStmt(fd.getBody().getNumStmts() - 1) instanceof ReturnStmt) {
+            // Only one return at end -- removing it doesn't simplify things
+            return;
         }
-        final List<Stmt> result = new ArrayList<>();
-        result.addAll(regionStack.get(0));
-
-        // Check that the remainder actually contains some statements
-        if (regionStack.subList(1, regionStack.size()).stream().anyMatch(item -> !item.isEmpty())) {
-          result.add(new IfStmt(
-                new UnaryExpr(makeHasReturned(), UnOp.LNOT),
-                new BlockStmt(regionStackToStmts(
-                      regionStack.subList(1, regionStack.size())),
-                      true),
-                null));
+        if (containsSwitch(fd)) {
+            throw new CannotRemoveReturnsException("Switch statements not yet supported.");
         }
-        return result;
-      }
+        addReturnInstrumentation();
+        replaceReturnStatements();
+        addSpecialDeclarations();
+    }
 
-      private void addToCurrentRegion(List<List<Stmt>> regionStack, Stmt stmt) {
-        regionStack.get(regionStack.size() - 1).add(stmt);
-      }
+    private String functionName() {
+        return fd.getPrototype().getName();
+    }
 
-    }.visit(fd);
-  }
+    private Expr makeHasReturned() {
+        return new VariableIdentifierExpr(
+                makeHasReturnedName());
+    }
 
-  private Expr makeHasReturned() {
-    return new VariableIdentifierExpr(
-          makeHasReturnedName());
-  }
+    private String makeHasReturnedName() {
+        return functionName() + "_has_returned";
+    }
 
-  private String makeHasReturnedName() {
-    return functionName() + "_has_returned";
-  }
+    private Expr makeReturnValue() {
+        return new VariableIdentifierExpr(
+                makeReturnValueName());
+    }
 
-  private Expr makeReturnValue() {
-    return new VariableIdentifierExpr(
-          makeReturnValueName());
-  }
+    private String makeReturnValueName() {
+        return functionName() + "_return_value";
+    }
 
-  private String makeReturnValueName() {
-    return functionName() + "_return_value";
-  }
+    private int numReturnStmts(Stmt stmt) {
+        return new StandardVisitor() {
+            private int returnCount = 0;
 
-  private String functionName() {
-    return fd.getPrototype().getName();
-  }
+            int countReturns(IAstNode node) {
+                visit(node);
+                return returnCount;
+            }
 
-  private boolean containsSwitch(FunctionDefinition fd) {
-    return new CheckPredicateVisitor() {
-      @Override
-      public void visitSwitchStmt(SwitchStmt switchStmt) {
-        predicateHolds();
-      }
-    }.test(fd);
-  }
+            @Override
+            public void visitReturnStmt(ReturnStmt returnStmt) {
+                super.visitReturnStmt(returnStmt);
+                returnCount++;
+            }
+        }.countReturns(stmt);
+    }
 
-  private boolean containsReturn(Stmt stmt) {
-    return new CheckPredicateVisitor() {
-      @Override
-      public void visitReturnStmt(ReturnStmt returnStmt) {
-        predicateHolds();
-      }
-    }.test(stmt);
-  }
+    private void replaceReturnStatements() {
+        final IParentMap parentMap = IParentMap.createParentMap(fd);
+        new StandardVisitor() {
+            @Override
+            public void visitDoStmt(DoStmt doStmt) {
+                handleLoop(doStmt);
+                super.visitDoStmt(doStmt);
+            }
 
-  private int numReturnStmts(Stmt stmt) {
-    return new StandardVisitor() {
-      private int returnCount = 0;
+            @Override
+            public void visitForStmt(ForStmt forStmt) {
+                if (shadingLanguageVersion.restrictedForLoops()) {
+                    handleRestrictedForLoop(forStmt);
+                } else {
+                    handleLoop(forStmt);
+                }
+                super.visitForStmt(forStmt);
+            }
 
-      @Override
-      public void visitReturnStmt(ReturnStmt returnStmt) {
-        super.visitReturnStmt(returnStmt);
-        returnCount++;
-      }
+            @Override
+            public void visitReturnStmt(ReturnStmt returnStmt) {
+                if (returnStmt.hasExpr()) {
+                    parentMap.getParent(returnStmt).replaceChild(returnStmt,
+                            new BlockStmt(Arrays.asList(
+                                    new ExprStmt(new BinaryExpr(makeReturnValue(), returnStmt.getExpr(),
+                                            BinOp.ASSIGN)),
+                                    setHasReturned()), true));
+                } else {
+                    parentMap.getParent(returnStmt).replaceChild(returnStmt,
+                            setHasReturned());
 
-      int countReturns(IAstNode node) {
-        visit(node);
-        return returnCount;
-      }
-    }.countReturns(stmt);
-  }
+                }
+            }
+
+            @Override
+            public void visitWhileStmt(WhileStmt whileStmt) {
+                handleLoop(whileStmt);
+                super.visitWhileStmt(whileStmt);
+            }
+
+            private void handleLoop(LoopStmt loopStmt) {
+                if (containsReturn(loopStmt)) {
+                    loopStmt.setCondition(
+                            new BinaryExpr(
+                                    new ParenExpr(new UnaryExpr(makeHasReturned(), UnOp.LNOT)),
+                                    loopStmt.hasCondition() ? loopStmt.getCondition() :
+                                            new BoolConstantExpr(true),
+                                    BinOp.LAND));
+                }
+            }
+
+            private void handleRestrictedForLoop(ForStmt forStmt) {
+                if (containsReturn(forStmt)) {
+                    forStmt.setBody(new BlockStmt(
+                            Arrays.asList(
+                                    new IfStmt(
+                                            makeHasReturned(),
+                                            new BlockStmt(Arrays.asList(new BreakStmt()), true),
+                                            null),
+                                    forStmt.getBody()),
+                            false));
+                }
+            }
+
+            private ExprStmt setHasReturned() {
+                return new ExprStmt(new BinaryExpr(makeHasReturned(), new BoolConstantExpr(true),
+                        BinOp.ASSIGN));
+            }
+        }.visit(fd);
+    }
 
 }

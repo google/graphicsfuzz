@@ -29,43 +29,43 @@ import java.util.stream.Collectors;
 
 public class RemoveRedundantUniformMetadataReductionOpportunities {
 
-  private RemoveRedundantUniformMetadataReductionOpportunities() {
-    // This class just provides a static method; there is no cause to create an instance of the
-    // class.
-  }
-
-  static List<RemoveRedundantUniformMetadataReductionOpportunity> findOpportunities(
-      ShaderJob shaderJob,
-      ReducerContext context) {
-
-    // We initially grab names of all uniforms in the pipeline info.
-    final List<String> canBeRemoved =
-        new ArrayList<>(shaderJob.getPipelineInfo().getUniformNames());
-
-    for (TranslationUnit tu : shaderJob.getShaders()) {
-      new StandardVisitor() {
-        @Override
-        public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
-          super.visitVariablesDeclaration(variablesDeclaration);
-          // A uniform in the pipeline info that its declaration is found in shaders
-          // will not be removed by the reducer.
-          if (variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.UNIFORM)) {
-            for (VariableDeclInfo vdi : variablesDeclaration.getDeclInfos()) {
-              canBeRemoved.remove(vdi.getName());
-            }
-          }
-        }
-      }.visit(tu);
+    private RemoveRedundantUniformMetadataReductionOpportunities() {
+        // This class just provides a static method; there is no cause to create an instance of the
+        // class.
     }
 
-    // Since we are going to remove redundant uniforms in the pipeline info that do not
-    // belong to any shader, the visitation depth should be zero.
-    return canBeRemoved
-        .stream()
-        .map(item -> new RemoveRedundantUniformMetadataReductionOpportunity(item,
-            shaderJob.getPipelineInfo(),
-            new VisitationDepth(0))
-        ).collect(Collectors.toList());
-  }
+    static List<RemoveRedundantUniformMetadataReductionOpportunity> findOpportunities(
+            ShaderJob shaderJob,
+            ReducerContext context) {
+
+        // We initially grab names of all uniforms in the pipeline info.
+        final List<String> canBeRemoved =
+                new ArrayList<>(shaderJob.getPipelineInfo().getUniformNames());
+
+        for (TranslationUnit tu : shaderJob.getShaders()) {
+            new StandardVisitor() {
+                @Override
+                public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
+                    super.visitVariablesDeclaration(variablesDeclaration);
+                    // A uniform in the pipeline info that its declaration is found in shaders
+                    // will not be removed by the reducer.
+                    if (variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.UNIFORM)) {
+                        for (VariableDeclInfo vdi : variablesDeclaration.getDeclInfos()) {
+                            canBeRemoved.remove(vdi.getName());
+                        }
+                    }
+                }
+            }.visit(tu);
+        }
+
+        // Since we are going to remove redundant uniforms in the pipeline info that do not
+        // belong to any shader, the visitation depth should be zero.
+        return canBeRemoved
+                .stream()
+                .map(item -> new RemoveRedundantUniformMetadataReductionOpportunity(item,
+                        shaderJob.getPipelineInfo(),
+                        new VisitationDepth(0))
+                ).collect(Collectors.toList());
+    }
 
 }

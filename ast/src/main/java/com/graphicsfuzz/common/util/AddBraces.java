@@ -29,70 +29,70 @@ import java.util.Arrays;
 
 public final class AddBraces {
 
-  private AddBraces() {
-    // Utility class; should not be constructable.
-  }
+    private AddBraces() {
+        // Utility class; should not be constructable.
+    }
 
-  /**
-   * Add braces to all conditional and loop statements.
-   *
-   * @param tu The translation unit to be transformed
-   * @return A cloned translation unit with braces added
-   */
-  public static TranslationUnit transform(TranslationUnit tu) {
+    /**
+     * Add braces to all conditional and loop statements.
+     *
+     * @param tu The translation unit to be transformed
+     * @return A cloned translation unit with braces added
+     */
+    public static TranslationUnit transform(TranslationUnit tu) {
 
-    return new StandardVisitor() {
+        return new StandardVisitor() {
 
-      @Override
-      public void visitIfStmt(IfStmt ifStmt) {
-        super.visitIfStmt(ifStmt);
-        if (!isBlock(ifStmt.getThenStmt())) {
-          ifStmt.setThenStmt(makeBlock(ifStmt.getThenStmt()));
-        }
-        if (ifStmt.hasElseStmt() && !isBlock(ifStmt.getElseStmt())) {
-          ifStmt.setElseStmt(makeBlock(ifStmt.getElseStmt()));
-        }
-      }
+            public TranslationUnit addBraces(TranslationUnit tu) {
+                visit(tu);
+                return tu;
+            }
 
-      @Override
-      public void visitForStmt(ForStmt forStmt) {
-        super.visitForStmt(forStmt);
-        handleLoopStmt(forStmt);
-      }
+            @Override
+            public void visitDoStmt(DoStmt doStmt) {
+                super.visitDoStmt(doStmt);
+                handleLoopStmt(doStmt);
+            }
 
-      @Override
-      public void visitWhileStmt(WhileStmt whileStmt) {
-        super.visitWhileStmt(whileStmt);
-        handleLoopStmt(whileStmt);
-      }
+            @Override
+            public void visitForStmt(ForStmt forStmt) {
+                super.visitForStmt(forStmt);
+                handleLoopStmt(forStmt);
+            }
 
-      @Override
-      public void visitDoStmt(DoStmt doStmt) {
-        super.visitDoStmt(doStmt);
-        handleLoopStmt(doStmt);
-      }
+            @Override
+            public void visitIfStmt(IfStmt ifStmt) {
+                super.visitIfStmt(ifStmt);
+                if (!isBlock(ifStmt.getThenStmt())) {
+                    ifStmt.setThenStmt(makeBlock(ifStmt.getThenStmt()));
+                }
+                if (ifStmt.hasElseStmt() && !isBlock(ifStmt.getElseStmt())) {
+                    ifStmt.setElseStmt(makeBlock(ifStmt.getElseStmt()));
+                }
+            }
 
-      private boolean isBlock(Stmt stmt) {
-        return stmt instanceof BlockStmt;
-      }
+            @Override
+            public void visitWhileStmt(WhileStmt whileStmt) {
+                super.visitWhileStmt(whileStmt);
+                handleLoopStmt(whileStmt);
+            }
 
-      private Stmt makeBlock(Stmt stmt) {
-        return new BlockStmt(Arrays.asList(stmt), true);
-      }
+            private void handleLoopStmt(LoopStmt loopStmt) {
+                if (!isBlock(loopStmt.getBody())) {
+                    loopStmt.setBody(makeBlock(loopStmt.getBody()));
+                }
+            }
 
-      private void handleLoopStmt(LoopStmt loopStmt) {
-        if (!isBlock(loopStmt.getBody())) {
-          loopStmt.setBody(makeBlock(loopStmt.getBody()));
-        }
-      }
+            private boolean isBlock(Stmt stmt) {
+                return stmt instanceof BlockStmt;
+            }
 
-      public TranslationUnit addBraces(TranslationUnit tu) {
-        visit(tu);
-        return tu;
-      }
+            private Stmt makeBlock(Stmt stmt) {
+                return new BlockStmt(Arrays.asList(stmt), true);
+            }
 
-    }.addBraces(tu.clone());
+        }.addBraces(tu.clone());
 
-  }
+    }
 
 }

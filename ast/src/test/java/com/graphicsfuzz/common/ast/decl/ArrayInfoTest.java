@@ -16,25 +16,25 @@
 
 package com.graphicsfuzz.common.ast.decl;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
-
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+
 public class ArrayInfoTest {
 
-  @Test
-  public void testClone() {
-    final Expr sizeExpr = new IntConstantExpr("1");
-    final ArrayInfo arrayInfo1 = new ArrayInfo(sizeExpr);
-    final ArrayInfo arrayInfo2 = arrayInfo1.clone();
-    assertNotSame(arrayInfo1, arrayInfo2);
-    assertSame(sizeExpr, arrayInfo1.getSizeExpr());
-    assertNotSame(sizeExpr, arrayInfo2.getSizeExpr());
-    assertEquals(sizeExpr.getText(), arrayInfo2.getSizeExpr().getText());
-  }
+    @Test
+    public void testClone() {
+        final Expr sizeExpr = new IntConstantExpr("1");
+        final ArrayInfo arrayInfo1 = new ArrayInfo(sizeExpr);
+        final ArrayInfo arrayInfo2 = arrayInfo1.clone();
+        assertNotSame(arrayInfo1, arrayInfo2);
+        assertSame(sizeExpr, arrayInfo1.getSizeExpr());
+        assertNotSame(sizeExpr, arrayInfo2.getSizeExpr());
+        assertEquals(sizeExpr.getText(), arrayInfo2.getSizeExpr().getText());
+    }
 
 }

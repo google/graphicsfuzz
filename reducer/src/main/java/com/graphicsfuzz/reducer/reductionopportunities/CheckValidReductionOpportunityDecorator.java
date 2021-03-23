@@ -25,50 +25,50 @@ import java.io.IOException;
 
 public class CheckValidReductionOpportunityDecorator implements IReductionOpportunity {
 
-  private final IReductionOpportunity delegate;
-  private final ShaderJob shaderJob;
-  private final ShadingLanguageVersion shadingLanguageVersion;
-  private final ShaderJobFileOperations fileOps;
+    private final IReductionOpportunity delegate;
+    private final ShaderJob shaderJob;
+    private final ShadingLanguageVersion shadingLanguageVersion;
+    private final ShaderJobFileOperations fileOps;
 
 
-  public CheckValidReductionOpportunityDecorator(IReductionOpportunity delegate,
-                                                 ShaderJob shaderJob,
-                                                 ShadingLanguageVersion shadingLanguageVersion,
-                                                 ShaderJobFileOperations fileOps) {
-    this.delegate = delegate;
-    this.shaderJob = shaderJob;
-    this.shadingLanguageVersion = shadingLanguageVersion;
-    this.fileOps = fileOps;
-  }
-
-  @Override
-  public void applyReduction() {
-    final ShaderJob before = shaderJob.clone();
-    delegate.applyReduction();
-    final File outputShaderJobFile = new File("temp_to_validate.json");
-    try {
-      fileOps.writeShaderJobFile(
-          shaderJob,
-          outputShaderJobFile
-      );
-
-      boolean valid = fileOps.areShadersValid(outputShaderJobFile, false);
-      if (!valid) {
-        throw new ReductionLedToInvalidException(before, shaderJob, delegate);
-      }
-
-    } catch (InterruptedException | IOException exception) {
-      throw new RuntimeException(exception);
+    public CheckValidReductionOpportunityDecorator(IReductionOpportunity delegate,
+                                                   ShaderJob shaderJob,
+                                                   ShadingLanguageVersion shadingLanguageVersion,
+                                                   ShaderJobFileOperations fileOps) {
+        this.delegate = delegate;
+        this.shaderJob = shaderJob;
+        this.shadingLanguageVersion = shadingLanguageVersion;
+        this.fileOps = fileOps;
     }
-  }
 
-  @Override
-  public VisitationDepth depth() {
-    return delegate.depth();
-  }
+    @Override
+    public void applyReduction() {
+        final ShaderJob before = shaderJob.clone();
+        delegate.applyReduction();
+        final File outputShaderJobFile = new File("temp_to_validate.json");
+        try {
+            fileOps.writeShaderJobFile(
+                    shaderJob,
+                    outputShaderJobFile
+            );
 
-  @Override
-  public boolean preconditionHolds() {
-    return delegate.preconditionHolds();
-  }
+            boolean valid = fileOps.areShadersValid(outputShaderJobFile, false);
+            if (!valid) {
+                throw new ReductionLedToInvalidException(before, shaderJob, delegate);
+            }
+
+        } catch (InterruptedException | IOException exception) {
+            throw new RuntimeException(exception);
+        }
+    }
+
+    @Override
+    public VisitationDepth depth() {
+        return delegate.depth();
+    }
+
+    @Override
+    public boolean preconditionHolds() {
+        return delegate.preconditionHolds();
+    }
 }

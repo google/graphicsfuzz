@@ -25,36 +25,36 @@ import org.junit.Test;
 
 public class ExprCaseLabelTest {
 
-  @Test
-  public void testReplaceChild() throws Exception {
-    final String before = "void main() {"
-          + "  switch(0) {"
-          + "    case 1:"
-          + "      return;"
-          + "    default:"
-          + "      break;"
-          + "  }"
-          + "}";
-    final String after = "void main() {"
-          + "  switch(0) {"
-          + "    case 2:"
-          + "      return;"
-          + "    default:"
-          + "      break;"
-          + "  }"
-          + "}";
+    @Test
+    public void testReplaceChild() throws Exception {
+        final String before = "void main() {"
+                + "  switch(0) {"
+                + "    case 1:"
+                + "      return;"
+                + "    default:"
+                + "      break;"
+                + "  }"
+                + "}";
+        final String after = "void main() {"
+                + "  switch(0) {"
+                + "    case 2:"
+                + "      return;"
+                + "    default:"
+                + "      break;"
+                + "  }"
+                + "}";
 
-    final TranslationUnit tu = ParseHelper.parse(before);
+        final TranslationUnit tu = ParseHelper.parse(before);
 
-    new StandardVisitor() {
-      @Override
-      public void visitExprCaseLabel(ExprCaseLabel exprCaseLabel) {
-        super.visitExprCaseLabel(exprCaseLabel);
-        exprCaseLabel.replaceChild(exprCaseLabel.getExpr(), new IntConstantExpr("2"));
-      }
-    }.visit(tu);
+        new StandardVisitor() {
+            @Override
+            public void visitExprCaseLabel(ExprCaseLabel exprCaseLabel) {
+                super.visitExprCaseLabel(exprCaseLabel);
+                exprCaseLabel.replaceChild(exprCaseLabel.getExpr(), new IntConstantExpr("2"));
+            }
+        }.visit(tu);
 
-    CompareAstsDuplicate.assertEqualAsts(after, tu);
-  }
+        CompareAstsDuplicate.assertEqualAsts(after, tu);
+    }
 
 }

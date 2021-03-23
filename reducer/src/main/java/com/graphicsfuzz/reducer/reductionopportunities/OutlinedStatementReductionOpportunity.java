@@ -30,55 +30,55 @@ import java.util.Map;
 
 public class OutlinedStatementReductionOpportunity extends AbstractReductionOpportunity {
 
-  private final ExprStmt stmt;
-  private final FunctionDefinition outlined;
+    private final ExprStmt stmt;
+    private final FunctionDefinition outlined;
 
-  public OutlinedStatementReductionOpportunity(ExprStmt stmt, FunctionDefinition outlined,
-      VisitationDepth depth) {
-    super(depth);
-    assert stmt.getExpr() instanceof BinaryExpr;
-    assert outlined.getBody().getNumStmts() == 1;
-    assert outlined.getBody().getStmt(0) instanceof ReturnStmt;
-    this.stmt = stmt;
-    this.outlined = outlined;
-  }
-
-  @Override
-  public void applyReductionImpl() {
-    final BinaryExpr assignment = (BinaryExpr) stmt.getExpr();
-    final Expr expr = ((ReturnStmt) outlined.getBody().getStmt(0)).getExpr().clone();
-
-    Map<String, Expr> paramReplacement = new HashMap<>();
-    for (int i = 0; i < outlined.getPrototype().getNumParameters(); i++) {
-      Expr actualParam = ((FunctionCallExpr) assignment.getRhs()).getArg(i);
-      assert actualParam != null;
-      paramReplacement.put(outlined.getPrototype().getParameter(i).getName(),
-          actualParam);
+    public OutlinedStatementReductionOpportunity(ExprStmt stmt, FunctionDefinition outlined,
+                                                 VisitationDepth depth) {
+        super(depth);
+        assert stmt.getExpr() instanceof BinaryExpr;
+        assert outlined.getBody().getNumStmts() == 1;
+        assert outlined.getBody().getStmt(0) instanceof ReturnStmt;
+        this.stmt = stmt;
+        this.outlined = outlined;
     }
-    assert assignment.getOp() == BinOp.ASSIGN;
-    stmt.setExpr(new BinaryExpr(assignment.getLhs(),
-        applySubstitutionDestructive(expr, paramReplacement), BinOp.ASSIGN));
-  }
 
-  /**
-   * Returns a subsituted expression, and may mutate the argument expression in the process.
-   */
-  private Expr applySubstitutionDestructive(Expr expr, Map<String, Expr> paramReplacement) {
-    assert !paramReplacement.values().contains(null);
-    if (expr instanceof VariableIdentifierExpr
-        && paramReplacement.containsKey(((VariableIdentifierExpr) expr).getName())) {
-      return paramReplacement.get(((VariableIdentifierExpr) expr).getName());
-    }
-    for (int i = 0; i < expr.getNumChildren(); i++) {
-      Expr newChild = applySubstitutionDestructive(expr.getChild(i), paramReplacement);
-      assert newChild != null;
-      expr.setChild(i, newChild);
-    }
-    return expr;
-  }
+    @Override
+    public void applyReductionImpl() {
+        final BinaryExpr assignment = (BinaryExpr) stmt.getExpr();
+        final Expr expr = ((ReturnStmt) outlined.getBody().getStmt(0)).getExpr().clone();
 
-  @Override
-  public boolean preconditionHolds() {
-    return true;
-  }
+        Map<String, Expr> paramReplacement = new HashMap<>();
+        for (int i = 0; i < outlined.getPrototype().getNumParameters(); i++) {
+            Expr actualParam = ((FunctionCallExpr) assignment.getRhs()).getArg(i);
+            assert actualParam != null;
+            paramReplacement.put(outlined.getPrototype().getParameter(i).getName(),
+                    actualParam);
+        }
+        assert assignment.getOp() == BinOp.ASSIGN;
+        stmt.setExpr(new BinaryExpr(assignment.getLhs(),
+                applySubstitutionDestructive(expr, paramReplacement), BinOp.ASSIGN));
+    }
+
+    @Override
+    public boolean preconditionHolds() {
+        return true;
+    }
+
+    /**
+     * Returns a subsituted expression, and may mutate the argument expression in the process.
+     */
+    private Expr applySubstitutionDestructive(Expr expr, Map<String, Expr> paramReplacement) {
+        assert !paramReplacement.values().contains(null);
+        if (expr instanceof VariableIdentifierExpr
+                && paramReplacement.containsKey(((VariableIdentifierExpr) expr).getName())) {
+            return paramReplacement.get(((VariableIdentifierExpr) expr).getName());
+        }
+        for (int i = 0; i < expr.getNumChildren(); i++) {
+            Expr newChild = applySubstitutionDestructive(expr.getChild(i), paramReplacement);
+            assert newChild != null;
+            expr.setChild(i, newChild);
+        }
+        return expr;
+    }
 }

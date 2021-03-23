@@ -21,30 +21,30 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class FunctionDefinition extends Declaration {
 
-  private FunctionPrototype prototype;
-  private BlockStmt body;
+    private FunctionPrototype prototype;
+    private BlockStmt body;
 
-  public FunctionDefinition(FunctionPrototype prototype, BlockStmt body) {
-    this.prototype = prototype;
-    this.body = body;
-  }
+    public FunctionDefinition(FunctionPrototype prototype, BlockStmt body) {
+        this.prototype = prototype;
+        this.body = body;
+    }
 
-  public FunctionPrototype getPrototype() {
-    return prototype;
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitFunctionDefinition(this);
+    }
 
-  public BlockStmt getBody() {
-    return body;
-  }
+    @Override
+    public FunctionDefinition clone() {
+        return new FunctionDefinition(prototype.clone(), body.clone());
+    }
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitFunctionDefinition(this);
-  }
+    public BlockStmt getBody() {
+        return body;
+    }
 
-  @Override
-  public FunctionDefinition clone() {
-    return new FunctionDefinition(prototype.clone(), body.clone());
-  }
+    public FunctionPrototype getPrototype() {
+        return prototype;
+    }
 
 }

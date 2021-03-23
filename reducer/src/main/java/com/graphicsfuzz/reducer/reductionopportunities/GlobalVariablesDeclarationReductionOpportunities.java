@@ -26,49 +26,49 @@ import java.util.Arrays;
 import java.util.List;
 
 public class GlobalVariablesDeclarationReductionOpportunities
-      extends ReductionOpportunitiesBase<GlobalVariablesDeclarationReductionOpportunity> {
+        extends ReductionOpportunitiesBase<GlobalVariablesDeclarationReductionOpportunity> {
 
-  private final TranslationUnit tu;
+    private final TranslationUnit tu;
 
-  private GlobalVariablesDeclarationReductionOpportunities(TranslationUnit tu,
-                                                           ReducerContext context) {
-    super(tu, context);
-    this.tu = tu;
-  }
-
-  @Override
-  public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
-    if (variablesDeclaration.getNumDecls() == 0) {
-      if (!StructUtils.declaresReferencedStruct(tu, variablesDeclaration)) {
-        addOpportunity(new GlobalVariablesDeclarationReductionOpportunity(
-            tu,
-            variablesDeclaration,
-            getVistitationDepth()));
-      }
+    private GlobalVariablesDeclarationReductionOpportunities(TranslationUnit tu,
+                                                             ReducerContext context) {
+        super(tu, context);
+        this.tu = tu;
     }
-  }
 
-  @Override
-  public void visitFunctionDefinition(FunctionDefinition functionDefinition) {
-    // Block entry to function so that we stay global.
-  }
+    static List<GlobalVariablesDeclarationReductionOpportunity> findOpportunities(
+            ShaderJob shaderJob,
+            ReducerContext context) {
+        return shaderJob.getShaders()
+                .stream()
+                .map(item -> findOpportunitiesForShader(item, context))
+                .reduce(Arrays.asList(), ListConcat::concatenate);
+    }
 
-  private static List<GlobalVariablesDeclarationReductionOpportunity> findOpportunitiesForShader(
-      TranslationUnit tu,
-      ReducerContext context) {
-    GlobalVariablesDeclarationReductionOpportunities finder =
-        new GlobalVariablesDeclarationReductionOpportunities(tu, context);
-    finder.visit(tu);
-    return finder.getOpportunities();
-  }
+    @Override
+    public void visitFunctionDefinition(FunctionDefinition functionDefinition) {
+        // Block entry to function so that we stay global.
+    }
 
-  static List<GlobalVariablesDeclarationReductionOpportunity> findOpportunities(
-      ShaderJob shaderJob,
-      ReducerContext context) {
-    return shaderJob.getShaders()
-        .stream()
-        .map(item -> findOpportunitiesForShader(item, context))
-        .reduce(Arrays.asList(), ListConcat::concatenate);
-  }
+    @Override
+    public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
+        if (variablesDeclaration.getNumDecls() == 0) {
+            if (!StructUtils.declaresReferencedStruct(tu, variablesDeclaration)) {
+                addOpportunity(new GlobalVariablesDeclarationReductionOpportunity(
+                        tu,
+                        variablesDeclaration,
+                        getVistitationDepth()));
+            }
+        }
+    }
+
+    private static List<GlobalVariablesDeclarationReductionOpportunity> findOpportunitiesForShader(
+            TranslationUnit tu,
+            ReducerContext context) {
+        GlobalVariablesDeclarationReductionOpportunities finder =
+                new GlobalVariablesDeclarationReductionOpportunities(tu, context);
+        finder.visit(tu);
+        return finder.getOpportunities();
+    }
 
 }

@@ -37,93 +37,93 @@ import com.graphicsfuzz.common.typing.TyperHelper;
 
 public class SideEffectChecker {
 
-  private static boolean isSideEffectFreeVisitor(IAstNode node,
-      ShadingLanguageVersion shadingLanguageVersion, ShaderKind shaderKind) {
-    return !new CheckPredicateVisitor() {
+    public static boolean isSideEffectFree(Stmt stmt, ShadingLanguageVersion shadingLanguageVersion,
+                                           ShaderKind shaderKind) {
+        return isSideEffectFreeVisitor(stmt, shadingLanguageVersion, shaderKind);
+    }
 
-      @Override
-      public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
-        if (TyperHelper.getBuiltins(shadingLanguageVersion, shaderKind)
-            .containsKey(functionCallExpr.getCallee())) {
-          for (FunctionPrototype p :
-              TyperHelper.getBuiltins(shadingLanguageVersion, shaderKind)
-                  .get(functionCallExpr.getCallee())) {
-            // We check each argument of the built-in's prototypes to see if they require lvalues -
-            // if so, they can cause side effects.
-            // We could be more precise here by finding the specific overload of the function rather
-            // than checking every possible prototype for lvalue parameters.
-            for (ParameterDecl param : p.getParameters()) {
-              if (param.getType().hasQualifier(TypeQualifier.OUT_PARAM)
-                  || param.getType().hasQualifier(TypeQualifier.INOUT_PARAM)) {
-                predicateHolds();
-              }
+    public static boolean isSideEffectFree(Expr expr, ShadingLanguageVersion shadingLanguageVersion,
+                                           ShaderKind shaderKind) {
+        return isSideEffectFreeVisitor(expr, shadingLanguageVersion, shaderKind);
+    }
+
+    private static boolean isSideEffectFreeVisitor(IAstNode node,
+                                                   ShadingLanguageVersion shadingLanguageVersion, ShaderKind shaderKind) {
+        return !new CheckPredicateVisitor() {
+
+            @Override
+            public void visitBinaryExpr(BinaryExpr binaryExpr) {
+                if (binaryExpr.getOp().isSideEffecting()) {
+                    predicateHolds();
+                }
+                super.visitBinaryExpr(binaryExpr);
             }
-          }
-        } else if (!MacroNames.isGraphicsFuzzMacro(functionCallExpr)) {
-          // Assume that any call to a function that is not a GraphicsFuzz macro or builtin
-          // might have a side-effect.
-          predicateHolds();
-        }
-        super.visitFunctionCallExpr(functionCallExpr);
-      }
 
-      @Override
-      public void visitUnaryExpr(UnaryExpr unaryExpr) {
-        if (unaryExpr.getOp().isSideEffecting()) {
-          predicateHolds();
-        }
-        super.visitUnaryExpr(unaryExpr);
-      }
+            @Override
+            public void visitBreakStmt(BreakStmt breakStmt) {
+                predicateHolds();
+            }
 
-      @Override
-      public void visitBinaryExpr(BinaryExpr binaryExpr) {
-        if (binaryExpr.getOp().isSideEffecting()) {
-          predicateHolds();
-        }
-        super.visitBinaryExpr(binaryExpr);
-      }
+            @Override
+            public void visitContinueStmt(ContinueStmt continueStmt) {
+                predicateHolds();
+            }
 
-      @Override
-      public void visitReturnStmt(ReturnStmt returnStmt) {
-        predicateHolds();
-      }
+            @Override
+            public void visitDefaultCaseLabel(DefaultCaseLabel defaultCaseLabel) {
+                predicateHolds();
+            }
 
-      @Override
-      public void visitBreakStmt(BreakStmt breakStmt) {
-        predicateHolds();
-      }
+            @Override
+            public void visitDiscardStmt(DiscardStmt discardStmt) {
+                predicateHolds();
+            }
 
-      @Override
-      public void visitContinueStmt(ContinueStmt continueStmt) {
-        predicateHolds();
-      }
+            @Override
+            public void visitExprCaseLabel(ExprCaseLabel exprCaseLabel) {
+                predicateHolds();
+            }
 
-      @Override
-      public void visitDiscardStmt(DiscardStmt discardStmt) {
-        predicateHolds();
-      }
+            @Override
+            public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+                if (TyperHelper.getBuiltins(shadingLanguageVersion, shaderKind)
+                        .containsKey(functionCallExpr.getCallee())) {
+                    for (FunctionPrototype p :
+                            TyperHelper.getBuiltins(shadingLanguageVersion, shaderKind)
+                                    .get(functionCallExpr.getCallee())) {
+                        // We check each argument of the built-in's prototypes to see if they require lvalues -
+                        // if so, they can cause side effects.
+                        // We could be more precise here by finding the specific overload of the function rather
+                        // than checking every possible prototype for lvalue parameters.
+                        for (ParameterDecl param : p.getParameters()) {
+                            if (param.getType().hasQualifier(TypeQualifier.OUT_PARAM)
+                                    || param.getType().hasQualifier(TypeQualifier.INOUT_PARAM)) {
+                                predicateHolds();
+                            }
+                        }
+                    }
+                } else if (!MacroNames.isGraphicsFuzzMacro(functionCallExpr)) {
+                    // Assume that any call to a function that is not a GraphicsFuzz macro or builtin
+                    // might have a side-effect.
+                    predicateHolds();
+                }
+                super.visitFunctionCallExpr(functionCallExpr);
+            }
 
-      @Override
-      public void visitExprCaseLabel(ExprCaseLabel exprCaseLabel) {
-        predicateHolds();
-      }
+            @Override
+            public void visitReturnStmt(ReturnStmt returnStmt) {
+                predicateHolds();
+            }
 
-      @Override
-      public void visitDefaultCaseLabel(DefaultCaseLabel defaultCaseLabel) {
-        predicateHolds();
-      }
+            @Override
+            public void visitUnaryExpr(UnaryExpr unaryExpr) {
+                if (unaryExpr.getOp().isSideEffecting()) {
+                    predicateHolds();
+                }
+                super.visitUnaryExpr(unaryExpr);
+            }
 
-    }.test(node);
-  }
-
-  public static boolean isSideEffectFree(Stmt stmt, ShadingLanguageVersion shadingLanguageVersion,
-                                         ShaderKind shaderKind) {
-    return isSideEffectFreeVisitor(stmt, shadingLanguageVersion, shaderKind);
-  }
-
-  public static boolean isSideEffectFree(Expr expr, ShadingLanguageVersion shadingLanguageVersion,
-                                         ShaderKind shaderKind) {
-    return isSideEffectFreeVisitor(expr, shadingLanguageVersion, shaderKind);
-  }
+        }.test(node);
+    }
 
 }

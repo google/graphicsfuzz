@@ -22,41 +22,41 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class ExprStmt extends Stmt {
 
-  private Expr expr;
+    private Expr expr;
 
-  public ExprStmt(Expr expr) {
-    assert expr != null;
-    this.expr = expr;
-  }
+    public ExprStmt(Expr expr) {
+        assert expr != null;
+        this.expr = expr;
+    }
 
-  public Expr getExpr() {
-    return expr;
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitExprStmt(this);
+    }
 
-  public void setExpr(Expr expr) {
-    this.expr = expr;
-  }
+    @Override
+    public ExprStmt clone() {
+        return new ExprStmt(expr.clone());
+    }
 
-  @Override
-  public void replaceChild(IAstNode child, IAstNode newChild) {
-    assert child == getExpr();
-    assert newChild instanceof Expr;
-    expr = (Expr) newChild;
-  }
+    public Expr getExpr() {
+        return expr;
+    }
 
-  @Override
-  public boolean hasChild(IAstNode candidateChild) {
-    return candidateChild == expr;
-  }
+    public void setExpr(Expr expr) {
+        this.expr = expr;
+    }
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitExprStmt(this);
-  }
+    @Override
+    public boolean hasChild(IAstNode candidateChild) {
+        return candidateChild == expr;
+    }
 
-  @Override
-  public ExprStmt clone() {
-    return new ExprStmt(expr.clone());
-  }
+    @Override
+    public void replaceChild(IAstNode child, IAstNode newChild) {
+        assert child == getExpr();
+        assert newChild instanceof Expr;
+        expr = (Expr) newChild;
+    }
 
 }

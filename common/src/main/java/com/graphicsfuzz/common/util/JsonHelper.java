@@ -21,8 +21,8 @@ import com.google.gson.JsonObject;
 
 public class JsonHelper {
 
-  public static String jsonToString(JsonObject infoJson) {
-    return new GsonBuilder().setPrettyPrinting().create().toJson(infoJson);
-  }
+    public static String jsonToString(JsonObject infoJson) {
+        return new GsonBuilder().setPrettyPrinting().create().toJson(infoJson);
+    }
 
 }

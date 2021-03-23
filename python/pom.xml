@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <artifactId>python</artifactId>
   <name>python</name>
@@ -51,10 +51,12 @@ limitations under the License.
             </goals>
             <configuration>
               <target>
-                <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${ant-contrib:ant-contrib:jar}"/>
+                <taskdef resource="net/sf/antcontrib/antcontrib.properties"
+                         classpath="${ant-contrib:ant-contrib:jar}"/>
 
                 <property name="python-source" value="${project.basedir}/src/main/python"/>
-                <property name="python-zip" value="${project.build.directory}/${project.artifactId}-${project.version}.zip/"/>
+                <property name="python-zip"
+                          value="${project.build.directory}/${project.artifactId}-${project.version}.zip/"/>
 
                 <outofdate>
                   <sourcefiles>

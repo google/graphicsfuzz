@@ -20,17 +20,18 @@ import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 
 public interface IReductionOpportunity {
 
-  void applyReduction();
+    void applyReduction();
 
-  VisitationDepth depth();
+    VisitationDepth depth();
 
-  /**
-   * To guard against reduction opportunities making one another invalid, it can be useful to
-   * give a reduction opportunity a precondition that should be checked at the start of application;
-   * if the precondition does not hold then the reduction opportunity should not be applied -- it
-   * should leave the target translation unit unchanged.
-   * @return Whether the reduction opportunity's precondition is satisfied.
-   */
-  boolean preconditionHolds();
+    /**
+     * To guard against reduction opportunities making one another invalid, it can be useful to
+     * give a reduction opportunity a precondition that should be checked at the start of application;
+     * if the precondition does not hold then the reduction opportunity should not be applied -- it
+     * should leave the target translation unit unchanged.
+     *
+     * @return Whether the reduction opportunity's precondition is satisfied.
+     */
+    boolean preconditionHolds();
 
 }

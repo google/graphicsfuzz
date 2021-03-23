@@ -21,29 +21,29 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class FloatConstantExpr extends ConstantExpr {
 
-  private String value;
+    private String value;
 
-  public FloatConstantExpr(String text) {
-    this.value = text;
-  }
+    public FloatConstantExpr(String text) {
+        this.value = text;
+    }
 
-  @Override
-  public boolean hasChild(IAstNode child) {
-    return false;
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitFloatConstantExpr(this);
+    }
 
-  public String getValue() {
-    return value;
-  }
+    @Override
+    public FloatConstantExpr clone() {
+        return new FloatConstantExpr(value);
+    }
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitFloatConstantExpr(this);
-  }
+    public String getValue() {
+        return value;
+    }
 
-  @Override
-  public FloatConstantExpr clone() {
-    return new FloatConstantExpr(value);
-  }
+    @Override
+    public boolean hasChild(IAstNode child) {
+        return false;
+    }
 
 }

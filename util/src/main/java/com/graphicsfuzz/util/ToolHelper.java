@@ -24,109 +24,110 @@ import java.util.List;
 
 public class ToolHelper {
 
-  public static ExecResult runValidatorOnShader(ExecHelper.RedirectType redirectType, File file)
-      throws IOException, InterruptedException {
-    return runValidatorOnShader(redirectType, file, false);
-  }
+    public static ExecResult runGenerateImageOnShader(ExecHelper.RedirectType redirectType,
+                                                      File fragmentShader, File imageOutput, boolean skipRender)
+            throws IOException, InterruptedException {
+        List<String> command = new ArrayList<>(Arrays.asList(
+                ToolPaths.getImageGlfw(),
+                fragmentShader.toString(),
+                "--output", imageOutput.toString()));
 
-  /**
-   * Run shader validator on a shader
-   * @param redirectType How shader validator output should be redirected (buffer, file, etc)
-   * @param file File to be checked
-   * @param isVulkan Tell the validator that this is a vulkan target
-   * @return Result of the validator execution
-   */
-  public static ExecResult runValidatorOnShader(ExecHelper.RedirectType redirectType, File file,
-                                                boolean isVulkan)
-      throws IOException, InterruptedException {
+        if (skipRender) {
+            command.add("--exit-linking");
+        }
 
-    String[] command;
-    if (isVulkan) {
-      command = new String[] {
-          ToolPaths.glslangValidator(),
-          "-V100",
-          file.toString()
-      };
-    } else {
-      command = new String[] {
-          ToolPaths.glslangValidator(),
-          file.toString()
-      };
-    }
-    return new ExecHelper().exec(
-          redirectType,
-          null,
-          false,
-          command);
-  }
-
-  public static ExecResult runShaderTranslatorOnShader(ExecHelper.RedirectType redirectType,
-        File file,
-        String arg)
-        throws IOException, InterruptedException {
-    return new ExecHelper().exec(
-          redirectType,
-          null,
-          false,
-          ToolPaths.shaderTranslator(),
-          arg,
-          file.toString());
-  }
-
-  public static ExecResult runGenerateImageOnShader(ExecHelper.RedirectType redirectType,
-        File fragmentShader, File imageOutput, boolean skipRender)
-        throws IOException, InterruptedException {
-    List<String> command = new ArrayList<>(Arrays.asList(
-          ToolPaths.getImageGlfw(),
-          fragmentShader.toString(),
-          "--output", imageOutput.toString()));
-
-    if (skipRender) {
-      command.add("--exit-linking");
+        return new ExecHelper().exec(
+                redirectType,
+                null,
+                false,
+                command.toArray(new String[]{}));
     }
 
-    return new ExecHelper().exec(
-          redirectType,
-          null,
-          false,
-          command.toArray(new String[]{}));
-  }
-
-  public static ExecResult runSwiftshaderOnShader(
-      ExecHelper.RedirectType redirectType,
-      File fragmentShader,
-      File imageOutput,
-      boolean skipRender)
-        throws IOException, InterruptedException {
-    return runSwiftshaderOnShader(redirectType, fragmentShader,
-        imageOutput, skipRender, 32, 32);
-  }
-
-  public static ExecResult runSwiftshaderOnShader(
-      ExecHelper.RedirectType redirectType,
-      File fragmentShader,
-      File imageOutput,
-      boolean skipRender,
-      int width,
-      int height)
-        throws IOException, InterruptedException {
-    List<String> command = new ArrayList<>(Arrays.asList(
-          ToolPaths.getImageEglSwiftshader(),
-          fragmentShader.toString(),
-          "--output", imageOutput.toString(),
-          "--resolution",
-          String.valueOf(width),
-          String.valueOf(height)));
-
-    if (skipRender) {
-      command.add("--exit-linking");
+    public static ExecResult runShaderTranslatorOnShader(ExecHelper.RedirectType redirectType,
+                                                         File file,
+                                                         String arg)
+            throws IOException, InterruptedException {
+        return new ExecHelper().exec(
+                redirectType,
+                null,
+                false,
+                ToolPaths.shaderTranslator(),
+                arg,
+                file.toString());
     }
 
-    return new ExecHelper().exec(
-          redirectType,
-          null,
-          false,
-          command.toArray(new String[]{}));
-  }
+    public static ExecResult runSwiftshaderOnShader(
+            ExecHelper.RedirectType redirectType,
+            File fragmentShader,
+            File imageOutput,
+            boolean skipRender)
+            throws IOException, InterruptedException {
+        return runSwiftshaderOnShader(redirectType, fragmentShader,
+                imageOutput, skipRender, 32, 32);
+    }
+
+    public static ExecResult runSwiftshaderOnShader(
+            ExecHelper.RedirectType redirectType,
+            File fragmentShader,
+            File imageOutput,
+            boolean skipRender,
+            int width,
+            int height)
+            throws IOException, InterruptedException {
+        List<String> command = new ArrayList<>(Arrays.asList(
+                ToolPaths.getImageEglSwiftshader(),
+                fragmentShader.toString(),
+                "--output", imageOutput.toString(),
+                "--resolution",
+                String.valueOf(width),
+                String.valueOf(height)));
+
+        if (skipRender) {
+            command.add("--exit-linking");
+        }
+
+        return new ExecHelper().exec(
+                redirectType,
+                null,
+                false,
+                command.toArray(new String[]{}));
+    }
+
+    public static ExecResult runValidatorOnShader(ExecHelper.RedirectType redirectType, File file)
+            throws IOException, InterruptedException {
+        return runValidatorOnShader(redirectType, file, false);
+    }
+
+    /**
+     * Run shader validator on a shader
+     *
+     * @param redirectType How shader validator output should be redirected (buffer, file, etc)
+     * @param file         File to be checked
+     * @param isVulkan     Tell the validator that this is a vulkan target
+     * @return Result of the validator execution
+     */
+    public static ExecResult runValidatorOnShader(ExecHelper.RedirectType redirectType, File file,
+                                                  boolean isVulkan)
+            throws IOException, InterruptedException {
+
+        String[] command;
+        if (isVulkan) {
+            command = new String[]{
+                    ToolPaths.glslangValidator(),
+                    "-V100",
+                    file.toString()
+            };
+        } else {
+            command = new String[]{
+                    ToolPaths.glslangValidator(),
+                    file.toString()
+            };
+        }
+        return new ExecHelper().exec(
+                redirectType,
+                null,
+                false,
+                command);
+    }
 
 }

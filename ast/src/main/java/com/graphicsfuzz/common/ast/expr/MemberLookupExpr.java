@@ -22,69 +22,69 @@ import java.util.Collections;
 
 public class MemberLookupExpr extends Expr {
 
-  private Expr structure;
-  private String member;
+    private Expr structure;
+    private String member;
 
-  public MemberLookupExpr(Expr structure, String member) {
-    checkNoTopLevelCommaExpression(Collections.singletonList(structure));
-    setStructure(structure);
-    this.member = member;
-  }
-
-  public Expr getStructure() {
-    return structure;
-  }
-
-  public void setStructure(Expr structure) {
-    if (structure == null) {
-      throw new IllegalArgumentException("Member lookup expression canno have null structure");
+    public MemberLookupExpr(Expr structure, String member) {
+        checkNoTopLevelCommaExpression(Collections.singletonList(structure));
+        setStructure(structure);
+        this.member = member;
     }
-    this.structure = structure;
-  }
 
-  public String getMember() {
-    return member;
-  }
-
-  public void setMember(String member) {
-    this.member = member;
-  }
-
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitMemberLookupExpr(this);
-  }
-
-  @Override
-  public MemberLookupExpr clone() {
-    return new MemberLookupExpr(structure.clone(), member);
-  }
-
-  @Override
-  public boolean hasChild(IAstNode candidateChild) {
-    return structure == candidateChild;
-  }
-
-  @Override
-  public Expr getChild(int index) {
-    if (index == 0) {
-      return structure;
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitMemberLookupExpr(this);
     }
-    throw new IndexOutOfBoundsException("Index for MemberLookupExpr must be 0");
-  }
 
-  @Override
-  public void setChild(int index, Expr expr) {
-    if (index == 0) {
-      setStructure(expr);
-      return;
+    @Override
+    public MemberLookupExpr clone() {
+        return new MemberLookupExpr(structure.clone(), member);
     }
-    throw new IndexOutOfBoundsException("Index for MemberLookupExpr must be 0");
-  }
 
-  @Override
-  public int getNumChildren() {
-    return 1;
-  }
+    @Override
+    public Expr getChild(int index) {
+        if (index == 0) {
+            return structure;
+        }
+        throw new IndexOutOfBoundsException("Index for MemberLookupExpr must be 0");
+    }
+
+    public String getMember() {
+        return member;
+    }
+
+    public void setMember(String member) {
+        this.member = member;
+    }
+
+    @Override
+    public int getNumChildren() {
+        return 1;
+    }
+
+    public Expr getStructure() {
+        return structure;
+    }
+
+    public void setStructure(Expr structure) {
+        if (structure == null) {
+            throw new IllegalArgumentException("Member lookup expression canno have null structure");
+        }
+        this.structure = structure;
+    }
+
+    @Override
+    public boolean hasChild(IAstNode candidateChild) {
+        return structure == candidateChild;
+    }
+
+    @Override
+    public void setChild(int index, Expr expr) {
+        if (index == 0) {
+            setStructure(expr);
+            return;
+        }
+        throw new IndexOutOfBoundsException("Index for MemberLookupExpr must be 0");
+    }
 
 }

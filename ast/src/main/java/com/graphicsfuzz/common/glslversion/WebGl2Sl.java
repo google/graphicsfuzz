@@ -18,21 +18,21 @@ package com.graphicsfuzz.common.glslversion;
 
 final class WebGl2Sl extends CompositeShadingLanguageVersion {
 
-  static final ShadingLanguageVersion INSTANCE = new WebGl2Sl(Essl300.INSTANCE);
+    static final ShadingLanguageVersion INSTANCE = new WebGl2Sl(Essl300.INSTANCE);
 
-  private WebGl2Sl(ShadingLanguageVersion prototype) {
-    super(prototype);
-    // Singleton
-  }
+    private WebGl2Sl(ShadingLanguageVersion prototype) {
+        super(prototype);
+        // Singleton
+    }
 
-  @Override
-  public String getVersionString() {
-    return "300 es";
-  }
+    @Override
+    public String getVersionString() {
+        return "300 es";
+    }
 
-  @Override
-  public boolean isWebGl() {
-    return true;
-  }
+    @Override
+    public boolean isWebGl() {
+        return true;
+    }
 
 }

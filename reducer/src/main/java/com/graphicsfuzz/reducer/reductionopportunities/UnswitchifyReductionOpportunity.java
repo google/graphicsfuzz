@@ -30,50 +30,50 @@ import java.util.ArrayList;
 
 public class UnswitchifyReductionOpportunity extends AbstractReductionOpportunity {
 
-  private final SwitchStmt switchStmt;
-  private final IAstNode parent;
+    private final SwitchStmt switchStmt;
+    private final IAstNode parent;
 
-  public UnswitchifyReductionOpportunity(SwitchStmt switchStmt, IAstNode parent,
-      VisitationDepth visitationDepth) {
-    super(visitationDepth);
-    this.switchStmt = switchStmt;
-    this.parent = parent;
-  }
-
-  @Override
-  public void applyReductionImpl() {
-    BlockStmt replacement = new BlockStmt(new ArrayList<>(), true);
-
-    boolean reachedOriginalCode = false;
-    for (Stmt stmt : switchStmt.getBody().getStmts()) {
-      if (!reachedOriginalCode) {
-        if (!(stmt instanceof ExprCaseLabel && isZeroLabel((ExprCaseLabel) stmt))) {
-          continue;
-        }
-        reachedOriginalCode = true;
-      }
-      if (stmt instanceof BreakStmt) {
-        break;
-      }
-      if (stmt instanceof CaseLabel) {
-        continue;
-      }
-      replacement.addStmt(stmt);
+    public UnswitchifyReductionOpportunity(SwitchStmt switchStmt, IAstNode parent,
+                                           VisitationDepth visitationDepth) {
+        super(visitationDepth);
+        this.switchStmt = switchStmt;
+        this.parent = parent;
     }
-    parent.replaceChild(switchStmt, replacement);
-  }
 
-  private boolean isZeroLabel(ExprCaseLabel label) {
-    return isZero(label.getExpr());
-  }
+    @Override
+    public void applyReductionImpl() {
+        BlockStmt replacement = new BlockStmt(new ArrayList<>(), true);
 
-  private boolean isZero(Expr expr) {
-    return expr instanceof IntConstantExpr
-        && ((IntConstantExpr) expr).getText().equals("0");
-  }
+        boolean reachedOriginalCode = false;
+        for (Stmt stmt : switchStmt.getBody().getStmts()) {
+            if (!reachedOriginalCode) {
+                if (!(stmt instanceof ExprCaseLabel && isZeroLabel((ExprCaseLabel) stmt))) {
+                    continue;
+                }
+                reachedOriginalCode = true;
+            }
+            if (stmt instanceof BreakStmt) {
+                break;
+            }
+            if (stmt instanceof CaseLabel) {
+                continue;
+            }
+            replacement.addStmt(stmt);
+        }
+        parent.replaceChild(switchStmt, replacement);
+    }
 
-  @Override
-  public boolean preconditionHolds() {
-    return true;
-  }
+    @Override
+    public boolean preconditionHolds() {
+        return true;
+    }
+
+    private boolean isZero(Expr expr) {
+        return expr instanceof IntConstantExpr
+                && ((IntConstantExpr) expr).getText().equals("0");
+    }
+
+    private boolean isZeroLabel(ExprCaseLabel label) {
+        return isZero(label.getExpr());
+    }
 }

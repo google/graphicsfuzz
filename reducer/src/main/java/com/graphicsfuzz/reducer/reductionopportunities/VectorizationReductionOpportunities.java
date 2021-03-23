@@ -27,76 +27,76 @@ import java.util.Arrays;
 import java.util.List;
 
 public class VectorizationReductionOpportunities
-      extends ReductionOpportunitiesBase<VectorizationReductionOpportunity> {
+        extends ReductionOpportunitiesBase<VectorizationReductionOpportunity> {
 
-  private final TranslationUnit tu;
-  private VariablesDeclaration enclosingVariablesDeclaration;
+    private final TranslationUnit tu;
+    private VariablesDeclaration enclosingVariablesDeclaration;
 
-  private VectorizationReductionOpportunities(
-        TranslationUnit tu,
-        ReducerContext context) {
-    super(tu, context);
-    this.tu = tu;
-    this.enclosingVariablesDeclaration = null;
-  }
-
-  /**
-   * Find all vectorization opportunities for the given translation unit.
-   *
-   * @param shaderJob The shader job to be searched.
-   * @param context Includes info such as whether we reduce everywhere or only reduce injections
-   * @return The opportunities that can be reduced
-   */
-  static List<VectorizationReductionOpportunity> findOpportunities(
-        ShaderJob shaderJob,
-        ReducerContext context) {
-    return shaderJob.getShaders()
-        .stream()
-        .map(item -> findOpportunitiesForShader(item, context))
-        .reduce(Arrays.asList(), ListConcat::concatenate);
-  }
-
-  private static List<VectorizationReductionOpportunity> findOpportunitiesForShader(
-      TranslationUnit tu,
-      ReducerContext context) {
-    VectorizationReductionOpportunities finder =
-          new VectorizationReductionOpportunities(tu, context);
-    finder.visit(tu);
-    return finder.getOpportunities();
-  }
-
-  @Override
-  public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
-    assert enclosingVariablesDeclaration == null;
-    enclosingVariablesDeclaration = variablesDeclaration;
-    super.visitVariablesDeclaration(variablesDeclaration);
-    assert enclosingVariablesDeclaration != null;
-    enclosingVariablesDeclaration = null;
-  }
-
-  @Override
-  public void visitVariableDeclInfo(VariableDeclInfo variableDeclInfo) {
-    super.visitVariableDeclInfo(variableDeclInfo);
-    String name = variableDeclInfo.getName();
-    if (MergeSet.isMergedVariable(name)) {
-      List<MergedVariablesComponentData> componentsData = MergeSet.getComponentData(name);
-      assert inSomeBlock();
-      for (MergedVariablesComponentData data : componentsData) {
-        assert enclosingVariablesDeclaration != null;
-        final VectorizationReductionOpportunity potentialOpportunity
-              = new VectorizationReductionOpportunity(
-              tu,
-              currentBlock(),
-              enclosingVariablesDeclaration,
-              variableDeclInfo,
-              data,
-              parentMap,
-              getVistitationDepth());
-        if (potentialOpportunity.preconditionHolds()) {
-          addOpportunity(potentialOpportunity);
-        }
-      }
+    private VectorizationReductionOpportunities(
+            TranslationUnit tu,
+            ReducerContext context) {
+        super(tu, context);
+        this.tu = tu;
+        this.enclosingVariablesDeclaration = null;
     }
-  }
+
+    /**
+     * Find all vectorization opportunities for the given translation unit.
+     *
+     * @param shaderJob The shader job to be searched.
+     * @param context   Includes info such as whether we reduce everywhere or only reduce injections
+     * @return The opportunities that can be reduced
+     */
+    static List<VectorizationReductionOpportunity> findOpportunities(
+            ShaderJob shaderJob,
+            ReducerContext context) {
+        return shaderJob.getShaders()
+                .stream()
+                .map(item -> findOpportunitiesForShader(item, context))
+                .reduce(Arrays.asList(), ListConcat::concatenate);
+    }
+
+    @Override
+    public void visitVariableDeclInfo(VariableDeclInfo variableDeclInfo) {
+        super.visitVariableDeclInfo(variableDeclInfo);
+        String name = variableDeclInfo.getName();
+        if (MergeSet.isMergedVariable(name)) {
+            List<MergedVariablesComponentData> componentsData = MergeSet.getComponentData(name);
+            assert inSomeBlock();
+            for (MergedVariablesComponentData data : componentsData) {
+                assert enclosingVariablesDeclaration != null;
+                final VectorizationReductionOpportunity potentialOpportunity
+                        = new VectorizationReductionOpportunity(
+                        tu,
+                        currentBlock(),
+                        enclosingVariablesDeclaration,
+                        variableDeclInfo,
+                        data,
+                        parentMap,
+                        getVistitationDepth());
+                if (potentialOpportunity.preconditionHolds()) {
+                    addOpportunity(potentialOpportunity);
+                }
+            }
+        }
+    }
+
+    @Override
+    public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
+        assert enclosingVariablesDeclaration == null;
+        enclosingVariablesDeclaration = variablesDeclaration;
+        super.visitVariablesDeclaration(variablesDeclaration);
+        assert enclosingVariablesDeclaration != null;
+        enclosingVariablesDeclaration = null;
+    }
+
+    private static List<VectorizationReductionOpportunity> findOpportunitiesForShader(
+            TranslationUnit tu,
+            ReducerContext context) {
+        VectorizationReductionOpportunities finder =
+                new VectorizationReductionOpportunities(tu, context);
+        finder.visit(tu);
+        return finder.getOpportunities();
+    }
 
 }

@@ -18,21 +18,21 @@ package com.graphicsfuzz.common.glslversion;
 
 final class Glsl460 extends CompositeShadingLanguageVersion {
 
-  static final ShadingLanguageVersion INSTANCE = new Glsl460(Glsl450.INSTANCE);
+    static final ShadingLanguageVersion INSTANCE = new Glsl460(Glsl450.INSTANCE);
 
-  private Glsl460(ShadingLanguageVersion prototype) {
-    super(prototype);
-    // Singleton
-  }
+    private Glsl460(ShadingLanguageVersion prototype) {
+        super(prototype);
+        // Singleton
+    }
 
-  @Override
-  public String getVersionString() {
-    return "460";
-  }
+    @Override
+    public String getVersionString() {
+        return "460";
+    }
 
-  @Override
-  public boolean supportedPushConstants() {
-    return true;
-  }
+    @Override
+    public boolean supportedPushConstants() {
+        return true;
+    }
 
 }

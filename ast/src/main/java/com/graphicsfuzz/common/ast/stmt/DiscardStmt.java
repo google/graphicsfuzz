@@ -20,14 +20,14 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class DiscardStmt extends Stmt {
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitDiscardStmt(this);
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitDiscardStmt(this);
+    }
 
-  @Override
-  public DiscardStmt clone() {
-    return new DiscardStmt();
-  }
+    @Override
+    public DiscardStmt clone() {
+        return new DiscardStmt();
+    }
 
 }

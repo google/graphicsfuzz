@@ -15,13 +15,13 @@
  */
 
 function goBack(msg, n) {
-  if (msg !== null) {
-    alert(msg);
-  }
-  window.name = "autoload";
-  if (n !== null) {
-    window.history.go(-n);
-  } else {
-    window.history.back();
-  }
+    if (msg !== null) {
+        alert(msg);
+    }
+    window.name = "autoload";
+    if (n !== null) {
+        window.history.go(-n);
+    } else {
+        window.history.back();
+    }
 }

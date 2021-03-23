@@ -18,20 +18,20 @@ package com.graphicsfuzz.shadersets;
 
 public class ShaderDispatchException extends Exception {
 
-  public ShaderDispatchException() {
-    super();
-  }
+    public ShaderDispatchException() {
+        super();
+    }
 
-  public ShaderDispatchException(String message) {
-    super(message);
-  }
+    public ShaderDispatchException(String message) {
+        super(message);
+    }
 
-  public ShaderDispatchException(String message, Throwable cause) {
-    super(message, cause);
-  }
+    public ShaderDispatchException(String message, Throwable cause) {
+        super(message, cause);
+    }
 
-  public ShaderDispatchException(Throwable cause) {
-    super(cause);
-  }
+    public ShaderDispatchException(Throwable cause) {
+        super(cause);
+    }
 
 }

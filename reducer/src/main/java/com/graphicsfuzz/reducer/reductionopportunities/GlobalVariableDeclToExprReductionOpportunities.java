@@ -50,71 +50,70 @@ import java.util.List;
  */
 
 public class GlobalVariableDeclToExprReductionOpportunities
-    extends ReductionOpportunitiesBase<GlobalVariableDeclToExprReductionOpportunity> {
-  private final List<VariablesDeclaration> globalVariableDecl;
+        extends ReductionOpportunitiesBase<GlobalVariableDeclToExprReductionOpportunity> {
+    private final List<VariablesDeclaration> globalVariableDecl;
 
-  private GlobalVariableDeclToExprReductionOpportunities(TranslationUnit tu,
-                                                        ReducerContext context) {
-    super(tu, context);
-    this.globalVariableDecl = new ArrayList<>();
-  }
-
-  /**
-   * Find all initialized global variable declaration opportunities for the given translation unit.
-   *
-   * @param shaderJob The shader job to be searched.
-   * @param context   Includes info such as whether we reduce everywhere or only reduce injections
-   * @return The opportunities that can be reduced
-   */
-  static List<GlobalVariableDeclToExprReductionOpportunity> findOpportunities(
-      ShaderJob shaderJob,
-      ReducerContext context) {
-    return shaderJob.getShaders()
-        .stream()
-        .map(item -> findOpportunitiesForShader(item, context))
-        .reduce(Arrays.asList(), ListConcat::concatenate);
-  }
-
-  private static List<GlobalVariableDeclToExprReductionOpportunity> findOpportunitiesForShader(
-      TranslationUnit tu,
-      ReducerContext context) {
-    GlobalVariableDeclToExprReductionOpportunities finder =
-        new GlobalVariableDeclToExprReductionOpportunities(tu, context);
-    finder.visit(tu);
-    return finder.getOpportunities();
-  }
-
-
-  @Override
-  public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
-    super.visitVariablesDeclaration(variablesDeclaration);
-    if (!context.reduceEverywhere()) {
-      // Replacing initializers with a new assignment statement might change semantics,
-      // do not consider these reduction opportunities if we are not reducing everywhere.
-      return;
+    private GlobalVariableDeclToExprReductionOpportunities(TranslationUnit tu,
+                                                           ReducerContext context) {
+        super(tu, context);
+        this.globalVariableDecl = new ArrayList<>();
     }
 
-    // As constant must always be initialized, we will not consider global variable declarations
-    // that have const qualifier (i.e., const int a = 1).
-    if (atGlobalScope() && !variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.CONST)) {
-      globalVariableDecl.add(variablesDeclaration);
+    /**
+     * Find all initialized global variable declaration opportunities for the given translation unit.
+     *
+     * @param shaderJob The shader job to be searched.
+     * @param context   Includes info such as whether we reduce everywhere or only reduce injections
+     * @return The opportunities that can be reduced
+     */
+    static List<GlobalVariableDeclToExprReductionOpportunity> findOpportunities(
+            ShaderJob shaderJob,
+            ReducerContext context) {
+        return shaderJob.getShaders()
+                .stream()
+                .map(item -> findOpportunitiesForShader(item, context))
+                .reduce(Arrays.asList(), ListConcat::concatenate);
     }
-  }
 
-  @Override
-  public void visitFunctionDefinition(FunctionDefinition functionDefinition) {
-    super.visitFunctionDefinition(functionDefinition);
-    // We consider only the global variable declarations with the initializer that have been
-    // found before main function.
-    if (functionDefinition.getPrototype().getName().equals("main")) {
-      for (VariablesDeclaration variablesDeclaration : globalVariableDecl) {
-        for (VariableDeclInfo variableDeclInfo : variablesDeclaration.getDeclInfos()) {
-          if (variableDeclInfo.hasInitializer()) {
-            addOpportunity(new GlobalVariableDeclToExprReductionOpportunity(
-                getVistitationDepth(), variableDeclInfo, functionDefinition));
-          }
+    @Override
+    public void visitFunctionDefinition(FunctionDefinition functionDefinition) {
+        super.visitFunctionDefinition(functionDefinition);
+        // We consider only the global variable declarations with the initializer that have been
+        // found before main function.
+        if (functionDefinition.getPrototype().getName().equals("main")) {
+            for (VariablesDeclaration variablesDeclaration : globalVariableDecl) {
+                for (VariableDeclInfo variableDeclInfo : variablesDeclaration.getDeclInfos()) {
+                    if (variableDeclInfo.hasInitializer()) {
+                        addOpportunity(new GlobalVariableDeclToExprReductionOpportunity(
+                                getVistitationDepth(), variableDeclInfo, functionDefinition));
+                    }
+                }
+            }
         }
-      }
     }
-  }
+
+    @Override
+    public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
+        super.visitVariablesDeclaration(variablesDeclaration);
+        if (!context.reduceEverywhere()) {
+            // Replacing initializers with a new assignment statement might change semantics,
+            // do not consider these reduction opportunities if we are not reducing everywhere.
+            return;
+        }
+
+        // As constant must always be initialized, we will not consider global variable declarations
+        // that have const qualifier (i.e., const int a = 1).
+        if (atGlobalScope() && !variablesDeclaration.getBaseType().hasQualifier(TypeQualifier.CONST)) {
+            globalVariableDecl.add(variablesDeclaration);
+        }
+    }
+
+    private static List<GlobalVariableDeclToExprReductionOpportunity> findOpportunitiesForShader(
+            TranslationUnit tu,
+            ReducerContext context) {
+        GlobalVariableDeclToExprReductionOpportunities finder =
+                new GlobalVariableDeclToExprReductionOpportunities(tu, context);
+        finder.visit(tu);
+        return finder.getOpportunities();
+    }
 }

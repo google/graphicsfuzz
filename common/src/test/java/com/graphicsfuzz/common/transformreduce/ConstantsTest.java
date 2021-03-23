@@ -22,9 +22,9 @@ import org.junit.Test;
 
 public class ConstantsTest {
 
-  @Test
-  public void testUtility() throws Exception {
-    CheckUtilityClass.assertUtilityClassWellDefined(Constants.class);
-  }
+    @Test
+    public void testUtility() throws Exception {
+        CheckUtilityClass.assertUtilityClassWellDefined(Constants.class);
+    }
 
 }

@@ -27,24 +27,24 @@ import java.io.IOException;
 public class ReportShaderSize {
 
 
-  public static void main(String[] args) throws IOException, ParseTimeoutException,
-      InterruptedException, GlslParserException {
-    if (args.length != 1) {
-      System.err.println("Usage: ReportShaderSize <file>");
-      System.exit(1);
+    public static void main(String[] args) throws IOException, ParseTimeoutException,
+            InterruptedException, GlslParserException {
+        if (args.length != 1) {
+            System.err.println("Usage: ReportShaderSize <file>");
+            System.exit(1);
+        }
+        File inputFile = new File(args[0]);
+        TranslationUnit tu = ParseHelper.parse(inputFile);
+
+        StatsVisitor sv = new StatsVisitor(tu);
+
+        System.out.printf(
+                "{ \"num_bytes\": %d, \"num_nodes\": %d, \"num_statements\": %d }",
+                inputFile.length(),
+                sv.getNumNodes(),
+                sv.getNumStatements());
+
     }
-    File inputFile = new File(args[0]);
-    TranslationUnit tu = ParseHelper.parse(inputFile);
-
-    StatsVisitor sv = new StatsVisitor(tu);
-
-    System.out.printf(
-        "{ \"num_bytes\": %d, \"num_nodes\": %d, \"num_statements\": %d }",
-        inputFile.length(),
-        sv.getNumNodes(),
-        sv.getNumStatements());
-
-  }
 
 }
 

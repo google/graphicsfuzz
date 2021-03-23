@@ -30,63 +30,63 @@ import java.util.List;
 
 public class InlineStructifiedFieldReductionOpportunities extends ScopeTrackingVisitor {
 
-  private final List<InlineStructifiedFieldReductionOpportunity> opportunities;
-  private final TranslationUnit tu;
+    private final List<InlineStructifiedFieldReductionOpportunity> opportunities;
+    private final TranslationUnit tu;
 
-  private InlineStructifiedFieldReductionOpportunities(TranslationUnit tu) {
-    this.opportunities = new LinkedList<>();
-    this.tu = tu;
-  }
-
-  static List<InlineStructifiedFieldReductionOpportunity> findOpportunities(
-        ShaderJob shaderJob,
-        ReducerContext context) {
-    return shaderJob.getShaders()
-        .stream()
-        .map(item -> findOpportunitiesForShader(item))
-        .reduce(Arrays.asList(), ListConcat::concatenate);
-  }
-
-  private static List<InlineStructifiedFieldReductionOpportunity> findOpportunitiesForShader(
-      TranslationUnit tu) {
-    InlineStructifiedFieldReductionOpportunities finder =
-          new InlineStructifiedFieldReductionOpportunities(tu);
-    finder.visit(tu);
-    return finder.opportunities;
-  }
-
-  @Override
-  public void visitDeclarationStmt(DeclarationStmt declarationStmt) {
-    super.visitDeclarationStmt(declarationStmt);
-    if (!Util.isStructifiedDeclaration(declarationStmt)) {
-      return;
+    private InlineStructifiedFieldReductionOpportunities(TranslationUnit tu) {
+        this.opportunities = new LinkedList<>();
+        this.tu = tu;
     }
-    final StructNameType structType =
-        (StructNameType) declarationStmt.getVariablesDeclaration().getBaseType()
-        .getWithoutQualifiers();
-    findInliningOpportunities(structType);
 
-  }
-
-  public void findInliningOpportunities(StructNameType structType) {
-    assert structType.getName().startsWith(Constants.STRUCTIFICATION_STRUCT_PREFIX);
-    final StructDefinitionType structDefinitionType =
-        getCurrentScope().lookupStructName(structType.getName());
-    for (String f : structDefinitionType.getFieldNames()) {
-      if (!f.startsWith(Constants.STRUCTIFICATION_FIELD_PREFIX)) {
-        continue;
-      }
-      if (structDefinitionType.getFieldType(f).getWithoutQualifiers()
-          instanceof StructNameType) {
-        final StructNameType innerStructType =
-            (StructNameType) structDefinitionType.getFieldType(f).getWithoutQualifiers();
-        opportunities.add(new InlineStructifiedFieldReductionOpportunity(
-            structDefinitionType, getCurrentScope().lookupStructName(innerStructType.getName()), f,
-            tu,
-            getVistitationDepth()));
-        findInliningOpportunities(innerStructType);
-      }
+    static List<InlineStructifiedFieldReductionOpportunity> findOpportunities(
+            ShaderJob shaderJob,
+            ReducerContext context) {
+        return shaderJob.getShaders()
+                .stream()
+                .map(item -> findOpportunitiesForShader(item))
+                .reduce(Arrays.asList(), ListConcat::concatenate);
     }
-  }
+
+    public void findInliningOpportunities(StructNameType structType) {
+        assert structType.getName().startsWith(Constants.STRUCTIFICATION_STRUCT_PREFIX);
+        final StructDefinitionType structDefinitionType =
+                getCurrentScope().lookupStructName(structType.getName());
+        for (String f : structDefinitionType.getFieldNames()) {
+            if (!f.startsWith(Constants.STRUCTIFICATION_FIELD_PREFIX)) {
+                continue;
+            }
+            if (structDefinitionType.getFieldType(f).getWithoutQualifiers()
+                    instanceof StructNameType) {
+                final StructNameType innerStructType =
+                        (StructNameType) structDefinitionType.getFieldType(f).getWithoutQualifiers();
+                opportunities.add(new InlineStructifiedFieldReductionOpportunity(
+                        structDefinitionType, getCurrentScope().lookupStructName(innerStructType.getName()), f,
+                        tu,
+                        getVistitationDepth()));
+                findInliningOpportunities(innerStructType);
+            }
+        }
+    }
+
+    @Override
+    public void visitDeclarationStmt(DeclarationStmt declarationStmt) {
+        super.visitDeclarationStmt(declarationStmt);
+        if (!Util.isStructifiedDeclaration(declarationStmt)) {
+            return;
+        }
+        final StructNameType structType =
+                (StructNameType) declarationStmt.getVariablesDeclaration().getBaseType()
+                        .getWithoutQualifiers();
+        findInliningOpportunities(structType);
+
+    }
+
+    private static List<InlineStructifiedFieldReductionOpportunity> findOpportunitiesForShader(
+            TranslationUnit tu) {
+        InlineStructifiedFieldReductionOpportunities finder =
+                new InlineStructifiedFieldReductionOpportunities(tu);
+        finder.visit(tu);
+        return finder.opportunities;
+    }
 
 }

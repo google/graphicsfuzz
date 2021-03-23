@@ -18,16 +18,15 @@ package com.graphicsfuzz.server.webui;
 
 public final class WebUiConstants {
 
-  private WebUiConstants() {
-    // Utility class
-  }
-
-  static final String FILE_ROUTE = "file";
-  static final String WORKER_DIR = "processing";
-  static final String SHADER_FAMILIES_DIR = "shaderfamilies";
-  static final String WORKER_INFO_FILE = "client.json";
-  static final String COMPUTE_SHADER_DOC_URL =
-      "https://github.com/google/graphicsfuzz/blob/master/docs/glsl-fuzz-walkthrough"
-          + ".md#Inspecting-results-for-compute-shader-families";
+    static final String FILE_ROUTE = "file";
+    static final String WORKER_DIR = "processing";
+    static final String SHADER_FAMILIES_DIR = "shaderfamilies";
+    static final String WORKER_INFO_FILE = "client.json";
+    static final String COMPUTE_SHADER_DOC_URL =
+            "https://github.com/google/graphicsfuzz/blob/master/docs/glsl-fuzz-walkthrough"
+                    + ".md#Inspecting-results-for-compute-shader-families";
+    private WebUiConstants() {
+        // Utility class
+    }
 
 }

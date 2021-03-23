@@ -16,50 +16,50 @@
 
 package com.graphicsfuzz.common.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+
 public class AddBracesTest {
 
-  @Test
-  public void danglingElse() throws Exception {
-    String program = "void main() { if (a) if (b) s1; else s2; }";
-    TranslationUnit tu = ParseHelper.parse(program);
-    TranslationUnit transformed = AddBraces.transform(tu);
-    assertNotEquals(tu, transformed);
+    @Rule
+    public TemporaryFolder testFolder = new TemporaryFolder();
 
-    String programAfter = "void main() { if (a) { if (b) { s1; } } else { s2; } }";
+    @Test
+    public void danglingElse() throws Exception {
+        String program = "void main() { if (a) if (b) s1; else s2; }";
+        TranslationUnit tu = ParseHelper.parse(program);
+        TranslationUnit transformed = AddBraces.transform(tu);
+        assertNotEquals(tu, transformed);
 
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(
-        ParseHelper.parse(programAfter)),
-        PrettyPrinterVisitor.prettyPrintAsString(transformed));
-  }
+        String programAfter = "void main() { if (a) { if (b) { s1; } } else { s2; } }";
 
-  @Test
-  public void loops() throws Exception {
-    String program =      "void main() { for (a; b; c) while (d) do e; while (f); }";
-    String programAfter = "void main() { for (a; b; c) { while (d) { do { e; } while (f); } } }";
+        assertEquals(PrettyPrinterVisitor.prettyPrintAsString(
+                ParseHelper.parse(programAfter)),
+                PrettyPrinterVisitor.prettyPrintAsString(transformed));
+    }
 
-    TranslationUnit tu = ParseHelper.parse(program);
-    TranslationUnit transformed = AddBraces.transform(tu);
-    assertNotEquals(tu, transformed);
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(
-        ParseHelper.parse(programAfter)),
-        PrettyPrinterVisitor.prettyPrintAsString(transformed));
-  }
+    @Test
+    public void loops() throws Exception {
+        String program = "void main() { for (a; b; c) while (d) do e; while (f); }";
+        String programAfter = "void main() { for (a; b; c) { while (d) { do { e; } while (f); } } }";
 
-  @Rule
-  public TemporaryFolder testFolder = new TemporaryFolder();
+        TranslationUnit tu = ParseHelper.parse(program);
+        TranslationUnit transformed = AddBraces.transform(tu);
+        assertNotEquals(tu, transformed);
+        assertEquals(PrettyPrinterVisitor.prettyPrintAsString(
+                ParseHelper.parse(programAfter)),
+                PrettyPrinterVisitor.prettyPrintAsString(transformed));
+    }
 
-  @Test
-  public void testIsUtilityClass() throws Exception {
-    CheckUtilityClass.assertUtilityClassWellDefined(AddBraces.class);
-  }
+    @Test
+    public void testIsUtilityClass() throws Exception {
+        CheckUtilityClass.assertUtilityClassWellDefined(AddBraces.class);
+    }
 
 }

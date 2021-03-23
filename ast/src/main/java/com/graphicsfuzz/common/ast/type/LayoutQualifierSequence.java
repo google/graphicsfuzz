@@ -23,30 +23,30 @@ import java.util.List;
 
 public final class LayoutQualifierSequence extends TypeQualifier {
 
-  private final List<LayoutQualifier> contents;
+    private final List<LayoutQualifier> contents;
 
-  public LayoutQualifierSequence(List<LayoutQualifier> contents) {
-    super("layout");
-    this.contents = new ArrayList<>();
-    this.contents.addAll(contents);
-  }
+    public LayoutQualifierSequence(List<LayoutQualifier> contents) {
+        super("layout");
+        this.contents = new ArrayList<>();
+        this.contents.addAll(contents);
+    }
 
-  public LayoutQualifierSequence(LayoutQualifier... contents) {
-    this(Arrays.asList(contents));
-  }
+    public LayoutQualifierSequence(LayoutQualifier... contents) {
+        this(Arrays.asList(contents));
+    }
 
-  public List<LayoutQualifier> getLayoutQualifiers() {
-    return Collections.unmodifiableList(contents);
-  }
+    public List<LayoutQualifier> getLayoutQualifiers() {
+        return Collections.unmodifiableList(contents);
+    }
 
-  @Override
-  public String toString() {
-    return super.toString() + "("
-        + contents
-        .stream()
-        .map(LayoutQualifier::toString)
-        .reduce((item1, item2) -> (item1 + ", " + item2))
-        .orElse("") + ")";
-  }
+    @Override
+    public String toString() {
+        return super.toString() + "("
+                + contents
+                .stream()
+                .map(LayoutQualifier::toString)
+                .reduce((item1, item2) -> (item1 + ", " + item2))
+                .orElse("") + ")";
+    }
 
 }

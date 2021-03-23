@@ -22,41 +22,41 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class Initializer implements IAstNode {
 
-  private Expr expr;
+    private Expr expr;
 
-  public Initializer(Expr expr) {
-    this.expr = expr;
-  }
-
-  public Expr getExpr() {
-    return expr;
-  }
-
-  public void setExpr(Expr expr) {
-    this.expr = expr;
-  }
-
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitInitializer(this);
-  }
-
-  @Override
-  public Initializer clone() {
-    return new Initializer(expr.clone());
-  }
-
-  @Override
-  public void replaceChild(IAstNode child, IAstNode newChild) {
-    if (!(child == expr && newChild instanceof Expr)) {
-      throw new IllegalArgumentException();
+    public Initializer(Expr expr) {
+        this.expr = expr;
     }
-    setExpr((Expr) newChild);
-  }
 
-  @Override
-  public boolean hasChild(IAstNode candidateChild) {
-    return candidateChild == expr;
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitInitializer(this);
+    }
+
+    @Override
+    public Initializer clone() {
+        return new Initializer(expr.clone());
+    }
+
+    public Expr getExpr() {
+        return expr;
+    }
+
+    public void setExpr(Expr expr) {
+        this.expr = expr;
+    }
+
+    @Override
+    public boolean hasChild(IAstNode candidateChild) {
+        return candidateChild == expr;
+    }
+
+    @Override
+    public void replaceChild(IAstNode child, IAstNode newChild) {
+        if (!(child == expr && newChild instanceof Expr)) {
+            throw new IllegalArgumentException();
+        }
+        setExpr((Expr) newChild);
+    }
 
 }

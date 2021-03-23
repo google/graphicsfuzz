@@ -20,5 +20,5 @@ import com.graphicsfuzz.generator.transformation.ITransformation;
 import java.io.IOException;
 
 interface ITransformationSupplier {
-  ITransformation get() throws IOException;
+    ITransformation get() throws IOException;
 }

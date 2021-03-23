@@ -29,56 +29,56 @@ import java.util.List;
 
 public class InlineFunctionReductionOpportunities extends StandardVisitor {
 
-  private static final int INLINE_NODE_LIMIT = 50; // Only inline relatively small functions
+    private static final int INLINE_NODE_LIMIT = 50; // Only inline relatively small functions
 
-  private final List<InlineFunctionReductionOpportunity> opportunities;
-  private final TranslationUnit tu;
-  private final ReducerContext context;
+    private final List<InlineFunctionReductionOpportunity> opportunities;
+    private final TranslationUnit tu;
+    private final ReducerContext context;
 
-  static List<InlineFunctionReductionOpportunity> findOpportunities(
-        ShaderJob shaderJob,
-        ReducerContext context) {
-    return shaderJob.getShaders()
-        .stream()
-        .map(item -> findOpportunitiesForShader(item, context))
-        .reduce(Arrays.asList(), ListConcat::concatenate);
-  }
-
-  private static List<InlineFunctionReductionOpportunity> findOpportunitiesForShader(
-      TranslationUnit tu,
-      ReducerContext context) {
-    InlineFunctionReductionOpportunities finder = new InlineFunctionReductionOpportunities(
-        tu, context);
-    finder.visit(tu);
-    return finder.opportunities;
-  }
-
-  private InlineFunctionReductionOpportunities(TranslationUnit tu,
-        ReducerContext context) {
-    opportunities = new ArrayList<>();
-    this.tu = tu;
-    this.context = context;
-  }
-
-  @Override
-  public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
-    super.visitFunctionCallExpr(functionCallExpr);
-    if (allowedToInline(functionCallExpr)
-          && Inliner.canInline(
-              functionCallExpr, tu, context.getShadingLanguageVersion(), INLINE_NODE_LIMIT)) {
-      opportunities.add(new InlineFunctionReductionOpportunity(
-            functionCallExpr,
-            tu,
-            context.getShadingLanguageVersion(),
-            context.getIdGenerator(),
-            getVistitationDepth()));
+    private InlineFunctionReductionOpportunities(TranslationUnit tu,
+                                                 ReducerContext context) {
+        opportunities = new ArrayList<>();
+        this.tu = tu;
+        this.context = context;
     }
-  }
 
-  private boolean allowedToInline(FunctionCallExpr functionCallExpr) {
-    return context.reduceEverywhere()
-          || functionCallExpr.getCallee().startsWith(Constants.LIVE_PREFIX)
-          || functionCallExpr.getCallee().startsWith(Constants.DEAD_PREFIX);
-  }
+    static List<InlineFunctionReductionOpportunity> findOpportunities(
+            ShaderJob shaderJob,
+            ReducerContext context) {
+        return shaderJob.getShaders()
+                .stream()
+                .map(item -> findOpportunitiesForShader(item, context))
+                .reduce(Arrays.asList(), ListConcat::concatenate);
+    }
+
+    @Override
+    public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+        super.visitFunctionCallExpr(functionCallExpr);
+        if (allowedToInline(functionCallExpr)
+                && Inliner.canInline(
+                functionCallExpr, tu, context.getShadingLanguageVersion(), INLINE_NODE_LIMIT)) {
+            opportunities.add(new InlineFunctionReductionOpportunity(
+                    functionCallExpr,
+                    tu,
+                    context.getShadingLanguageVersion(),
+                    context.getIdGenerator(),
+                    getVistitationDepth()));
+        }
+    }
+
+    private static List<InlineFunctionReductionOpportunity> findOpportunitiesForShader(
+            TranslationUnit tu,
+            ReducerContext context) {
+        InlineFunctionReductionOpportunities finder = new InlineFunctionReductionOpportunities(
+                tu, context);
+        finder.visit(tu);
+        return finder.opportunities;
+    }
+
+    private boolean allowedToInline(FunctionCallExpr functionCallExpr) {
+        return context.reduceEverywhere()
+                || functionCallExpr.getCallee().startsWith(Constants.LIVE_PREFIX)
+                || functionCallExpr.getCallee().startsWith(Constants.DEAD_PREFIX);
+    }
 
 }

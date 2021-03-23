@@ -20,25 +20,25 @@ import com.graphicsfuzz.common.ast.IAstNode;
 
 public abstract class CheckPredicateVisitor extends StandardVisitor {
 
-  private boolean predicateHolds;
+    private boolean predicateHolds;
 
-  public CheckPredicateVisitor() {
-    this.predicateHolds = false;
-  }
-
-  public final void predicateHolds() {
-    assert !predicateHolds;
-    predicateHolds = true;
-    throw new AbortVisitationException();
-  }
-
-  public final boolean test(IAstNode node) {
-    try {
-      visit(node);
-    } catch (AbortVisitationException exception) {
-      // Good: visitation exited early
+    public CheckPredicateVisitor() {
+        this.predicateHolds = false;
     }
-    return predicateHolds;
-  }
+
+    public final void predicateHolds() {
+        assert !predicateHolds;
+        predicateHolds = true;
+        throw new AbortVisitationException();
+    }
+
+    public final boolean test(IAstNode node) {
+        try {
+            visit(node);
+        } catch (AbortVisitationException exception) {
+            // Good: visitation exited early
+        }
+        return predicateHolds;
+    }
 
 }

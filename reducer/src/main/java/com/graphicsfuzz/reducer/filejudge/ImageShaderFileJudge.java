@@ -33,81 +33,79 @@ import org.slf4j.LoggerFactory;
 
 public class ImageShaderFileJudge implements IFileJudge {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ImageShaderFileJudge.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ImageShaderFileJudge.class);
+    private final boolean throwExceptionOnValidationError;
+    private final ShaderJobFileOperations fileOps;
+    private final File referenceShaderResultFile;
+    private final IImageFileComparator fileComparator;
+    private IShaderDispatcher imageGenerator;
 
-  private IShaderDispatcher imageGenerator;
-  private final boolean throwExceptionOnValidationError;
-  private final ShaderJobFileOperations fileOps;
-  private final File referenceShaderResultFile;
-  private final IImageFileComparator fileComparator;
-
-  public ImageShaderFileJudge(
-      File referenceShaderResultFile,
-      IShaderDispatcher imageGenerator,
-      boolean throwExceptionOnValidationError,
-      IImageFileComparator fileComparator,
-      ShaderJobFileOperations fileOps) {
-    this.imageGenerator = imageGenerator;
-    this.throwExceptionOnValidationError = throwExceptionOnValidationError;
-    this.referenceShaderResultFile = referenceShaderResultFile;
-    this.fileComparator = fileComparator;
-    this.fileOps = fileOps;
-  }
-
-  @Override
-  public boolean isInteresting(
-      File shaderJobFile,
-      File shaderResultFileOutput) throws FileJudgeException {
-
-    // 1. Shader files validate.
-    // 2. Generate image.
-    // 3. Compare.
-
-    try {
-      // 1.
-      if (!fileOps.areShadersValid(shaderJobFile, throwExceptionOnValidationError)) {
-        return false;
-      }
-      // 2.
-
-      // Read shader job into an image job.
-      ImageJob imageJob = new ImageJob();
-      fileOps.readShaderJobFileToImageJob(shaderJobFile, imageJob);
-      imageJob.setSkipRender(false);
-
-      // Run the image job.
-      ImageJobResult imageRes = imageGenerator.getImage(imageJob);
-
-      // Write the shader result file.
-      fileOps.writeShaderResultToFile(imageRes, shaderResultFileOutput, Optional.empty());
-
-      switch (imageRes.getStatus()) {
-        case SUCCESS:
-          break;
-        case SAME_AS_REFERENCE:
-          throw new IllegalStateException("No longer supported: " + JobStatus.SAME_AS_REFERENCE);
-        default:
-          LOGGER.info("Failed to run shader. Not interesting.");
-          return false;
-      }
-
-      // Success:
-
-      // 3.
-
-      if (!fileComparator.areFilesInteresting(referenceShaderResultFile, shaderResultFileOutput)) {
-        LOGGER.info("Shader image was not deemed interesting by file comparator. Not interesting.");
-        return false;
-      }
-      LOGGER.info("Interesting.");
-      return true;
-    } catch (InterruptedException | ShaderDispatchException | IOException exception) {
-      LOGGER.info("Error occurred while checking if file was interesting.", exception);
-      throw new FileJudgeException(exception);
+    public ImageShaderFileJudge(
+            File referenceShaderResultFile,
+            IShaderDispatcher imageGenerator,
+            boolean throwExceptionOnValidationError,
+            IImageFileComparator fileComparator,
+            ShaderJobFileOperations fileOps) {
+        this.imageGenerator = imageGenerator;
+        this.throwExceptionOnValidationError = throwExceptionOnValidationError;
+        this.referenceShaderResultFile = referenceShaderResultFile;
+        this.fileComparator = fileComparator;
+        this.fileOps = fileOps;
     }
 
-  }
+    @Override
+    public boolean isInteresting(
+            File shaderJobFile,
+            File shaderResultFileOutput) throws FileJudgeException {
 
+        // 1. Shader files validate.
+        // 2. Generate image.
+        // 3. Compare.
+
+        try {
+            // 1.
+            if (!fileOps.areShadersValid(shaderJobFile, throwExceptionOnValidationError)) {
+                return false;
+            }
+            // 2.
+
+            // Read shader job into an image job.
+            ImageJob imageJob = new ImageJob();
+            fileOps.readShaderJobFileToImageJob(shaderJobFile, imageJob);
+            imageJob.setSkipRender(false);
+
+            // Run the image job.
+            ImageJobResult imageRes = imageGenerator.getImage(imageJob);
+
+            // Write the shader result file.
+            fileOps.writeShaderResultToFile(imageRes, shaderResultFileOutput, Optional.empty());
+
+            switch (imageRes.getStatus()) {
+                case SUCCESS:
+                    break;
+                case SAME_AS_REFERENCE:
+                    throw new IllegalStateException("No longer supported: " + JobStatus.SAME_AS_REFERENCE);
+                default:
+                    LOGGER.info("Failed to run shader. Not interesting.");
+                    return false;
+            }
+
+            // Success:
+
+            // 3.
+
+            if (!fileComparator.areFilesInteresting(referenceShaderResultFile, shaderResultFileOutput)) {
+                LOGGER.info("Shader image was not deemed interesting by file comparator. Not interesting.");
+                return false;
+            }
+            LOGGER.info("Interesting.");
+            return true;
+        } catch (InterruptedException | ShaderDispatchException | IOException exception) {
+            LOGGER.info("Error occurred while checking if file was interesting.", exception);
+            throw new FileJudgeException(exception);
+        }
+
+    }
 
 
 }

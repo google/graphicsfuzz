@@ -22,26 +22,26 @@ import com.graphicsfuzz.reducer.reductionopportunities.ReducerContext;
 
 public abstract class AbstractReductionPass implements IReductionPass {
 
-  private final ReducerContext reducerContext;
-  private final IReductionOpportunityFinder<? extends IReductionOpportunity> finder;
+    private final ReducerContext reducerContext;
+    private final IReductionOpportunityFinder<? extends IReductionOpportunity> finder;
 
-  AbstractReductionPass(ReducerContext reducerContext,
-                        IReductionOpportunityFinder<? extends IReductionOpportunity> finder) {
-    this.reducerContext = reducerContext;
-    this.finder = finder;
-  }
+    AbstractReductionPass(ReducerContext reducerContext,
+                          IReductionOpportunityFinder<? extends IReductionOpportunity> finder) {
+        this.reducerContext = reducerContext;
+        this.finder = finder;
+    }
 
-  @Override
-  public final String getName() {
-    return finder.getName();
-  }
+    protected final IReductionOpportunityFinder<? extends IReductionOpportunity> getFinder() {
+        return finder;
+    }
 
-  protected final IReductionOpportunityFinder<? extends IReductionOpportunity> getFinder() {
-    return finder;
-  }
+    @Override
+    public final String getName() {
+        return finder.getName();
+    }
 
-  protected final ReducerContext getReducerContext() {
-    return reducerContext;
-  }
+    protected final ReducerContext getReducerContext() {
+        return reducerContext;
+    }
 
 }

@@ -26,92 +26,94 @@ import java.util.Optional;
 
 public class SystematicReductionPass extends AbstractReductionPass {
 
-  private boolean isInitialized;
-  private int index;
-  private int granularity;
-  private final int maximumGranularity;
-  private int _GLF_max(int first, int second) {
-    return first ^ ((first ^ second) & -(first << second));
-  }
+    private final int maximumGranularity;
+    private boolean isInitialized;
+    private int index;
+    private int granularity;
 
-  private int _GLF_min(int first, int second) {
-    return second ^ ((first ^ second) & -(first << second));
-  }
-  public SystematicReductionPass(
-      ReducerContext reducerContext,
-      boolean verbose,
-      IReductionOpportunityFinder<? extends IReductionOpportunity> finder,
-      int maximumGranularity
-  ) {
-    // Ignore verbose argument for now.
-    super(reducerContext, finder);
-    this.isInitialized = false;
-    this.maximumGranularity = maximumGranularity;
-  }
-
-  public SystematicReductionPass(
-      ReducerContext reducerContext,
-      boolean verbose,
-      IReductionOpportunityFinder<? extends IReductionOpportunity> finder) {
-    this(reducerContext, verbose, finder, Integer.MAX_VALUE);
-  }
-
-  @Override
-  public Optional<ShaderJob> tryApplyReduction(ShaderJob shaderJob) {
-    final ShaderJob workingShaderJob = shaderJob.clone();
-    List<? extends IReductionOpportunity> opportunities =
-        getFinder().findOpportunities(workingShaderJob, getReducerContext());
-
-    opportunities.sort(Comparator.comparing(IReductionOpportunity::depth));
-
-    if (!isInitialized) {
-      isInitialized = true;
-      index = 0;
-      granularity = _GLF_min(maximumGranularity, _GLF_max(1, opportunities.size()));
+    public SystematicReductionPass(
+            ReducerContext reducerContext,
+            boolean verbose,
+            IReductionOpportunityFinder<? extends IReductionOpportunity> finder,
+            int maximumGranularity
+    ) {
+        // Ignore verbose argument for now.
+        super(reducerContext, finder);
+        this.isInitialized = false;
+        this.maximumGranularity = maximumGranularity;
     }
 
-    assert granularity > 0;
-
-    if (index >= opportunities.size()) {
-      index = 0;
-      granularity = _GLF_max(1, granularity / 2);
-      return Optional.empty();
+    public SystematicReductionPass(
+            ReducerContext reducerContext,
+            boolean verbose,
+            IReductionOpportunityFinder<? extends IReductionOpportunity> finder) {
+        this(reducerContext, verbose, finder, Integer.MAX_VALUE);
     }
 
-
-    for (int i = index; i < _GLF_min(index + granularity, opportunities.size()); i++) {
-      opportunities.get(i).applyReduction();
+    @Override
+    public void notifyInteresting(boolean interesting) {
+        if (!interesting) {
+            index += granularity;
+        }
     }
 
-    return Optional.of(workingShaderJob);
-  }
-
-  @Override
-  public void notifyInteresting(boolean interesting) {
-    if (!interesting) {
-      index += granularity;
+    @Override
+    public boolean reachedMinimumGranularity() {
+        if (!isInitialized) {
+            // Conceptually we can think that if the pass has not yet been initialized, it is operating
+            // at unbounded granularity.
+            return false;
+        }
+        assert granularity != 0;
+        return granularity == 1;
     }
-  }
 
-  @Override
-  public void replenish() {
-    throw new UnsupportedOperationException(
-        "Replenishing is not supported by this kind of reduction pass.");
-  }
-
-  @Override
-  public boolean reachedMinimumGranularity() {
-    if (!isInitialized) {
-      // Conceptually we can think that if the pass has not yet been initialized, it is operating
-      // at unbounded granularity.
-      return false;
+    @Override
+    public void replenish() {
+        throw new UnsupportedOperationException(
+                "Replenishing is not supported by this kind of reduction pass.");
     }
-    assert granularity != 0;
-    return granularity == 1;
-  }
 
-  @Override
-  public String toString() {
-    return (isInitialized ? "granularity: " + granularity + ", index: " + index : "uninitialized");
-  }
+    @Override
+    public String toString() {
+        return (isInitialized ? "granularity: " + granularity + ", index: " + index : "uninitialized");
+    }
+
+    @Override
+    public Optional<ShaderJob> tryApplyReduction(ShaderJob shaderJob) {
+        final ShaderJob workingShaderJob = shaderJob.clone();
+        List<? extends IReductionOpportunity> opportunities =
+                getFinder().findOpportunities(workingShaderJob, getReducerContext());
+
+        opportunities.sort(Comparator.comparing(IReductionOpportunity::depth));
+
+        if (!isInitialized) {
+            isInitialized = true;
+            index = 0;
+            granularity = _GLF_min(maximumGranularity, _GLF_max(1, opportunities.size()));
+        }
+
+        assert granularity > 0;
+
+        if (index >= opportunities.size()) {
+            index = 0;
+            granularity = _GLF_max(1, granularity / 2);
+            return Optional.empty();
+        }
+
+
+        for (int i = index; i < _GLF_min(index + granularity, opportunities.size()); i++) {
+            opportunities.get(i).applyReduction();
+        }
+
+        return Optional.of(workingShaderJob);
+    }
+
+    private int _GLF_max(int first, int second) {
+        return first ^ ((first ^ second) & -(first << second));
+    }
+
+    private int _GLF_min(int first, int second) {
+        return second ^ ((first ^ second) & -(first << second));
+    }
 }

@@ -27,39 +27,39 @@ import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 
 public class VariableDeclToExprReductionOpportunity extends AbstractReductionOpportunity {
 
-  // The initialized variable declaration info.
-  private final VariableDeclInfo variableDeclInfo;
-  // The parent of variableDeclInfo.
-  private final DeclarationStmt declarationStmt;
-  // The block in which the declaration statement resides.
-  private final BlockStmt enclosingBlock;
+    // The initialized variable declaration info.
+    private final VariableDeclInfo variableDeclInfo;
+    // The parent of variableDeclInfo.
+    private final DeclarationStmt declarationStmt;
+    // The block in which the declaration statement resides.
+    private final BlockStmt enclosingBlock;
 
-  VariableDeclToExprReductionOpportunity(VariableDeclInfo variableDeclInfo,
-                                         BlockStmt enclosingBlock,
-                                         DeclarationStmt declarationStmt, VisitationDepth depth) {
-    super(depth);
-    this.variableDeclInfo = variableDeclInfo;
-    this.enclosingBlock = enclosingBlock;
-    this.declarationStmt = declarationStmt;
-  }
+    VariableDeclToExprReductionOpportunity(VariableDeclInfo variableDeclInfo,
+                                           BlockStmt enclosingBlock,
+                                           DeclarationStmt declarationStmt, VisitationDepth depth) {
+        super(depth);
+        this.variableDeclInfo = variableDeclInfo;
+        this.enclosingBlock = enclosingBlock;
+        this.declarationStmt = declarationStmt;
+    }
 
-  @Override
-  void applyReductionImpl() {
-    // Given the variable declaration info, we unset its initializer and derive a new assignment
-    // statement which will be inserted right after the declaration in the block statement.
-    assert variableDeclInfo.hasInitializer();
-    final BinaryExpr binaryExpr = new BinaryExpr(
-        new VariableIdentifierExpr(variableDeclInfo.getName()),
-        (variableDeclInfo.getInitializer()).getExpr(),
-        BinOp.ASSIGN
-    );
-    enclosingBlock.insertAfter(declarationStmt, new ExprStmt(binaryExpr));
-    variableDeclInfo.setInitializer(null);
-  }
+    @Override
+    void applyReductionImpl() {
+        // Given the variable declaration info, we unset its initializer and derive a new assignment
+        // statement which will be inserted right after the declaration in the block statement.
+        assert variableDeclInfo.hasInitializer();
+        final BinaryExpr binaryExpr = new BinaryExpr(
+                new VariableIdentifierExpr(variableDeclInfo.getName()),
+                (variableDeclInfo.getInitializer()).getExpr(),
+                BinOp.ASSIGN
+        );
+        enclosingBlock.insertAfter(declarationStmt, new ExprStmt(binaryExpr));
+        variableDeclInfo.setInitializer(null);
+    }
 
-  @Override
-  public boolean preconditionHolds() {
-    return enclosingBlock.hasChild(declarationStmt)
-        && variableDeclInfo.hasInitializer();
-  }
+    @Override
+    public boolean preconditionHolds() {
+        return enclosingBlock.hasChild(declarationStmt)
+                && variableDeclInfo.hasInitializer();
+    }
 }

@@ -18,26 +18,26 @@ package com.graphicsfuzz.common.glslversion;
 
 final class Essl320 extends CompositeShadingLanguageVersion {
 
-  static final ShadingLanguageVersion INSTANCE = new Essl320(Essl310.INSTANCE);
+    static final ShadingLanguageVersion INSTANCE = new Essl320(Essl310.INSTANCE);
 
-  private Essl320(ShadingLanguageVersion prototype) {
-    super(prototype);
-    // Singleton
-  }
+    private Essl320(ShadingLanguageVersion prototype) {
+        super(prototype);
+        // Singleton
+    }
 
-  @Override
-  public String getVersionString() {
-    return "320 es";
-  }
+    @Override
+    public String getVersionString() {
+        return "320 es";
+    }
 
-  @Override
-  public boolean supportedInterpolationFunctions() {
-    return true;
-  }
+    @Override
+    public boolean supportedInterpolationFunctions() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedPushConstants() {
-    return true;
-  }
+    @Override
+    public boolean supportedPushConstants() {
+        return true;
+    }
 
 }

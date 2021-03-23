@@ -16,66 +16,66 @@
 
 package com.graphicsfuzz.common.ast.expr;
 
+import org.junit.Before;
+import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.Before;
-import org.junit.Test;
-
 public class UnaryExprTest {
 
-  private UnaryExpr expr;
+    private UnaryExpr expr;
 
-  @Before
-  public void setup() {
-    expr = new UnaryExpr(new VariableIdentifierExpr("x"), UnOp.BNEG);
-  }
+    @Test
+    public void getChild() throws Exception {
+        assertTrue(expr.getChild(0) instanceof VariableIdentifierExpr);
+        assertEquals("x", expr.getChild(0).getText());
 
-  @Test
-  public void getExpr() throws Exception {
-    assertEquals("~ x", expr.getText());
-  }
+    }
 
-  @Test
-  public void getOp() throws Exception {
-    assertEquals(UnOp.BNEG, expr.getOp());
-  }
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void getChildBad() throws Exception {
+        expr.getChild(1);
+    }
 
-  @Test
-  public void testClone() throws Exception {
-    UnaryExpr theClone = expr.clone();
-    assertFalse(expr == theClone);
-    assertEquals(theClone.getText(), expr.getText());
-  }
+    @Test
+    public void getExpr() throws Exception {
+        assertEquals("~ x", expr.getText());
+    }
 
-  @Test
-  public void getChild() throws Exception {
-    assertTrue(expr.getChild(0) instanceof VariableIdentifierExpr);
-    assertEquals("x", expr.getChild(0).getText());
+    @Test
+    public void getNumChildren() throws Exception {
+        assertEquals(1, expr.getNumChildren());
+    }
 
-  }
+    @Test
+    public void getOp() throws Exception {
+        assertEquals(UnOp.BNEG, expr.getOp());
+    }
 
-  @Test(expected = IndexOutOfBoundsException.class)
-  public void getChildBad() throws Exception {
-    expr.getChild(1);
-  }
+    @Test
+    public void setChild() throws Exception {
+        assertEquals("~ x", expr.getText());
+        expr.setChild(0, new VariableIdentifierExpr("y"));
+        assertEquals("~ y", expr.getText());
+    }
 
-  @Test
-  public void setChild() throws Exception {
-    assertEquals("~ x", expr.getText());
-    expr.setChild(0, new VariableIdentifierExpr("y"));
-    assertEquals("~ y", expr.getText());
-  }
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void setChildBad() throws Exception {
+        expr.setChild(-1, new IntConstantExpr("3"));
+    }
 
-  @Test(expected = IndexOutOfBoundsException.class)
-  public void setChildBad() throws Exception {
-    expr.setChild(-1, new IntConstantExpr("3"));
-  }
+    @Before
+    public void setup() {
+        expr = new UnaryExpr(new VariableIdentifierExpr("x"), UnOp.BNEG);
+    }
 
-  @Test
-  public void getNumChildren() throws Exception {
-    assertEquals(1, expr.getNumChildren());
-  }
+    @Test
+    public void testClone() throws Exception {
+        UnaryExpr theClone = expr.clone();
+        assertFalse(expr == theClone);
+        assertEquals(theClone.getText(), expr.getText());
+    }
 
 }

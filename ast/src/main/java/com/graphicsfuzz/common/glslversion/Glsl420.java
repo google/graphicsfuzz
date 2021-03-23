@@ -18,41 +18,41 @@ package com.graphicsfuzz.common.glslversion;
 
 final class Glsl420 extends CompositeShadingLanguageVersion {
 
-  static final ShadingLanguageVersion INSTANCE = new Glsl420(Glsl410.INSTANCE);
+    static final ShadingLanguageVersion INSTANCE = new Glsl420(Glsl410.INSTANCE);
 
-  private Glsl420(ShadingLanguageVersion prototype) {
-    super(prototype);
-    // Singleton
-  }
+    private Glsl420(ShadingLanguageVersion prototype) {
+        super(prototype);
+        // Singleton
+    }
 
-  @Override
-  public boolean initializersOfConstMustBeConst() {
-    return false;
-  }
+    @Override
+    public String getVersionString() {
+        return "420";
+    }
 
-  @Override
-  public String getVersionString() {
-    return "420";
-  }
+    @Override
+    public boolean initializersOfConstMustBeConst() {
+        return false;
+    }
 
-  @Override
-  public boolean supportedPackHalf2x16() {
-    return true;
-  }
+    @Override
+    public boolean supportedPackHalf2x16() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedPackSnorm2x16() {
-    return true;
-  }
+    @Override
+    public boolean supportedPackSnorm2x16() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedUnpackHalf2x16() {
-    return true;
-  }
+    @Override
+    public boolean supportedUnpackHalf2x16() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedUnpackSnorm2x16() {
-    return true;
-  }
+    @Override
+    public boolean supportedUnpackSnorm2x16() {
+        return true;
+    }
 
 }

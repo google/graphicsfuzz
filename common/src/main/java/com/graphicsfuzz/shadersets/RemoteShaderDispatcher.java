@@ -36,89 +36,86 @@ import org.slf4j.LoggerFactory;
 
 public class RemoteShaderDispatcher implements IShaderDispatcher {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(RemoteShaderDispatcher.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RemoteShaderDispatcher.class);
+    private static final int DEFAULT_RETRY_LIMIT = 2;
+    private final String url;
+    private final String worker;
+    private final FuzzerServiceManager.Iface fuzzerServiceManager;
+    private final AtomicLong jobCounter;
+    private final int retryLimit;
 
-  private final String url;
-  private final String worker;
-  private final FuzzerServiceManager.Iface fuzzerServiceManager;
-
-  private final AtomicLong jobCounter;
-  private final int retryLimit;
-
-  private static final int DEFAULT_RETRY_LIMIT = 2;
-
-  public RemoteShaderDispatcher(
-      String url,
-      String worker,
-      Iface fuzzerServiceManager,
-      AtomicLong jobCounter) {
-    this(url, worker, fuzzerServiceManager, jobCounter, DEFAULT_RETRY_LIMIT);
-  }
-
-  public RemoteShaderDispatcher(
-      String url,
-      String worker,
-      Iface fuzzerServiceManager,
-      AtomicLong jobCounter,
-      int retryLimit) {
-    this.url = url;
-    this.worker = worker;
-    this.fuzzerServiceManager = fuzzerServiceManager;
-    this.jobCounter = jobCounter;
-    this.retryLimit = retryLimit;
-  }
-
-  public RemoteShaderDispatcher(String url, String worker) {
-    this(url, worker, null, new AtomicLong(), DEFAULT_RETRY_LIMIT);
-  }
-
-  @Override
-  public ImageJobResult getImage(ImageJob imageJob) throws ShaderDispatchException {
-
-    LOGGER.info("Get image (via server) job: {}", imageJob.getName());
-
-    // Due to strange Thrift behaviour, we set this default value explicitly
-    // otherwise "isSetSkipRender()" is false.
-    if (!imageJob.isSetSkipRender()) {
-      imageJob.setSkipRender(false);
+    public RemoteShaderDispatcher(
+            String url,
+            String worker,
+            Iface fuzzerServiceManager,
+            AtomicLong jobCounter) {
+        this(url, worker, fuzzerServiceManager, jobCounter, DEFAULT_RETRY_LIMIT);
     }
 
-    // Optimisation: no need to actually use HTTP if we are on the server.
-    if (fuzzerServiceManager != null) {
-      try {
-        return getImageHelper(imageJob, fuzzerServiceManager);
-      } catch (TException exception) {
-        throw new ShaderDispatchException(exception);
-      }
-    } else {
-      try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
-        return getImageHelper(imageJob, getFuzzerServiceManagerProxy(httpClient));
-      } catch (IOException | TException exception) {
-        throw new ShaderDispatchException(exception);
-      }
+    public RemoteShaderDispatcher(
+            String url,
+            String worker,
+            Iface fuzzerServiceManager,
+            AtomicLong jobCounter,
+            int retryLimit) {
+        this.url = url;
+        this.worker = worker;
+        this.fuzzerServiceManager = fuzzerServiceManager;
+        this.jobCounter = jobCounter;
+        this.retryLimit = retryLimit;
     }
-  }
 
-  private ImageJobResult getImageHelper(
-      ImageJob imageJob,
-      FuzzerServiceManager.Iface fuzzerServiceManagerProxy) throws TException {
+    public RemoteShaderDispatcher(String url, String worker) {
+        this(url, worker, null, new AtomicLong(), DEFAULT_RETRY_LIMIT);
+    }
 
-    final Job job = new Job()
-        .setJobId(jobCounter.incrementAndGet())
-        .setImageJob(imageJob);
+    @Override
+    public ImageJobResult getImage(ImageJob imageJob) throws ShaderDispatchException {
 
-    return fuzzerServiceManagerProxy.submitJob(job, worker, retryLimit)
-        .getImageJob()
-        .getResult();
-  }
+        LOGGER.info("Get image (via server) job: {}", imageJob.getName());
 
-  private Iface getFuzzerServiceManagerProxy(CloseableHttpClient httpClient)
-      throws TTransportException {
-    TTransport transport = new THttpClient(url, httpClient);
-    transport.open();
-    TProtocol protocol = new TBinaryProtocol(transport);
-    return new FuzzerServiceManager.Client(
-        protocol);
-  }
+        // Due to strange Thrift behaviour, we set this default value explicitly
+        // otherwise "isSetSkipRender()" is false.
+        if (!imageJob.isSetSkipRender()) {
+            imageJob.setSkipRender(false);
+        }
+
+        // Optimisation: no need to actually use HTTP if we are on the server.
+        if (fuzzerServiceManager != null) {
+            try {
+                return getImageHelper(imageJob, fuzzerServiceManager);
+            } catch (TException exception) {
+                throw new ShaderDispatchException(exception);
+            }
+        } else {
+            try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
+                return getImageHelper(imageJob, getFuzzerServiceManagerProxy(httpClient));
+            } catch (IOException | TException exception) {
+                throw new ShaderDispatchException(exception);
+            }
+        }
+    }
+
+    private Iface getFuzzerServiceManagerProxy(CloseableHttpClient httpClient)
+            throws TTransportException {
+        TTransport transport = new THttpClient(url, httpClient);
+        transport.open();
+        TProtocol protocol = new TBinaryProtocol(transport);
+        return new FuzzerServiceManager.Client(
+                protocol);
+    }
+
+    private ImageJobResult getImageHelper(
+            ImageJob imageJob,
+            FuzzerServiceManager.Iface fuzzerServiceManagerProxy) throws TException {
+
+        final Job job = new Job()
+                .setJobId(jobCounter.incrementAndGet())
+                .setImageJob(imageJob);
+
+        return fuzzerServiceManagerProxy.submitJob(job, worker, retryLimit)
+                .getImageJob()
+                .getResult();
+    }
 
 }

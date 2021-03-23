@@ -28,59 +28,59 @@ import java.util.List;
 
 public final class ExprToConstantReductionOpportunities extends SimplifyExprReductionOpportunities {
 
-  private ExprToConstantReductionOpportunities(
-        TranslationUnit tu,
-        ReducerContext context) {
-    super(tu, context);
-  }
-
-  @Override
-  void identifyReductionOpportunitiesForChild(IAstNode parent, Expr child) {
-    if (allowedToReduceExpr(parent, child) && !inLValueContext()
-          && typeIsReducibleToConst(typer.lookupType(child))
-          && !isFullyReducedConstant(child, typer)) {
-      addOpportunity(new SimplifyExprReductionOpportunity(
-                  parent,
-                  typer.lookupType(child).getCanonicalConstant(getCurrentScope()),
-                  child,
-                  getVistitationDepth()));
+    private ExprToConstantReductionOpportunities(
+            TranslationUnit tu,
+            ReducerContext context) {
+        super(tu, context);
     }
-  }
 
-  static List<SimplifyExprReductionOpportunity> findOpportunities(
-        ShaderJob shaderJob,
-        ReducerContext context) {
-    return shaderJob.getShaders()
-        .stream()
-        .map(item -> findOpportunitiesForShader(item, context))
-        .reduce(Arrays.asList(), ListConcat::concatenate);
-  }
-
-  private static List<SimplifyExprReductionOpportunity> findOpportunitiesForShader(
-      TranslationUnit tu,
-      ReducerContext context) {
-    ExprToConstantReductionOpportunities finder = new ExprToConstantReductionOpportunities(tu,
-          context);
-    finder.visit(tu);
-    return finder.getOpportunities();
-  }
-
-  private boolean typeIsReducibleToConst(Type type) {
-    return type != null && type.hasCanonicalConstant(getCurrentScope());
-  }
-
-  private boolean isFullyReducedConstant(Expr expr, Typer typer) {
-    final Type type = typer.lookupType(expr);
-    if (type == null) {
-      return false;
+    static List<SimplifyExprReductionOpportunity> findOpportunities(
+            ShaderJob shaderJob,
+            ReducerContext context) {
+        return shaderJob.getShaders()
+                .stream()
+                .map(item -> findOpportunitiesForShader(item, context))
+                .reduce(Arrays.asList(), ListConcat::concatenate);
     }
-    if (!type.hasCanonicalConstant(getCurrentScope())) {
-      return false;
+
+    @Override
+    void identifyReductionOpportunitiesForChild(IAstNode parent, Expr child) {
+        if (allowedToReduceExpr(parent, child) && !inLValueContext()
+                && typeIsReducibleToConst(typer.lookupType(child))
+                && !isFullyReducedConstant(child, typer)) {
+            addOpportunity(new SimplifyExprReductionOpportunity(
+                    parent,
+                    typer.lookupType(child).getCanonicalConstant(getCurrentScope()),
+                    child,
+                    getVistitationDepth()));
+        }
     }
-    // To make the reduced shader as clean as possible, we try reducing every constant to
-    // something textually equivalent to its canonical constant.
-    return expr.getText()
-        .equals(type.getCanonicalConstant(getCurrentScope()).getText());
-  }
+
+    private static List<SimplifyExprReductionOpportunity> findOpportunitiesForShader(
+            TranslationUnit tu,
+            ReducerContext context) {
+        ExprToConstantReductionOpportunities finder = new ExprToConstantReductionOpportunities(tu,
+                context);
+        finder.visit(tu);
+        return finder.getOpportunities();
+    }
+
+    private boolean isFullyReducedConstant(Expr expr, Typer typer) {
+        final Type type = typer.lookupType(expr);
+        if (type == null) {
+            return false;
+        }
+        if (!type.hasCanonicalConstant(getCurrentScope())) {
+            return false;
+        }
+        // To make the reduced shader as clean as possible, we try reducing every constant to
+        // something textually equivalent to its canonical constant.
+        return expr.getText()
+                .equals(type.getCanonicalConstant(getCurrentScope()).getText());
+    }
+
+    private boolean typeIsReducibleToConst(Type type) {
+        return type != null && type.hasCanonicalConstant(getCurrentScope());
+    }
 
 }

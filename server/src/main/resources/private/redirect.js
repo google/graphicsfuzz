@@ -15,8 +15,8 @@
  */
 
 function redirect(msg, url) {
-  if (msg != null) {
-    alert(msg);
-  }
-  window.location.assign(url);
+    if (msg != null) {
+        alert(msg);
+    }
+    window.location.assign(url);
 }

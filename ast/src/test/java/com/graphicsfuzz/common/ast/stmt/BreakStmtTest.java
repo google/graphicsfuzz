@@ -16,18 +16,18 @@
 
 package com.graphicsfuzz.common.ast.stmt;
 
+import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 
-import org.junit.Test;
-
 public class BreakStmtTest {
 
-  @Test
-  public void testBreakStmt() {
-    assertEquals("break;\n", new BreakStmt().getText());
-    final BreakStmt breakStmt = new BreakStmt();
-    assertNotSame(breakStmt, breakStmt.clone());
-  }
+    @Test
+    public void testBreakStmt() {
+        assertEquals("break;\n", new BreakStmt().getText());
+        final BreakStmt breakStmt = new BreakStmt();
+        assertNotSame(breakStmt, breakStmt.clone());
+    }
 
 }

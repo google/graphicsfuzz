@@ -31,64 +31,64 @@ import java.util.List;
 
 public class InlineUniformReductionOpportunities extends SimplifyExprReductionOpportunities {
 
-  public static List<SimplifyExprReductionOpportunity> findOpportunities(
-      ShaderJob shaderJob,
-      ReducerContext context) {
-    return shaderJob.getShaders()
-        .stream()
-        .map(item -> findOpportunitiesForShader(item, context, shaderJob.getPipelineInfo()))
-        .reduce(Arrays.asList(), ListConcat::concatenate);
-  }
+    private final PipelineInfo pipelineInfo;
 
-  private static List<SimplifyExprReductionOpportunity> findOpportunitiesForShader(
-      TranslationUnit tu, ReducerContext context, PipelineInfo pipelineInfo) {
-    final InlineUniformReductionOpportunities finder = new InlineUniformReductionOpportunities(
-        tu, context, pipelineInfo);
-    finder.visit(tu);
-    return finder.getOpportunities();
-  }
-
-  private final PipelineInfo pipelineInfo;
-
-  private InlineUniformReductionOpportunities(TranslationUnit tu,
-                                              ReducerContext context,
-                                              PipelineInfo pipelineInfo) {
-    super(tu, context);
-    this.pipelineInfo = pipelineInfo;
-  }
-
-  @Override
-  public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
-    super.visitVariableIdentifierExpr(variableIdentifierExpr);
-
-    // We only inline uniforms if we are not preserving semantics, if the current program point is
-    // is dead code, or if the uniform is a live-injected variable.
-    if (!(context.reduceEverywhere() || currentProgramPointIsDeadCode()
-        || Constants.isLiveInjectedVariableName(variableIdentifierExpr.getName()))) {
-      return;
+    private InlineUniformReductionOpportunities(TranslationUnit tu,
+                                                ReducerContext context,
+                                                PipelineInfo pipelineInfo) {
+        super(tu, context);
+        this.pipelineInfo = pipelineInfo;
     }
 
-    final String name = variableIdentifierExpr.getName();
-    final ScopeEntry se = getCurrentScope().lookupScopeEntry(name);
-    if (se == null) {
-      return;
+    public static List<SimplifyExprReductionOpportunity> findOpportunities(
+            ShaderJob shaderJob,
+            ReducerContext context) {
+        return shaderJob.getShaders()
+                .stream()
+                .map(item -> findOpportunitiesForShader(item, context, shaderJob.getPipelineInfo()))
+                .reduce(Arrays.asList(), ListConcat::concatenate);
     }
-    if (se.getType() == null) {
-      return;
+
+    @Override
+    public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
+        super.visitVariableIdentifierExpr(variableIdentifierExpr);
+
+        // We only inline uniforms if we are not preserving semantics, if the current program point is
+        // is dead code, or if the uniform is a live-injected variable.
+        if (!(context.reduceEverywhere() || currentProgramPointIsDeadCode()
+                || Constants.isLiveInjectedVariableName(variableIdentifierExpr.getName()))) {
+            return;
+        }
+
+        final String name = variableIdentifierExpr.getName();
+        final ScopeEntry se = getCurrentScope().lookupScopeEntry(name);
+        if (se == null) {
+            return;
+        }
+        if (se.getType() == null) {
+            return;
+        }
+        if (!se.getType().hasQualifier(TypeQualifier.UNIFORM)) {
+            return;
+        }
+        if (se.getType().getWithoutQualifiers() instanceof BasicType
+                && pipelineInfo.hasUniform(name)) {
+            final BasicType basicType = (BasicType) se.getType().getWithoutQualifiers();
+            addOpportunity(new SimplifyExprReductionOpportunity(
+                    parentMap.getParent(variableIdentifierExpr),
+                    PruneUniforms.getBasicTypeLiteralExpr(basicType,
+                            pipelineInfo.getArgs(name)),
+                    variableIdentifierExpr,
+                    getVistitationDepth()));
+        }
     }
-    if (!se.getType().hasQualifier(TypeQualifier.UNIFORM)) {
-      return;
+
+    private static List<SimplifyExprReductionOpportunity> findOpportunitiesForShader(
+            TranslationUnit tu, ReducerContext context, PipelineInfo pipelineInfo) {
+        final InlineUniformReductionOpportunities finder = new InlineUniformReductionOpportunities(
+                tu, context, pipelineInfo);
+        finder.visit(tu);
+        return finder.getOpportunities();
     }
-    if (se.getType().getWithoutQualifiers() instanceof BasicType
-        && pipelineInfo.hasUniform(name)) {
-      final BasicType basicType = (BasicType) se.getType().getWithoutQualifiers();
-      addOpportunity(new SimplifyExprReductionOpportunity(
-          parentMap.getParent(variableIdentifierExpr),
-          PruneUniforms.getBasicTypeLiteralExpr(basicType,
-              pipelineInfo.getArgs(name)),
-          variableIdentifierExpr,
-          getVistitationDepth()));
-    }
-  }
 
 }

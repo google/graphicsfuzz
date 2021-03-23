@@ -20,18 +20,18 @@ import java.io.File;
 
 public class ExecResult {
 
-  public final StringBuffer stdout;
-  public final StringBuffer stderr;
-  public final int res;
-  public final File stdoutFile;
-  public final File stderrFile;
+    public final StringBuffer stdout;
+    public final StringBuffer stderr;
+    public final int res;
+    public final File stdoutFile;
+    public final File stderrFile;
 
-  public ExecResult(int res, StringBuffer stdout, StringBuffer stderr, File stdoutFile,
-      File stderrFile) {
-    this.res = res;
-    this.stdout = stdout;
-    this.stderr = stderr;
-    this.stdoutFile = stdoutFile;
-    this.stderrFile = stderrFile;
-  }
+    public ExecResult(int res, StringBuffer stdout, StringBuffer stderr, File stdoutFile,
+                      File stderrFile) {
+        this.res = res;
+        this.stdout = stdout;
+        this.stderr = stderr;
+        this.stdoutFile = stdoutFile;
+        this.stderrFile = stderrFile;
+    }
 }

@@ -27,51 +27,51 @@ import java.util.Set;
 
 class NotReferencedFromLiveContext extends StandardVisitor {
 
-  private final Set<String> functionsCalledFromPotentiallyLiveContext;
-  private final InjectionTracker injectionTracker;
+    private final Set<String> functionsCalledFromPotentiallyLiveContext;
+    private final InjectionTracker injectionTracker;
 
-  NotReferencedFromLiveContext(IAstNode node) {
-    this.functionsCalledFromPotentiallyLiveContext = new HashSet<>();
-    this.injectionTracker = new InjectionTracker();
-    visit(node);
-  }
+    NotReferencedFromLiveContext(IAstNode node) {
+        this.functionsCalledFromPotentiallyLiveContext = new HashSet<>();
+        this.injectionTracker = new InjectionTracker();
+        visit(node);
+    }
 
-  boolean neverCalledFromLiveContext(String functionName) {
-    if (functionName.equals("main")) {
-      return false;
+    boolean neverCalledFromLiveContext(String functionName) {
+        if (functionName.equals("main")) {
+            return false;
+        }
+        return !functionsCalledFromPotentiallyLiveContext.contains(functionName);
     }
-    return !functionsCalledFromPotentiallyLiveContext.contains(functionName);
-  }
 
-  @Override
-  public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
-    if (inPotentiallyLiveContext()) {
-      functionsCalledFromPotentiallyLiveContext.add(functionCallExpr.getCallee());
+    @Override
+    public void visitBlockStmt(BlockStmt stmt) {
+        for (Stmt child : stmt.getStmts()) {
+            if (ReductionOpportunitiesBase.isDeadCodeInjection(child)) {
+                injectionTracker.enterDeadCodeInjection();
+            }
+            visit(child);
+            if (ReductionOpportunitiesBase.isDeadCodeInjection(child)) {
+                injectionTracker.exitDeadCodeInjection();
+            }
+        }
     }
-    if (MacroNames.isFuzzed(functionCallExpr)) {
-      injectionTracker.enterFuzzedMacro();
-    }
-    super.visitFunctionCallExpr(functionCallExpr);
-    if (MacroNames.isFuzzed(functionCallExpr)) {
-      injectionTracker.exitFuzzedMacro();
-    }
-  }
 
-  @Override
-  public void visitBlockStmt(BlockStmt stmt) {
-    for (Stmt child : stmt.getStmts()) {
-      if (ReductionOpportunitiesBase.isDeadCodeInjection(child)) {
-        injectionTracker.enterDeadCodeInjection();
-      }
-      visit(child);
-      if (ReductionOpportunitiesBase.isDeadCodeInjection(child)) {
-        injectionTracker.exitDeadCodeInjection();
-      }
+    @Override
+    public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+        if (inPotentiallyLiveContext()) {
+            functionsCalledFromPotentiallyLiveContext.add(functionCallExpr.getCallee());
+        }
+        if (MacroNames.isFuzzed(functionCallExpr)) {
+            injectionTracker.enterFuzzedMacro();
+        }
+        super.visitFunctionCallExpr(functionCallExpr);
+        if (MacroNames.isFuzzed(functionCallExpr)) {
+            injectionTracker.exitFuzzedMacro();
+        }
     }
-  }
 
-  private boolean inPotentiallyLiveContext() {
-    return !injectionTracker.underFuzzedMacro() && !injectionTracker.enclosedByDeadCodeInjection();
-  }
+    private boolean inPotentiallyLiveContext() {
+        return !injectionTracker.underFuzzedMacro() && !injectionTracker.enclosedByDeadCodeInjection();
+    }
 
 }

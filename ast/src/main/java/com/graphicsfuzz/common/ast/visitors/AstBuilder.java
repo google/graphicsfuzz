@@ -180,1453 +180,1454 @@ import org.antlr.v4.runtime.misc.Pair;
 
 public class AstBuilder extends GLSLBaseVisitor<Object> {
 
-  private final ShaderKind shaderKind;
-  private final boolean hasWebGlHint;
-  private final List<Declaration> topLevelDeclarations;
-  private final Set<StructNameType> structs;
+    private final ShaderKind shaderKind;
+    private final boolean hasWebGlHint;
+    private final List<Declaration> topLevelDeclarations;
+    private final Set<StructNameType> structs;
 
-  private AstBuilder(ShaderKind shaderKind, boolean hasWebGlHint) {
-    this.shaderKind = shaderKind;
-    this.hasWebGlHint = hasWebGlHint;
-    this.topLevelDeclarations = new ArrayList<>();
-    this.structs = new HashSet<>();
-  }
+    private AstBuilder(ShaderKind shaderKind, boolean hasWebGlHint) {
+        this.shaderKind = shaderKind;
+        this.hasWebGlHint = hasWebGlHint;
+        this.topLevelDeclarations = new ArrayList<>();
+        this.structs = new HashSet<>();
+    }
 
-  void addTopLevelDeclaration(Declaration decl) {
-    topLevelDeclarations.add(decl);
-  }
+    public static TranslationUnit getTranslationUnit(Translation_unitContext ctx,
+                                                     ShaderKind shaderKind, boolean hasWebGlHint) {
+        /* Scan parsed AST and perform constant folding for array sizes.
+         * Doing the constant folding during AST build is not as convenient as
+         * not all of the required information may be available when needed.
+         */
+        return fixUpArraySizes(new AstBuilder(shaderKind, hasWebGlHint).visitTranslation_unit(ctx));
+    }
 
-  /**
-   * Performs constant folding for array size fields.
-   * @param tu Parsed syntax tree to scan and modify
-   * @return Modified syntax tree
-   */
-  private static TranslationUnit fixUpArraySizes(TranslationUnit tu) {
-    // Use a private class that extends ScopeTrackingVisitor to do the patching up.
-    new ScopeTrackingVisitor() {
-      /**
-       * Attempt to reduce expression, or throw exception if failed.
-       * @param expr Expression to fold
-       * @return Folded expression
-       */
-      private Expr reduce(Expr expr) {
+    void addTopLevelDeclaration(Declaration decl) {
+        topLevelDeclarations.add(decl);
+    }
 
-        if (expr instanceof IntConstantExpr) {
-          return expr;
+    @Override
+    public Expr visitAdditive_expression(Additive_expressionContext ctx) {
+        return handleBinary(ctx.operands, ctx.operators, this::visitMultiplicative_expression);
+    }
+
+    @Override
+    public Expr visitAnd_expression(And_expressionContext ctx) {
+        return handleBinary(ctx.operands, ctx.operators, this::visitEquality_expression);
+    }
+
+    @Override
+    public Expr visitAssignment_expression(Assignment_expressionContext ctx) {
+        if (ctx.conditional_expression() != null) {
+            return visitConditional_expression(ctx.conditional_expression());
         }
-        if (expr instanceof VariableIdentifierExpr) {
-          Expr newexpr =
-              getCurrentScope()
-                  .lookupScopeEntry(((VariableIdentifierExpr) expr).getName())
-                  .getVariableDeclInfo()
-                  .getInitializer()
-                  .getExpr();
-          return reduce(newexpr);
+        return new BinaryExpr(visitUnary_expression(ctx.unary_expression()),
+                visitAssignment_expression(ctx.assignment_expression()),
+                processAssignmentOperator(ctx.assignment_operator()));
+    }
+
+    @Override
+    public CaseLabel visitCase_label(Case_labelContext ctx) {
+        if (ctx.DEFAULT() != null) {
+            return new DefaultCaseLabel();
         }
-        if (expr instanceof ParenExpr) {
-          return reduce(((ParenExpr)expr).getExpr());
+        return new ExprCaseLabel(visitExpression(ctx.expression()));
+    }
+
+    @Override
+    public List<CaseLabel> visitCase_label_list(Case_label_listContext ctx) {
+        Deque<Case_labelContext> labels = new LinkedList<>();
+        {
+            Case_label_listContext temp = ctx;
+            while (true) {
+                labels.addFirst(temp.case_label());
+                if (temp.case_label_list() == null) {
+                    break;
+                }
+                temp = temp.case_label_list();
+            }
         }
-        if (expr instanceof BinaryExpr) {
-          BinaryExpr bexpr = (BinaryExpr) expr;
+        List<CaseLabel> result = new ArrayList<>();
+        for (Case_labelContext caseLabel : labels) {
+            result.add(visitCase_label(caseLabel));
+        }
+        return result;
+    }
 
-          Expr lexpr = reduce(bexpr.getLhs());
-          Expr rexpr = reduce(bexpr.getRhs());
+    @Override
+    public List<Stmt> visitCase_statement(Case_statementContext ctx) {
+        Deque<StatementContext> statements = new LinkedList<>();
+        Case_statementContext temp = ctx;
+        while (true) {
+            statements.addFirst(temp.statement());
+            if (temp.case_statement() == null) {
+                break;
+            }
+            temp = temp.case_statement();
+        }
+        List<Stmt> stmts = new ArrayList<>();
+        stmts.addAll(visitCase_label_list(temp.case_label_list()));
+        for (StatementContext statementContext : statements) {
+            stmts.add(visitStatement(statementContext));
+        }
+        return stmts;
+    }
 
-          if (!(lexpr instanceof IntConstantExpr && rexpr instanceof IntConstantExpr)) {
-            throw new RuntimeException("Unable to fold constant (leaf of binary expression did "
-                + "not fold)" + bexpr.getText());
-          }
+    @Override
+    public BlockStmt visitCompound_statement(Compound_statementContext ctx) {
+        if (ctx.statement_list() == null) {
+            return new BlockStmt(new ArrayList<>(), true);
+        }
+        return new BlockStmt(visitStatement_list(ctx.statement_list()), true);
+    }
 
-          int lval = ((IntConstantExpr) lexpr).getNumericValue();
-          int rval = ((IntConstantExpr) rexpr).getNumericValue();
-          int fval = 0;
-          switch (bexpr.getOp()) {
-            case MOD:
-              fval = lval % rval;
-              break;
-            case MUL:
-              fval = lval * rval;
-              break;
-            case DIV:
-              if (rval == 0) {
-                throw new RuntimeException("Division by zero while folding constant "
-                    + bexpr.getText());
-              }
-              fval = lval / rval;
-              break;
-            case ADD:
-              fval = lval + rval;
-              break;
-            case SUB:
-              fval = lval - rval;
-              break;
-            case BAND:
-              fval = lval & rval;
-              break;
-            case BOR:
-              fval = lval | rval;
-              break;
-            case BXOR:
-              fval = lval ^ rval;
-              break;
-            case LAND:
-              fval = ((lval != 0) && (rval != 0)) ? 1 : 0;
-              break;
-            case LOR:
-              fval = ((lval != 0) || (rval != 0)) ? 1 : 0;
-              break;
-            case LXOR:
-              fval = ((lval == 0) != (rval == 0)) ? 1 : 0;
-              break;
-            case SHL:
-              fval = lval << rval;
-              break;
-            case SHR:
-              fval = lval >> rval;
-              break;
-            case LT:
-              fval = (lval < rval) ? 1 : 0;
-              break;
-            case GT:
-              fval = (lval > rval) ? 1 : 0;
-              break;
-            case LE:
-              fval = (lval <= rval) ? 1 : 0;
-              break;
-            case GE:
-              fval = (lval >= rval) ? 1 : 0;
-              break;
-            case EQ:
-              fval = (lval == rval) ? 1 : 0;
-              break;
-            case NE:
-              fval = (lval != rval) ? 1 : 0;
-              break;
+    @Override
+    public BlockStmt visitCompound_statement_no_new_scope(
+            Compound_statement_no_new_scopeContext ctx) {
+        if (ctx.statement_list() == null) {
+            return new BlockStmt(new ArrayList<>(), false);
+        }
+        return new BlockStmt(visitStatement_list(ctx.statement_list()), false);
+    }
+
+    @Override
+    public Expr visitCondition(ConditionContext ctx) {
+        if (ctx.expression() != null) {
+            return visitExpression(ctx.expression());
+        }
+        assert ctx.ASSIGN_OP() != null;
+        throw new UnsupportedLanguageFeatureException(
+                "We do not yet support the case where the condition of a 'for' or 'while' introduces a "
+                        + "new variable: " + getOriginalSourceText(ctx));
+    }
+
+    @Override
+    public Expr visitConditional_expression(Conditional_expressionContext ctx) {
+        assert ctx.expression().size() == ctx.assignment_expression().size();
+
+        // First, visit all the args, slapping them into a list
+        List<Expr> argsInOrder = new ArrayList<>();
+        argsInOrder.add(visitLogical_or_expression(ctx.logical_or_expression()));
+        for (int i = 0; i < ctx.expression().size(); i++) {
+            argsInOrder.add(visitExpression(ctx.expression(i)));
+            argsInOrder.add(visitAssignment_expression(ctx.assignment_expression(i)));
+        }
+        assert (argsInOrder.size() % 2) == 1; // should be an odd number of args in total
+
+        // Now visit the list in reverse order, building up the ternary
+        Expr result = argsInOrder.get(argsInOrder.size() - 1);
+        for (int i = argsInOrder.size() - 2; i >= 0; i -= 2) {
+            assert (i % 2) == 1;
+            final Expr thenExpr = argsInOrder.get(i);
+            result = new TernaryExpr(argsInOrder.get(i - 1), thenExpr, result);
+        }
+        return result;
+    }
+
+    @Override
+    public Declaration visitDeclaration(DeclarationContext ctx) {
+        if (ctx.init_declarator_list() != null) {
+            return visitInit_declarator_list(ctx.init_declarator_list());
+        }
+        if (ctx.precision_qualifier() != null) {
+            return new PrecisionDeclaration(getOriginalSourceText(ctx));
+        }
+        if (ctx.function_prototype() != null) {
+            return visitFunction_prototype(ctx.function_prototype());
+        }
+        if (ctx.interface_block() != null) {
+            return visitInterface_block(ctx.interface_block());
+        }
+        // The above captures all the declaration kinds, so this indicates a bad input
+        // rather than lack of support.
+        throw new RuntimeException("Unknown declaration at line " + ctx.start.getLine() + ": "
+                + getOriginalSourceText(ctx));
+    }
+
+    @Override
+    public DeclarationStmt visitDeclaration_statement(Declaration_statementContext ctx) {
+        return new DeclarationStmt(
+                visitInit_declarator_list(ctx.declaration().init_declarator_list()));
+    }
+
+    @Override
+    public Expr visitEquality_expression(Equality_expressionContext ctx) {
+        return handleBinary(ctx.operands, ctx.operators, this::visitRelational_expression);
+    }
+
+    @Override
+    public Expr visitExclusive_or_expression(Exclusive_or_expressionContext ctx) {
+        return handleBinary(ctx.operands, ctx.operators, this::visitAnd_expression);
+    }
+
+    @Override
+    public Expr visitExpression(ExpressionContext ctx) {
+        return handleBinary(ctx.operands, ctx.operators, this::visitAssignment_expression);
+    }
+
+    @Override
+    public Stmt visitExpression_statement(Expression_statementContext ctx) {
+        if (ctx.expression() == null) {
+            return new NullStmt();
+        }
+        return new ExprStmt(visitExpression(ctx.expression()));
+    }
+
+    @Override
+    public ExtensionStatement visitExtension_statement(Extension_statementContext ctx) {
+        return new ExtensionStatement(ctx.extension_name.getText(), ctx.extension_status.getText());
+    }
+
+    @Override
+    public Void visitExtension_statement_list(Extension_statement_listContext ctx) {
+        if (ctx.extension_statement() != null) {
+            visitExtension_statement_list(ctx.extension_statement_list());
+            addTopLevelDeclaration(visitExtension_statement(ctx.extension_statement()));
+        }
+        return null;
+    }
+
+    @Override
+    public Void visitExternal_declaration_list(External_declaration_listContext ctx) {
+        // These lists can get very large, so that recursion leads to stack overflow.
+        // Hence we compute a list of all list prefixes and then go through it iteratively.
+        Deque<External_declaration_listContext> declarations = new LinkedList<>();
+        {
+            External_declaration_listContext temp = ctx;
+            while (true) {
+                declarations.addFirst(temp);
+                if (temp.single != null) {
+                    break;
+                }
+                temp = temp.prefix;
+            }
+        }
+        for (External_declaration_listContext decl : declarations) {
+            if (decl.single != null) {
+                assert decl.prefix == null;
+                assert decl.lastDecl == null;
+                assert decl.lastExtension == null;
+                addTopLevelDeclaration((Declaration) visitExternal_declaration(decl.single));
+            } else {
+                assert decl.prefix != null;
+                if (decl.lastDecl != null) {
+                    assert decl.lastExtension == null;
+                    addTopLevelDeclaration((Declaration) visitExternal_declaration(decl.lastDecl));
+                } else {
+                    assert decl.lastExtension != null;
+                    addTopLevelDeclaration(visitExtension_statement(decl.lastExtension));
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Stmt visitFor_init_statement(For_init_statementContext ctx) {
+        if (ctx.expression_statement() != null) {
+            return visitExpression_statement(ctx.expression_statement());
+        }
+        assert ctx.declaration_statement() != null;
+        return visitDeclaration_statement(ctx.declaration_statement());
+    }
+
+    @Override
+    public Stmt visitFor_rest_statement(For_rest_statementContext ctx) {
+        throw new RuntimeException("By construction, this visitor method should never get executed.");
+    }
+
+    @Override
+    public Type visitFully_specified_type(
+            Fully_specified_typeContext ctx) {
+        return getType(ctx.type_qualifier(), ctx.type_specifier());
+    }
+
+    @Override
+    public Expr visitFunction_call_generic(Function_call_genericContext ctx) {
+        if (ctx.function_call_header_no_parameters() != null) {
+            return visitFunction_call_header_no_parameters(ctx.function_call_header_no_parameters());
+        }
+        assert ctx.function_call_header_with_parameters() != null;
+        return visitFunction_call_header_with_parameters(ctx.function_call_header_with_parameters());
+    }
+
+    @Override
+    public Expr visitFunction_call_header_no_parameters(
+            Function_call_header_no_parametersContext ctx) {
+        if (isBuiltinTypeConstructor(ctx.function_call_header().function_identifier())
+                || isStructTypeConstructor(ctx.function_call_header().function_identifier())) {
+            // This is illegal, so indicates an invalid shader rather than lack of support.
+            throw new RuntimeException(
+                    "Found type constructor with no arguments at line " + ctx.start.getLine() + ": "
+                            + getOriginalSourceText(ctx));
+        }
+        if (isRegularFunction(ctx.function_call_header().function_identifier())) {
+            return new FunctionCallExpr(getCallee(ctx.function_call_header().function_identifier()),
+                    new ArrayList<>());
+        }
+        // The above logic is intended to capture all cases, so the following indicates an invalid
+        // shader, rather than lack of support.
+        throw new RuntimeException("Unsupported function call at line " + ctx.start.getLine() + ": "
+                + getOriginalSourceText(ctx));
+    }
+
+    @Override
+    public Expr visitFunction_call_header_with_parameters(
+            Function_call_header_with_parametersContext ctx) {
+        List<Expr> params = new LinkedList<>();
+        Function_call_header_with_parametersContext fchwp = ctx;
+        while (fchwp.function_call_header_with_parameters() != null) {
+            params.add(0, visitAssignment_expression(fchwp.assignment_expression()));
+            fchwp = fchwp.function_call_header_with_parameters();
+        }
+        params.add(0, visitAssignment_expression(fchwp.assignment_expression()));
+        Function_call_headerContext header = fchwp.function_call_header();
+        if (isBuiltinTypeConstructor(header.function_identifier())) {
+            if (header.array_specifier() != null) {
+                return new ArrayConstructorExpr(
+                        new ArrayType(
+                                getBuiltinType(header.function_identifier().builtin_type_specifier_nonarray()),
+                                getArrayInfo(header.array_specifier())), params);
+            }
+            return new TypeConstructorExpr(getTypeConstructorName(header.function_identifier()), params);
+        }
+        if (isStructTypeConstructor(header.function_identifier())) {
+            if (header.array_specifier() != null) {
+                final StructNameType structType = new StructNameType(
+                        header.function_identifier().variable_identifier().getText());
+                return new ArrayConstructorExpr(
+                        new ArrayType(structType,
+                                getArrayInfo(header.array_specifier())), params);
+            }
+            return new TypeConstructorExpr(getTypeConstructorName(header.function_identifier()), params);
+        }
+        if (isRegularFunction(header.function_identifier())) {
+            return new FunctionCallExpr(getCallee(header.function_identifier()), params);
+        }
+        // The above logic is intended to capture all cases, so the following indicates an invalid
+        // shader, rather than lack of support.
+        throw new RuntimeException("Unsupported function call: " + getOriginalSourceText(ctx));
+    }
+
+    @Override
+    public FunctionDefinition visitFunction_definition(Function_definitionContext ctx) {
+        return new FunctionDefinition(
+                visitFunction_prototype(ctx.function_prototype()),
+                visitCompound_statement_no_new_scope(ctx.compound_statement_no_new_scope()));
+    }
+
+    @Override
+    public FunctionPrototype visitFunction_prototype(Function_prototypeContext ctx) {
+        Function_headerContext header = ctx.function_declarator().function_header();
+        if (header != null) {
+            Type returnType =
+                    visitFully_specified_type(header.fully_specified_type());
+            String name = header.variable_identifier().getText();
+            return new FunctionPrototype(name, returnType, new ArrayList<>());
+        }
+        Function_header_with_parametersContext fhp = ctx.function_declarator()
+                .function_header_with_parameters();
+        List<ParameterDecl> parameters = new LinkedList<>();
+
+        final String badUseOfVoidMessage = "Unexpected use of 'void' in a list of parameters; void "
+                + "should be the only parameter if used to indicate absence of parameters.";
+
+        while (fhp.function_header_with_parameters() != null) {
+            final ParameterDecl parameterDecl = visitParameter_declaration(fhp.parameter_declaration());
+            if (parameterDecl.getType().getWithoutQualifiers() == VoidType.VOID) {
+                // This is a 'void' parameter, and it is not the final parameter under consideration.
+                // That's illegal, because 'void' can only be used in isolation, to indicate that there
+                // are no parameters.
+                throw new RuntimeException(badUseOfVoidMessage);
+            }
+            parameters.add(0, parameterDecl);
+            fhp = fhp.function_header_with_parameters();
+        }
+        final ParameterDecl parameterDecl = visitParameter_declaration(fhp.parameter_declaration());
+        if (parameterDecl.getType().getWithoutQualifiers() == VoidType.VOID) {
+            // If this 'void' parameter is the *only* parameter that's OK; we just ignore it.  Otherwise
+            // it is not OK, as we cannot use 'void' in the context of multiple parameters.
+            if (!parameters.isEmpty()) {
+                throw new RuntimeException(badUseOfVoidMessage);
+            }
+        } else {
+            parameters.add(0, parameterDecl);
+        }
+        header = fhp.function_header();
+        Type returnType =
+                visitFully_specified_type(header.fully_specified_type());
+        String name = header.variable_identifier().getText();
+        return new FunctionPrototype(name, returnType, parameters);
+    }
+
+    @Override
+    public Expr visitInclusive_or_expression(Inclusive_or_expressionContext ctx) {
+        return handleBinary(ctx.operands, ctx.operators, this::visitExclusive_or_expression);
+    }
+
+    @Override
+    public VariablesDeclaration visitInit_declarator_list(Init_declarator_listContext ctx) {
+        List<VariableDeclInfo> declInfo = new LinkedList<>();
+        Init_declarator_listContext idl = ctx;
+        while (idl.single_declaration() == null) {
+            declInfo.add(0,
+                    processVarDeclInfo(idl.IDENTIFIER().getText(), idl.array_specifier(), idl.initializer()));
+            idl = idl.init_declarator_list();
+        }
+        Single_declarationContext sdc = idl.single_declaration();
+        if (sdc.IDENTIFIER() != null) {
+            // Note: a struct declaration on its own is treated as a variables declaration with zero
+            // identifiers.  This seems to be the cleanest approach, since a struct declaration can
+            // be followed by declaration of struct instances.
+            declInfo.add(0,
+                    processVarDeclInfo(sdc.IDENTIFIER().getText(), sdc.array_specifier(), sdc.initializer()));
+        }
+        final Type baseType =
+                visitFully_specified_type(sdc.fully_specified_type());
+        return new VariablesDeclaration(baseType, declInfo);
+    }
+
+    @Override
+    public Initializer visitInitializer(InitializerContext ctx) {
+        if (ctx == null) {
+            return null;
+        }
+        if (ctx.assignment_expression() != null) {
+            return new Initializer(visitAssignment_expression(ctx.assignment_expression()));
+        }
+        throw new UnsupportedLanguageFeatureException("Initializer lists are not currently supported.");
+    }
+
+    @Override
+    public Declaration visitInterface_block(Interface_blockContext ctx) {
+        final Optional<LayoutQualifierSequence> maybeLayoutQualifier = ctx.layout_qualifier() == null
+                ? Optional.empty()
+                : Optional.of(visitLayout_qualifier(ctx.layout_qualifier()));
+        final Basic_interface_blockContext basicCtx = ctx.basic_interface_block();
+        final TypeQualifier interfaceQualifier =
+                visitInterface_qualifier(basicCtx.interface_qualifier());
+        if (basicCtx.instance_name() != null) {
+            throw new UnsupportedLanguageFeatureException("Named interface blocks are not currently "
+                    + "supported.");
+        }
+        final Pair<List<String>, List<Type>> members = getMembers(basicCtx.member_list());
+        return new InterfaceBlock(
+                maybeLayoutQualifier,
+                interfaceQualifier,
+                basicCtx.IDENTIFIER().getText(),
+                members.a,
+                members.b,
+                Optional.empty());
+    }
+
+    @Override
+    public TypeQualifier visitInterface_qualifier(Interface_qualifierContext ctx) {
+        switch (ctx.getText()) {
+            case "in":
+                return TypeQualifier.SHADER_INPUT;
+            case "out":
+                return TypeQualifier.SHADER_OUTPUT;
+            case "uniform":
+                return TypeQualifier.UNIFORM;
+            case "buffer":
+                return TypeQualifier.BUFFER;
             default:
-              throw new RuntimeException("Unable to fold constant (unimplemented binary "
-                  + "expression) " + bexpr.getText());
-          }
-          return new IntConstantExpr(Integer.toString(fval));
+                // The above is supposed to capture all the interface qualifiers, so this
+                // indicates that the input is bad (rather than lack of support).
+                throw new RuntimeException("Unknown interface qualifier: " + ctx.getText());
         }
-        throw new RuntimeException("Unable to fold constant (unimplemented expression) "
-            + expr.getText());
-      }
+    }
 
-      private void handleArrayInfo(ArrayInfo arrayInfo) {
-        if (arrayInfo.hasSizeExpr()) {
-          arrayInfo.setConstantSizeExpr(((IntConstantExpr)reduce(arrayInfo.getSizeExpr()))
-              .getNumericValue());
+    @Override
+    public Stmt visitIteration_statement(Iteration_statementContext ctx) {
+        if (ctx.DO() != null) {
+            return new DoStmt(visitStatement(ctx.statement()), visitExpression(ctx.expression()));
         }
-      }
-
-      @Override
-      public void visitVariableDeclInfo(VariableDeclInfo variableDeclInfo) {
-        if (variableDeclInfo.hasArrayInfo()) {
-          handleArrayInfo(variableDeclInfo.getArrayInfo());
+        if (ctx.WHILE() != null) {
+            return new WhileStmt(visitCondition(ctx.condition()),
+                    visitStatement_no_new_scope(ctx.statement_no_new_scope()));
         }
-        super.visitVariableDeclInfo(variableDeclInfo);
-      }
+        assert ctx.FOR() != null;
+        return new ForStmt(visitFor_init_statement(ctx.for_init_statement()),
+                ctx.for_rest_statement().condition() == null ? null :
+                        visitCondition(ctx.for_rest_statement().condition()),
+                ctx.for_rest_statement().expression() == null ? null :
+                        visitExpression(ctx.for_rest_statement().expression()),
+                visitStatement_no_new_scope(ctx.statement_no_new_scope()));
+    }
 
-      @Override
-      public void visitStructDefinitionType(StructDefinitionType structDefinitionType) {
-        super.visitStructDefinitionType(structDefinitionType);
-        for (Type fieldType : structDefinitionType.getFieldTypes()) {
-          if (fieldType.getWithoutQualifiers() instanceof ArrayType) {
-            handleArrayInfo(((ArrayType) fieldType.getWithoutQualifiers()).getArrayInfo());
-          }
+    @Override
+    public Stmt visitJump_statement(Jump_statementContext ctx) {
+        if (ctx.CONTINUE() != null) {
+            return new ContinueStmt();
         }
-      }
-
-      @Override
-      public void visitParameterDecl(ParameterDecl parameterDecl) {
-        super.visitParameterDecl(parameterDecl);
-        if (parameterDecl.hasArrayInfo()) {
-          handleArrayInfo(parameterDecl.getArrayInfo());
+        if (ctx.BREAK() != null) {
+            return new BreakStmt();
         }
-      }
-
-      @Override
-      public void visitInterfaceBlock(InterfaceBlock interfaceBlock) {
-        super.visitInterfaceBlock(interfaceBlock);
-        for (Type memberType : interfaceBlock.getMemberTypes()) {
-          if (memberType.getWithoutQualifiers() instanceof ArrayType) {
-            handleArrayInfo(((ArrayType) memberType.getWithoutQualifiers()).getArrayInfo());
-          }
+        if (ctx.RETURN() != null) {
+            if (ctx.expression() == null) {
+                return new ReturnStmt();
+            }
+            return new ReturnStmt(visitExpression(ctx.expression()));
         }
-      }
+        assert ctx.DISCARD() != null;
+        return new DiscardStmt();
+    }
 
-      @Override
-      public void visitArrayConstructorExpr(ArrayConstructorExpr arrayConstructorExpr) {
-        super.visitArrayConstructorExpr(arrayConstructorExpr);
-        handleArrayInfo(arrayConstructorExpr.getArrayType().getArrayInfo());
-      }
-    }.visit(tu);
-    return tu;
-  }
+    @Override
+    public DefaultLayout visitLayout_defaults(Layout_defaultsContext ctx) {
+        final LayoutQualifierSequence layoutQualifierSequence =
+                visitLayout_qualifier(ctx.layout_qualifier());
+        TypeQualifier typeQualifier;
+        if (ctx.IN_TOK() != null) {
+            typeQualifier = TypeQualifier.SHADER_INPUT;
+        } else if (ctx.OUT_TOK() != null) {
+            typeQualifier = TypeQualifier.SHADER_OUTPUT;
+        } else if (ctx.UNIFORM() != null) {
+            typeQualifier = TypeQualifier.UNIFORM;
+        } else {
+            assert ctx.BUFFER() != null;
+            typeQualifier = TypeQualifier.BUFFER;
+        }
+        return new DefaultLayout(layoutQualifierSequence, typeQualifier);
+    }
 
-  public static TranslationUnit getTranslationUnit(Translation_unitContext ctx,
-                                                   ShaderKind shaderKind, boolean hasWebGlHint) {
-    /* Scan parsed AST and perform constant folding for array sizes.
-     * Doing the constant folding during AST build is not as convenient as
-     * not all of the required information may be available when needed.
+    @Override
+    public LayoutQualifierSequence visitLayout_qualifier(Layout_qualifierContext ctx) {
+        final LinkedList<LayoutQualifier> layoutQualifiers = new LinkedList<>();
+        for (Layout_qualifier_id_listContext iterator = ctx.layout_qualifier_id_list();
+             iterator != null;
+             iterator = iterator.layout_qualifier_id_list()) {
+            layoutQualifiers.addFirst(processLayoutQualifierId(iterator.layout_qualifier_id()));
+        }
+        return new LayoutQualifierSequence(layoutQualifiers);
+    }
+
+    @Override
+    public Expr visitLogical_and_expression(Logical_and_expressionContext ctx) {
+        return handleBinary(ctx.operands, ctx.operators, this::visitInclusive_or_expression);
+    }
+
+    @Override
+    public Expr visitLogical_or_expression(Logical_or_expressionContext ctx) {
+        return handleBinary(ctx.operands, ctx.operators, this::visitLogical_xor_expression);
+    }
+
+    @Override
+    public Expr visitLogical_xor_expression(Logical_xor_expressionContext ctx) {
+        return handleBinary(ctx.operands, ctx.operators, this::visitLogical_and_expression);
+    }
+
+    @Override
+    public Expr visitMultiplicative_expression(Multiplicative_expressionContext ctx) {
+        return handleBinary(ctx.operands, ctx.operators, this::visitUnary_expression);
+    }
+
+    @Override
+    public ParameterDecl visitParameter_declaration(Parameter_declarationContext ctx) {
+        List<TypeQualifier> qualifiers = getQualifiers(ctx.parameter_qualifier());
+        if (ctx.parameter_type_specifier() != null) {
+            final Type type = getType(ctx.parameter_type_specifier().type_specifier(), qualifiers);
+            return new ParameterDecl(null, type, null);
+        } else {
+            final Type type = getType(ctx.parameter_declarator().type_specifier(), qualifiers);
+            return new ParameterDecl(ctx.parameter_declarator().IDENTIFIER().getText(),
+                    type, ctx.parameter_declarator().array_specifier() == null ? null :
+                    getArrayInfo(ctx.parameter_declarator().array_specifier()));
+        }
+    }
+
+    @Override
+    public Expr visitPostfix_expression(Postfix_expressionContext ctx) {
+        if (ctx.primary_expression() != null) {
+            return visitPrimary_expression(ctx.primary_expression());
+        }
+        if (ctx.LBRACKET() != null) {
+            return new ArrayIndexExpr(visitPostfix_expression(ctx.postfix_expression()),
+                    visitExpression(ctx.integer_expression().expression()));
+        }
+        if (ctx.method_call_generic() != null) {
+            throw new UnsupportedLanguageFeatureException("Method calls are not currently supported: "
+                    + getOriginalSourceText(ctx));
+        }
+        if (ctx.IDENTIFIER() != null) {
+            return new MemberLookupExpr(visitPostfix_expression(ctx.postfix_expression()),
+                    ctx.IDENTIFIER().getText());
+        }
+        if (ctx.INC_OP() != null) {
+            return new UnaryExpr(visitPostfix_expression(ctx.postfix_expression()), UnOp.POST_INC);
+        }
+        if (ctx.DEC_OP() != null) {
+            return new UnaryExpr(visitPostfix_expression(ctx.postfix_expression()), UnOp.POST_DEC);
+        }
+        assert ctx.function_call_generic() != null;
+        Expr result = visitFunction_call_generic(ctx.function_call_generic());
+        assert result != null;
+        return result;
+    }
+
+    @Override
+    public PragmaStatement visitPragma_statement(Pragma_statementContext ctx) {
+        if (ctx.PRAGMA_OPTIMIZE_ON() != null) {
+            return PragmaStatement.OPTIMIZE_ON;
+        }
+        if (ctx.PRAGMA_OPTIMIZE_OFF() != null) {
+            return PragmaStatement.OPTIMIZE_OFF;
+        }
+        if (ctx.PRAGMA_DEBUG_ON() != null) {
+            return PragmaStatement.DEBUG_ON;
+        }
+        if (ctx.PRAGMA_DEBUG_OFF() != null) {
+            return PragmaStatement.DEBUG_OFF;
+        }
+        if (ctx.PRAGMA_INVARIANT_ALL() != null) {
+            return PragmaStatement.INVARIANT_ALL;
+        }
+        // The above captures all the possibilities for a pragma statement, so reaching the following
+        // line indicates that the shader is invalid, rather than that support is missing.
+        throw new RuntimeException("Unknown pragma statement " + ctx.getText());
+    }
+
+    @Override
+    public Expr visitPrimary_expression(Primary_expressionContext ctx) {
+        if (ctx.variable_identifier() != null) {
+            return new VariableIdentifierExpr(ctx.variable_identifier().getText());
+        }
+        if (ctx.INTCONSTANT() != null) {
+            return new IntConstantExpr(ctx.INTCONSTANT().getText());
+        }
+        if (ctx.UINTCONSTANT() != null) {
+            return new UIntConstantExpr(ctx.UINTCONSTANT().getText());
+        }
+        if (ctx.FLOATCONSTANT() != null) {
+            return new FloatConstantExpr(ctx.FLOATCONSTANT().getText());
+        }
+        if (ctx.BOOLCONSTANT() != null) {
+            if (ctx.BOOLCONSTANT().getText().equals("true")) {
+                return new BoolConstantExpr(true);
+            }
+            assert (ctx.BOOLCONSTANT().getText().equals("false"));
+            return new BoolConstantExpr(false);
+        }
+        assert ctx.LPAREN() != null;
+        return new ParenExpr(visitExpression(ctx.expression()));
+    }
+
+    @Override
+    public Expr visitRelational_expression(Relational_expressionContext ctx) {
+        return handleBinary(ctx.operands, ctx.operators, this::visitShift_expression);
+    }
+
+    @Override
+    public IfStmt visitSelection_statement(Selection_statementContext ctx) {
+        Stmt thenStmt = visitStatement(ctx.selection_rest_statement().statement(0));
+        StatementContext maybeElseBranch = ctx.selection_rest_statement().statement(1);
+        Stmt elseStmt = (maybeElseBranch == null ? null : visitStatement(maybeElseBranch));
+        return new IfStmt(visitExpression(ctx.expression()), thenStmt, elseStmt);
+    }
+
+    @Override
+    public Expr visitShift_expression(Shift_expressionContext ctx) {
+        return handleBinary(ctx.operands, ctx.operators, this::visitAdditive_expression);
+    }
+
+    @Override
+    public Stmt visitStatement(StatementContext ctx) {
+        return (Stmt) super.visitStatement(ctx);
+    }
+
+    @Override
+    public List<Stmt> visitStatement_list(Statement_listContext ctx) {
+        if (ctx.statement_list() == null) {
+            List<Stmt> result = new ArrayList<>();
+            result.add(visitStatement(ctx.statement()));
+            return result;
+        }
+        List<Stmt> result = visitStatement_list(ctx.statement_list());
+        result.add(visitStatement(ctx.statement()));
+        return result;
+    }
+
+    @Override
+    public Stmt visitStatement_no_new_scope(Statement_no_new_scopeContext ctx) {
+        return (Stmt) super.visitStatement_no_new_scope(ctx);
+    }
+
+    @Override
+    public BlockStmt visitSwitch_body(Switch_bodyContext ctx) {
+        if (ctx.case_statement_list() == null) {
+            return new BlockStmt(new ArrayList<>(), true);
+        }
+        Deque<Case_statementContext> cases = new LinkedList<>();
+        {
+            Case_statement_listContext temp = ctx.case_statement_list();
+            while (true) {
+                cases.addFirst(temp.case_statement());
+                if (temp.case_statement_list() == null) {
+                    break;
+                }
+                temp = temp.case_statement_list();
+            }
+        }
+        final List<Stmt> stmts = new ArrayList<>();
+        for (Case_statementContext caseCtx : cases) {
+            stmts.addAll(visitCase_statement(caseCtx));
+        }
+        return new BlockStmt(stmts, true);
+    }
+
+    @Override
+    public Stmt visitSwitch_statement(Switch_statementContext ctx) {
+        return new SwitchStmt(visitExpression(ctx.expression()), visitSwitch_body(ctx.switch_body()));
+    }
+
+    @Override
+    public TranslationUnit visitTranslation_unit(Translation_unitContext ctx) {
+        visitExtension_statement_list(ctx.extension_statement_list());
+        visitExternal_declaration_list(ctx.external_declaration_list());
+
+        String versionString = null;
+        if (ctx.version_statement().INTCONSTANT() != null) {
+            versionString = ctx.version_statement().INTCONSTANT().getText();
+            if (ctx.version_statement().IDENTIFIER() != null) {
+                versionString += " " + ctx.version_statement().IDENTIFIER().getText();
+            }
+        }
+        return new TranslationUnit(shaderKind,
+                versionString == null
+                        ? Optional.empty()
+                        : Optional.of(ShadingLanguageVersion.fromVersionString(versionString, hasWebGlHint)),
+                topLevelDeclarations);
+    }
+
+    @Override
+    public Expr visitUnary_expression(Unary_expressionContext ctx) {
+        if (ctx.postfix_expression() != null) {
+            return visitPostfix_expression(ctx.postfix_expression());
+        }
+        if (ctx.INC_OP() != null) {
+            return new UnaryExpr(visitUnary_expression(ctx.unary_expression()), UnOp.PRE_INC);
+        }
+        if (ctx.DEC_OP() != null) {
+            return new UnaryExpr(visitUnary_expression(ctx.unary_expression()), UnOp.PRE_DEC);
+        }
+        assert ctx.unary_operator() != null;
+        return new UnaryExpr(visitUnary_expression(ctx.unary_expression()),
+                processUnaryOperator(ctx.unary_operator()));
+    }
+
+    /**
+     * Performs constant folding for array size fields.
+     *
+     * @param tu Parsed syntax tree to scan and modify
+     * @return Modified syntax tree
      */
-    return fixUpArraySizes(new AstBuilder(shaderKind, hasWebGlHint).visitTranslation_unit(ctx));
-  }
+    private static TranslationUnit fixUpArraySizes(TranslationUnit tu) {
+        // Use a private class that extends ScopeTrackingVisitor to do the patching up.
+        new ScopeTrackingVisitor() {
+            @Override
+            public void visitArrayConstructorExpr(ArrayConstructorExpr arrayConstructorExpr) {
+                super.visitArrayConstructorExpr(arrayConstructorExpr);
+                handleArrayInfo(arrayConstructorExpr.getArrayType().getArrayInfo());
+            }
 
-  @Override
-  public TranslationUnit visitTranslation_unit(Translation_unitContext ctx) {
-    visitExtension_statement_list(ctx.extension_statement_list());
-    visitExternal_declaration_list(ctx.external_declaration_list());
+            @Override
+            public void visitInterfaceBlock(InterfaceBlock interfaceBlock) {
+                super.visitInterfaceBlock(interfaceBlock);
+                for (Type memberType : interfaceBlock.getMemberTypes()) {
+                    if (memberType.getWithoutQualifiers() instanceof ArrayType) {
+                        handleArrayInfo(((ArrayType) memberType.getWithoutQualifiers()).getArrayInfo());
+                    }
+                }
+            }
 
-    String versionString = null;
-    if (ctx.version_statement().INTCONSTANT() != null) {
-      versionString = ctx.version_statement().INTCONSTANT().getText();
-      if (ctx.version_statement().IDENTIFIER() != null) {
-        versionString += " " + ctx.version_statement().IDENTIFIER().getText();
-      }
+            @Override
+            public void visitParameterDecl(ParameterDecl parameterDecl) {
+                super.visitParameterDecl(parameterDecl);
+                if (parameterDecl.hasArrayInfo()) {
+                    handleArrayInfo(parameterDecl.getArrayInfo());
+                }
+            }
+
+            @Override
+            public void visitStructDefinitionType(StructDefinitionType structDefinitionType) {
+                super.visitStructDefinitionType(structDefinitionType);
+                for (Type fieldType : structDefinitionType.getFieldTypes()) {
+                    if (fieldType.getWithoutQualifiers() instanceof ArrayType) {
+                        handleArrayInfo(((ArrayType) fieldType.getWithoutQualifiers()).getArrayInfo());
+                    }
+                }
+            }
+
+            @Override
+            public void visitVariableDeclInfo(VariableDeclInfo variableDeclInfo) {
+                if (variableDeclInfo.hasArrayInfo()) {
+                    handleArrayInfo(variableDeclInfo.getArrayInfo());
+                }
+                super.visitVariableDeclInfo(variableDeclInfo);
+            }
+
+            private void handleArrayInfo(ArrayInfo arrayInfo) {
+                if (arrayInfo.hasSizeExpr()) {
+                    arrayInfo.setConstantSizeExpr(((IntConstantExpr) reduce(arrayInfo.getSizeExpr()))
+                            .getNumericValue());
+                }
+            }
+
+            /**
+             * Attempt to reduce expression, or throw exception if failed.
+             * @param expr Expression to fold
+             * @return Folded expression
+             */
+            private Expr reduce(Expr expr) {
+
+                if (expr instanceof IntConstantExpr) {
+                    return expr;
+                }
+                if (expr instanceof VariableIdentifierExpr) {
+                    Expr newexpr =
+                            getCurrentScope()
+                                    .lookupScopeEntry(((VariableIdentifierExpr) expr).getName())
+                                    .getVariableDeclInfo()
+                                    .getInitializer()
+                                    .getExpr();
+                    return reduce(newexpr);
+                }
+                if (expr instanceof ParenExpr) {
+                    return reduce(((ParenExpr) expr).getExpr());
+                }
+                if (expr instanceof BinaryExpr) {
+                    BinaryExpr bexpr = (BinaryExpr) expr;
+
+                    Expr lexpr = reduce(bexpr.getLhs());
+                    Expr rexpr = reduce(bexpr.getRhs());
+
+                    if (!(lexpr instanceof IntConstantExpr && rexpr instanceof IntConstantExpr)) {
+                        throw new RuntimeException("Unable to fold constant (leaf of binary expression did "
+                                + "not fold)" + bexpr.getText());
+                    }
+
+                    int lval = ((IntConstantExpr) lexpr).getNumericValue();
+                    int rval = ((IntConstantExpr) rexpr).getNumericValue();
+                    int fval = 0;
+                    switch (bexpr.getOp()) {
+                        case MOD:
+                            fval = lval % rval;
+                            break;
+                        case MUL:
+                            fval = lval * rval;
+                            break;
+                        case DIV:
+                            if (rval == 0) {
+                                throw new RuntimeException("Division by zero while folding constant "
+                                        + bexpr.getText());
+                            }
+                            fval = lval / rval;
+                            break;
+                        case ADD:
+                            fval = lval + rval;
+                            break;
+                        case SUB:
+                            fval = lval - rval;
+                            break;
+                        case BAND:
+                            fval = lval & rval;
+                            break;
+                        case BOR:
+                            fval = lval | rval;
+                            break;
+                        case BXOR:
+                            fval = lval ^ rval;
+                            break;
+                        case LAND:
+                            fval = ((lval != 0) && (rval != 0)) ? 1 : 0;
+                            break;
+                        case LOR:
+                            fval = ((lval != 0) || (rval != 0)) ? 1 : 0;
+                            break;
+                        case LXOR:
+                            fval = ((lval == 0) != (rval == 0)) ? 1 : 0;
+                            break;
+                        case SHL:
+                            fval = lval << rval;
+                            break;
+                        case SHR:
+                            fval = lval >> rval;
+                            break;
+                        case LT:
+                            fval = (lval < rval) ? 1 : 0;
+                            break;
+                        case GT:
+                            fval = (lval > rval) ? 1 : 0;
+                            break;
+                        case LE:
+                            fval = (lval <= rval) ? 1 : 0;
+                            break;
+                        case GE:
+                            fval = (lval >= rval) ? 1 : 0;
+                            break;
+                        case EQ:
+                            fval = (lval == rval) ? 1 : 0;
+                            break;
+                        case NE:
+                            fval = (lval != rval) ? 1 : 0;
+                            break;
+                        default:
+                            throw new RuntimeException("Unable to fold constant (unimplemented binary "
+                                    + "expression) " + bexpr.getText());
+                    }
+                    return new IntConstantExpr(Integer.toString(fval));
+                }
+                throw new RuntimeException("Unable to fold constant (unimplemented expression) "
+                        + expr.getText());
+            }
+        }.visit(tu);
+        return tu;
     }
-    return new TranslationUnit(shaderKind,
-            versionString == null
-            ? Optional.empty()
-            : Optional.of(ShadingLanguageVersion.fromVersionString(versionString, hasWebGlHint)),
-        topLevelDeclarations);
-  }
 
-  @Override
-  public Void visitExternal_declaration_list(External_declaration_listContext ctx) {
-    // These lists can get very large, so that recursion leads to stack overflow.
-    // Hence we compute a list of all list prefixes and then go through it iteratively.
-    Deque<External_declaration_listContext> declarations = new LinkedList<>();
-    {
-      External_declaration_listContext temp = ctx;
-      while (true) {
-        declarations.addFirst(temp);
-        if (temp.single != null) {
-          break;
+    private ArrayInfo getArrayInfo(Array_specifierContext arraySpecifierContext) {
+        if (arraySpecifierContext.array_specifier() != null) {
+            throw new UnsupportedLanguageFeatureException("Not yet supporting multi-dimensional arrays");
         }
-        temp = temp.prefix;
-      }
+        if (arraySpecifierContext.constant_expression() == null) {
+            // An array with unspecified length.
+            return new ArrayInfo();
+        }
+        final Expr expr = (Expr) visit(arraySpecifierContext.constant_expression());
+        return new ArrayInfo(expr);
     }
-    for (External_declaration_listContext decl : declarations) {
-      if (decl.single != null) {
-        assert decl.prefix == null;
-        assert decl.lastDecl == null;
-        assert decl.lastExtension == null;
-        addTopLevelDeclaration((Declaration) visitExternal_declaration(decl.single));
-      } else {
-        assert decl.prefix != null;
-        if (decl.lastDecl != null) {
-          assert decl.lastExtension == null;
-          addTopLevelDeclaration((Declaration) visitExternal_declaration(decl.lastDecl));
+
+    private BinOp getBinOp(Token token) {
+        for (BinOp op : BinOp.values()) {
+            if (token.getText().equals(op.getText())) {
+                return op;
+            }
+        }
+        // The BinOp class includes all binary operators, so the following indicates an invalid shader,
+        // rather than lack of support.
+        throw new RuntimeException("Unknown binary operator: " + token.getText());
+    }
+
+    private BuiltinType getBuiltinType(Builtin_type_specifier_nonarrayContext ctx) {
+        if (ctx.VOID_TOK() != null) {
+            return VoidType.VOID;
+        } else if (ctx.FLOAT_TOK() != null) {
+            return BasicType.FLOAT;
+        } else if (ctx.INT_TOK() != null) {
+            return BasicType.INT;
+        } else if (ctx.UINT_TOK() != null) {
+            return BasicType.UINT;
+        } else if (ctx.BOOL_TOK() != null) {
+            return BasicType.BOOL;
+        } else if (ctx.VEC2() != null) {
+            return BasicType.VEC2;
+        } else if (ctx.VEC3() != null) {
+            return BasicType.VEC3;
+        } else if (ctx.VEC4() != null) {
+            return BasicType.VEC4;
+        } else if (ctx.BVEC2() != null) {
+            return BasicType.BVEC2;
+        } else if (ctx.BVEC3() != null) {
+            return BasicType.BVEC3;
+        } else if (ctx.BVEC4() != null) {
+            return BasicType.BVEC4;
+        } else if (ctx.IVEC2() != null) {
+            return BasicType.IVEC2;
+        } else if (ctx.IVEC3() != null) {
+            return BasicType.IVEC3;
+        } else if (ctx.IVEC4() != null) {
+            return BasicType.IVEC4;
+        } else if (ctx.UVEC2() != null) {
+            return BasicType.UVEC2;
+        } else if (ctx.UVEC3() != null) {
+            return BasicType.UVEC3;
+        } else if (ctx.UVEC4() != null) {
+            return BasicType.UVEC4;
+        } else if (ctx.MAT2X2() != null) {
+            return BasicType.MAT2X2;
+        } else if (ctx.MAT2X3() != null) {
+            return BasicType.MAT2X3;
+        } else if (ctx.MAT2X4() != null) {
+            return BasicType.MAT2X4;
+        } else if (ctx.MAT3X2() != null) {
+            return BasicType.MAT3X2;
+        } else if (ctx.MAT3X3() != null) {
+            return BasicType.MAT3X3;
+        } else if (ctx.MAT3X4() != null) {
+            return BasicType.MAT3X4;
+        } else if (ctx.MAT4X2() != null) {
+            return BasicType.MAT4X2;
+        } else if (ctx.MAT4X3() != null) {
+            return BasicType.MAT4X3;
+        } else if (ctx.MAT4X4() != null) {
+            return BasicType.MAT4X4;
+        } else if (ctx.SAMPLER1D() != null) {
+            return SamplerType.SAMPLER1D;
+        } else if (ctx.SAMPLER2D() != null) {
+            return SamplerType.SAMPLER2D;
+        } else if (ctx.SAMPLER2DRECT() != null) {
+            return SamplerType.SAMPLER2DRECT;
+        } else if (ctx.SAMPLER3D() != null) {
+            return SamplerType.SAMPLER3D;
+        } else if (ctx.SAMPLERCUBE() != null) {
+            return SamplerType.SAMPLERCUBE;
+        } else if (ctx.SAMPLEREXTERNALOES() != null) {
+            return SamplerType.SAMPLEREXTERNALOES;
+        } else if (ctx.SAMPLER1DSHADOW() != null) {
+            return SamplerType.SAMPLER1DSHADOW;
+        } else if (ctx.SAMPLER2DSHADOW() != null) {
+            return SamplerType.SAMPLER2DSHADOW;
+        } else if (ctx.SAMPLER2DRECTSHADOW() != null) {
+            return SamplerType.SAMPLER2DRECTSHADOW;
+        } else if (ctx.SAMPLERCUBESHADOW() != null) {
+            return SamplerType.SAMPLERCUBESHADOW;
+        } else if (ctx.SAMPLER1DARRAY() != null) {
+            return SamplerType.SAMPLER1DARRAY;
+        } else if (ctx.SAMPLER2DARRAY() != null) {
+            return SamplerType.SAMPLER2DARRAY;
+        } else if (ctx.SAMPLER1DARRAYSHADOW() != null) {
+            return SamplerType.SAMPLER1DARRAYSHADOW;
+        } else if (ctx.SAMPLER2DARRAYSHADOW() != null) {
+            return SamplerType.SAMPLER2DARRAYSHADOW;
+        } else if (ctx.SAMPLERBUFFER() != null) {
+            return SamplerType.SAMPLERBUFFER;
+        } else if (ctx.SAMPLERCUBEARRAY() != null) {
+            return SamplerType.SAMPLERCUBEARRAY;
+        } else if (ctx.SAMPLERCUBEARRAYSHADOW() != null) {
+            return SamplerType.SAMPLERCUBEARRAYSHADOW;
+        } else if (ctx.ISAMPLER1D() != null) {
+            return SamplerType.ISAMPLER1D;
+        } else if (ctx.ISAMPLER2D() != null) {
+            return SamplerType.ISAMPLER2D;
+        } else if (ctx.ISAMPLER2DRECT() != null) {
+            return SamplerType.ISAMPLER2DRECT;
+        } else if (ctx.ISAMPLER3D() != null) {
+            return SamplerType.ISAMPLER3D;
+        } else if (ctx.ISAMPLERCUBE() != null) {
+            return SamplerType.ISAMPLERCUBE;
+        } else if (ctx.ISAMPLER1DARRAY() != null) {
+            return SamplerType.ISAMPLER1DARRAY;
+        } else if (ctx.ISAMPLER2DARRAY() != null) {
+            return SamplerType.ISAMPLER2DARRAY;
+        } else if (ctx.ISAMPLERBUFFER() != null) {
+            return SamplerType.ISAMPLERBUFFER;
+        } else if (ctx.ISAMPLERCUBEARRAY() != null) {
+            return SamplerType.ISAMPLERCUBEARRAY;
+        } else if (ctx.USAMPLER1D() != null) {
+            return SamplerType.USAMPLER1D;
+        } else if (ctx.USAMPLER2D() != null) {
+            return SamplerType.USAMPLER2D;
+        } else if (ctx.USAMPLER2DRECT() != null) {
+            return SamplerType.USAMPLER2DRECT;
+        } else if (ctx.USAMPLER3D() != null) {
+            return SamplerType.USAMPLER3D;
+        } else if (ctx.USAMPLERCUBE() != null) {
+            return SamplerType.USAMPLERCUBE;
+        } else if (ctx.USAMPLER1DARRAY() != null) {
+            return SamplerType.USAMPLER1DARRAY;
+        } else if (ctx.USAMPLER2DARRAY() != null) {
+            return SamplerType.USAMPLER2DARRAY;
+        } else if (ctx.USAMPLERBUFFER() != null) {
+            return SamplerType.USAMPLERBUFFER;
+        } else if (ctx.USAMPLERCUBEARRAY() != null) {
+            return SamplerType.USAMPLERCUBEARRAY;
+        } else if (ctx.SAMPLER2DMS() != null) {
+            return SamplerType.SAMPLER2DMS;
+        } else if (ctx.ISAMPLER2DMS() != null) {
+            return SamplerType.ISAMPLER2DMS;
+        } else if (ctx.USAMPLER2DMS() != null) {
+            return SamplerType.USAMPLER2DMS;
+        } else if (ctx.SAMPLER2DMSARRAY() != null) {
+            return SamplerType.SAMPLER2DMSARRAY;
+        } else if (ctx.ISAMPLER2DMSARRAY() != null) {
+            return SamplerType.ISAMPLER2DMSARRAY;
+        } else if (ctx.USAMPLER2DMSARRAY() != null) {
+            return SamplerType.USAMPLER2DMSARRAY;
+        } else if (ctx.IMAGE1D() != null) {
+            return ImageType.IMAGE1D;
+        } else if (ctx.IMAGE2D() != null) {
+            return ImageType.IMAGE2D;
+        } else if (ctx.IMAGE3D() != null) {
+            return ImageType.IMAGE3D;
+        } else if (ctx.IMAGE2DRECT() != null) {
+            return ImageType.IMAGE2DRECT;
+        } else if (ctx.IMAGECUBE() != null) {
+            return ImageType.IMAGECUBE;
+        } else if (ctx.IMAGEBUFFER() != null) {
+            return ImageType.IMAGEBUFFER;
+        } else if (ctx.IMAGE1DARRAY() != null) {
+            return ImageType.IMAGE1DARRAY;
+        } else if (ctx.IMAGE2DARRAY() != null) {
+            return ImageType.IMAGE2DARRAY;
+        } else if (ctx.IMAGECUBEARRAY() != null) {
+            return ImageType.IMAGECUBEARRAY;
+        } else if (ctx.IMAGE2DMS() != null) {
+            return ImageType.IMAGE2DMS;
+        } else if (ctx.IMAGE2DMSARRAY() != null) {
+            return ImageType.IMAGE2DMSARRAY;
+        } else if (ctx.IIMAGE1D() != null) {
+            return ImageType.IIMAGE1D;
+        } else if (ctx.IIMAGE2D() != null) {
+            return ImageType.IIMAGE2D;
+        } else if (ctx.IIMAGE3D() != null) {
+            return ImageType.IIMAGE3D;
+        } else if (ctx.IIMAGE2DRECT() != null) {
+            return ImageType.IIMAGE2DRECT;
+        } else if (ctx.IIMAGECUBE() != null) {
+            return ImageType.IIMAGECUBE;
+        } else if (ctx.IIMAGEBUFFER() != null) {
+            return ImageType.IIMAGEBUFFER;
+        } else if (ctx.IIMAGE1DARRAY() != null) {
+            return ImageType.IIMAGE1DARRAY;
+        } else if (ctx.IIMAGE2DARRAY() != null) {
+            return ImageType.IIMAGE2DARRAY;
+        } else if (ctx.IIMAGECUBEARRAY() != null) {
+            return ImageType.IIMAGECUBEARRAY;
+        } else if (ctx.IIMAGE2DMS() != null) {
+            return ImageType.IIMAGE2DMS;
+        } else if (ctx.IIMAGE2DMSARRAY() != null) {
+            return ImageType.IIMAGE2DMSARRAY;
+        } else if (ctx.UIMAGE1D() != null) {
+            return ImageType.UIMAGE1D;
+        } else if (ctx.UIMAGE2D() != null) {
+            return ImageType.UIMAGE2D;
+        } else if (ctx.UIMAGE3D() != null) {
+            return ImageType.UIMAGE3D;
+        } else if (ctx.UIMAGE2DRECT() != null) {
+            return ImageType.UIMAGE2DRECT;
+        } else if (ctx.UIMAGECUBE() != null) {
+            return ImageType.UIMAGECUBE;
+        } else if (ctx.UIMAGEBUFFER() != null) {
+            return ImageType.UIMAGEBUFFER;
+        } else if (ctx.UIMAGE1DARRAY() != null) {
+            return ImageType.UIMAGE1DARRAY;
+        } else if (ctx.UIMAGE2DARRAY() != null) {
+            return ImageType.UIMAGE2DARRAY;
+        } else if (ctx.UIMAGECUBEARRAY() != null) {
+            return ImageType.UIMAGECUBEARRAY;
+        } else if (ctx.UIMAGE2DMS() != null) {
+            return ImageType.UIMAGE2DMS;
+        } else if (ctx.UIMAGE2DMSARRAY() != null) {
+            return ImageType.UIMAGE2DMSARRAY;
         } else {
-          assert decl.lastExtension != null;
-          addTopLevelDeclaration(visitExtension_statement(decl.lastExtension));
+            assert ctx.ATOMIC_UINT() != null;
+            return AtomicIntType.ATOMIC_UINT;
         }
-      }
     }
-    return null;
-  }
 
-  @Override
-  public Void visitExtension_statement_list(Extension_statement_listContext ctx) {
-    if (ctx.extension_statement() != null) {
-      visitExtension_statement_list(ctx.extension_statement_list());
-      addTopLevelDeclaration(visitExtension_statement(ctx.extension_statement()));
+    private String getCallee(Function_identifierContext ctx) {
+        assert ctx.variable_identifier() != null;
+        return ctx.variable_identifier().getText();
     }
-    return null;
-  }
 
-  @Override
-  public Declaration visitDeclaration(DeclarationContext ctx) {
-    if (ctx.init_declarator_list() != null) {
-      return visitInit_declarator_list(ctx.init_declarator_list());
+    private Pair<List<String>, List<Type>> getMembers(Member_listContext memberListContext) {
+        final LinkedList<String> fieldNames = new LinkedList<>();
+        final LinkedList<Type> fieldTypes = new LinkedList<>();
+        for (Member_listContext ctx = memberListContext; ctx != null;
+             ctx = ctx.member_list()) {
+            final Type baseType =
+                    visitFully_specified_type(ctx.member_declaration().fully_specified_type());
+            for (Struct_declarator_listContext declarators = ctx.member_declaration()
+                    .struct_declarator_list();
+                 declarators != null;
+                 declarators = declarators.struct_declarator_list()) {
+                fieldNames.addFirst(declarators.struct_declarator().IDENTIFIER().getText());
+                if (declarators.struct_declarator().array_specifier() == null) {
+                    fieldTypes.addFirst(baseType);
+                } else {
+                    final ArrayType arrayType = new ArrayType(baseType.getWithoutQualifiers(),
+                            getArrayInfo(declarators.struct_declarator().array_specifier()));
+                    fieldTypes.addFirst(baseType instanceof QualifiedType
+                            ? new QualifiedType(arrayType, ((QualifiedType) baseType).getQualifiers())
+                            : arrayType);
+                }
+            }
+        }
+        return new Pair<>(fieldNames, fieldTypes);
     }
-    if (ctx.precision_qualifier() != null) {
-      return new PrecisionDeclaration(getOriginalSourceText(ctx));
-    }
-    if (ctx.function_prototype() != null) {
-      return visitFunction_prototype(ctx.function_prototype());
-    }
-    if (ctx.interface_block() != null) {
-      return visitInterface_block(ctx.interface_block());
-    }
-    // The above captures all the declaration kinds, so this indicates a bad input
-    // rather than lack of support.
-    throw new RuntimeException("Unknown declaration at line " + ctx.start.getLine() + ": "
-        + getOriginalSourceText(ctx));
-  }
 
-  @Override
-  public Declaration visitInterface_block(Interface_blockContext ctx) {
-    final Optional<LayoutQualifierSequence> maybeLayoutQualifier = ctx.layout_qualifier() == null
-        ? Optional.empty()
-        : Optional.of(visitLayout_qualifier(ctx.layout_qualifier()));
-    final Basic_interface_blockContext basicCtx = ctx.basic_interface_block();
-    final TypeQualifier interfaceQualifier =
-        visitInterface_qualifier(basicCtx.interface_qualifier());
-    if (basicCtx.instance_name() != null) {
-      throw new UnsupportedLanguageFeatureException("Named interface blocks are not currently "
-          + "supported.");
+    private String getOriginalSourceText(ParserRuleContext ctx) {
+        return ctx.start.getInputStream()
+                .getText(new Interval(ctx.start.getStartIndex(), ctx.stop.getStopIndex()));
     }
-    final Pair<List<String>, List<Type>> members = getMembers(basicCtx.member_list());
-    return new InterfaceBlock(
-        maybeLayoutQualifier,
-        interfaceQualifier,
-        basicCtx.IDENTIFIER().getText(),
-        members.a,
-        members.b,
-        Optional.empty());
-  }
 
-  @Override
-  public TypeQualifier visitInterface_qualifier(Interface_qualifierContext ctx) {
-    switch (ctx.getText()) {
-      case "in":
-        return TypeQualifier.SHADER_INPUT;
-      case "out":
-        return TypeQualifier.SHADER_OUTPUT;
-      case "uniform":
-        return TypeQualifier.UNIFORM;
-      case "buffer":
-        return TypeQualifier.BUFFER;
-      default:
-        // The above is supposed to capture all the interface qualifiers, so this
-        // indicates that the input is bad (rather than lack of support).
-        throw new RuntimeException("Unknown interface qualifier: " + ctx.getText());
-    }
-  }
-
-  @Override
-  public FunctionPrototype visitFunction_prototype(Function_prototypeContext ctx) {
-    Function_headerContext header = ctx.function_declarator().function_header();
-    if (header != null) {
-      Type returnType =
-          visitFully_specified_type(header.fully_specified_type());
-      String name = header.variable_identifier().getText();
-      return new FunctionPrototype(name, returnType, new ArrayList<>());
-    }
-    Function_header_with_parametersContext fhp = ctx.function_declarator()
-        .function_header_with_parameters();
-    List<ParameterDecl> parameters = new LinkedList<>();
-
-    final String badUseOfVoidMessage = "Unexpected use of 'void' in a list of parameters; void "
-        + "should be the only parameter if used to indicate absence of parameters.";
-
-    while (fhp.function_header_with_parameters() != null) {
-      final ParameterDecl parameterDecl = visitParameter_declaration(fhp.parameter_declaration());
-      if (parameterDecl.getType().getWithoutQualifiers() == VoidType.VOID) {
-        // This is a 'void' parameter, and it is not the final parameter under consideration.
-        // That's illegal, because 'void' can only be used in isolation, to indicate that there
-        // are no parameters.
-        throw new RuntimeException(badUseOfVoidMessage);
-      }
-      parameters.add(0, parameterDecl);
-      fhp = fhp.function_header_with_parameters();
-    }
-    final ParameterDecl parameterDecl = visitParameter_declaration(fhp.parameter_declaration());
-    if (parameterDecl.getType().getWithoutQualifiers() == VoidType.VOID) {
-      // If this 'void' parameter is the *only* parameter that's OK; we just ignore it.  Otherwise
-      // it is not OK, as we cannot use 'void' in the context of multiple parameters.
-      if (!parameters.isEmpty()) {
-        throw new RuntimeException(badUseOfVoidMessage);
-      }
-    } else {
-      parameters.add(0, parameterDecl);
-    }
-    header = fhp.function_header();
-    Type returnType =
-        visitFully_specified_type(header.fully_specified_type());
-    String name = header.variable_identifier().getText();
-    return new FunctionPrototype(name, returnType, parameters);
-  }
-
-  @Override
-  public Type visitFully_specified_type(
-      Fully_specified_typeContext ctx) {
-    return getType(ctx.type_qualifier(), ctx.type_specifier());
-  }
-
-  private Type getType(Type_qualifierContext qualifiersCtx,
-                                                         Type_specifierContext specifierCtx) {
-    return getType(specifierCtx, new ArrayList<>(getQualifiers(qualifiersCtx)));
-  }
-
-  private Type getType(Type_specifierContext typeSpecifier,
-                               List<TypeQualifier> qualifiers) {
-    if (typeSpecifier.array_specifier() != null) {
-      throw new UnsupportedLanguageFeatureException("Array information specified at the base type"
-          + ", e.g. 'int[3] v', is not currently supported; use e.g. 'int A[3]' instead");
-    }
-    if (typeSpecifier.type_specifier_nonarray().builtin_type_specifier_nonarray() != null) {
-      return new QualifiedType(getBuiltinType(typeSpecifier.type_specifier_nonarray()
-              .builtin_type_specifier_nonarray()), qualifiers);
-    } else if (typeSpecifier.type_specifier_nonarray().struct_specifier() != null) {
-      return getStructDefinitionAndRecordStructType(
-          typeSpecifier.type_specifier_nonarray().struct_specifier());
-    } else {
-      assert typeSpecifier.type_specifier_nonarray().IDENTIFIER() != null;
-      final StructNameType maybeStructNameType = new StructNameType(
-          typeSpecifier.type_specifier_nonarray().IDENTIFIER().getText());
-      return new QualifiedType(maybeStructNameType, qualifiers);
-    }
-  }
-
-  private StructDefinitionType getStructDefinitionAndRecordStructType(
-      Struct_specifierContext ctx) {
-    StructNameType structNameType = null;
-    if (ctx.IDENTIFIER() != null) {
-      structNameType = new StructNameType(ctx.IDENTIFIER().getText());
-      assert !structs.contains(structNameType);
-      structs.add(structNameType);
-    }
-    return makeStructDefinition(Optional.ofNullable(structNameType), ctx.member_list());
-  }
-
-  private Pair<List<String>, List<Type>> getMembers(Member_listContext memberListContext) {
-    final LinkedList<String> fieldNames = new LinkedList<>();
-    final LinkedList<Type> fieldTypes = new LinkedList<>();
-    for (Member_listContext ctx = memberListContext; ctx != null;
-        ctx = ctx.member_list()) {
-      final Type baseType =
-          visitFully_specified_type(ctx.member_declaration().fully_specified_type());
-      for (Struct_declarator_listContext declarators = ctx.member_declaration()
-          .struct_declarator_list();
-          declarators != null;
-          declarators = declarators.struct_declarator_list()) {
-        fieldNames.addFirst(declarators.struct_declarator().IDENTIFIER().getText());
-        if (declarators.struct_declarator().array_specifier() == null) {
-          fieldTypes.addFirst(baseType);
+    private List<TypeQualifier> getQualifiers(Parameter_qualifierContext ctx) {
+        if (ctx.parameter_qualifier() == null) {
+            return new LinkedList<>();
+        }
+        List<TypeQualifier> result = getQualifiers(ctx.parameter_qualifier());
+        if (ctx.CONST_TOK() != null) {
+            result.add(0, TypeQualifier.CONST);
+        } else if (ctx.PRECISE() != null) {
+            result.add(0, TypeQualifier.PRECISE);
+        } else if (ctx.parameter_direction_qualifier() != null) {
+            if (ctx.parameter_direction_qualifier().IN_TOK() != null) {
+                result.add(TypeQualifier.IN_PARAM);
+            } else if (ctx.parameter_direction_qualifier().OUT_TOK() != null) {
+                result.add(TypeQualifier.OUT_PARAM);
+            } else {
+                assert ctx.parameter_direction_qualifier().INOUT_TOK() != null;
+                result.add(TypeQualifier.INOUT_PARAM);
+            }
         } else {
-          final ArrayType arrayType = new ArrayType(baseType.getWithoutQualifiers(),
-              getArrayInfo(declarators.struct_declarator().array_specifier()));
-          fieldTypes.addFirst(baseType instanceof QualifiedType
-              ? new QualifiedType(arrayType, ((QualifiedType) baseType).getQualifiers())
-              : arrayType);
+            assert ctx.precision_qualifier() != null;
+            if (ctx.precision_qualifier().HIGHP() != null) {
+                result.add(TypeQualifier.HIGHP);
+            } else if (ctx.precision_qualifier().MEDIUMP() != null) {
+                result.add(TypeQualifier.MEDIUMP);
+            } else {
+                assert ctx.precision_qualifier().LOWP() != null;
+                result.add(TypeQualifier.LOWP);
+            }
         }
-      }
-    }
-    return new Pair<>(fieldNames, fieldTypes);
-  }
-
-  private StructDefinitionType makeStructDefinition(Optional<StructNameType> structNameType,
-                                                    Member_listContext memberListContext) {
-    final Pair<List<String>, List<Type>> members = getMembers(memberListContext);
-    return new StructDefinitionType(structNameType, members.a, members.b);
-  }
-
-  private ArrayInfo getArrayInfo(Array_specifierContext arraySpecifierContext) {
-    if (arraySpecifierContext.array_specifier() != null) {
-      throw new UnsupportedLanguageFeatureException("Not yet supporting multi-dimensional arrays");
-    }
-    if (arraySpecifierContext.constant_expression() == null) {
-      // An array with unspecified length.
-      return new ArrayInfo();
-    }
-    final Expr expr = (Expr) visit(arraySpecifierContext.constant_expression());
-    return new ArrayInfo(expr);
-  }
-
-  private BuiltinType getBuiltinType(Builtin_type_specifier_nonarrayContext ctx) {
-    if (ctx.VOID_TOK() != null) {
-      return VoidType.VOID;
-    } else if (ctx.FLOAT_TOK() != null) {
-      return BasicType.FLOAT;
-    } else if (ctx.INT_TOK() != null) {
-      return BasicType.INT;
-    } else if (ctx.UINT_TOK() != null) {
-      return BasicType.UINT;
-    } else if (ctx.BOOL_TOK() != null) {
-      return BasicType.BOOL;
-    } else if (ctx.VEC2() != null) {
-      return BasicType.VEC2;
-    } else if (ctx.VEC3() != null) {
-      return BasicType.VEC3;
-    } else if (ctx.VEC4() != null) {
-      return BasicType.VEC4;
-    } else if (ctx.BVEC2() != null) {
-      return BasicType.BVEC2;
-    } else if (ctx.BVEC3() != null) {
-      return BasicType.BVEC3;
-    } else if (ctx.BVEC4() != null) {
-      return BasicType.BVEC4;
-    } else if (ctx.IVEC2() != null) {
-      return BasicType.IVEC2;
-    } else if (ctx.IVEC3() != null) {
-      return BasicType.IVEC3;
-    } else if (ctx.IVEC4() != null) {
-      return BasicType.IVEC4;
-    } else if (ctx.UVEC2() != null) {
-      return BasicType.UVEC2;
-    } else if (ctx.UVEC3() != null) {
-      return BasicType.UVEC3;
-    } else if (ctx.UVEC4() != null) {
-      return BasicType.UVEC4;
-    } else if (ctx.MAT2X2() != null) {
-      return BasicType.MAT2X2;
-    } else if (ctx.MAT2X3() != null) {
-      return BasicType.MAT2X3;
-    } else if (ctx.MAT2X4() != null) {
-      return BasicType.MAT2X4;
-    } else if (ctx.MAT3X2() != null) {
-      return BasicType.MAT3X2;
-    } else if (ctx.MAT3X3() != null) {
-      return BasicType.MAT3X3;
-    } else if (ctx.MAT3X4() != null) {
-      return BasicType.MAT3X4;
-    } else if (ctx.MAT4X2() != null) {
-      return BasicType.MAT4X2;
-    } else if (ctx.MAT4X3() != null) {
-      return BasicType.MAT4X3;
-    } else if (ctx.MAT4X4() != null) {
-      return BasicType.MAT4X4;
-    } else if (ctx.SAMPLER1D() != null) {
-      return SamplerType.SAMPLER1D;
-    } else if (ctx.SAMPLER2D() != null) {
-      return SamplerType.SAMPLER2D;
-    } else if (ctx.SAMPLER2DRECT() != null) {
-      return SamplerType.SAMPLER2DRECT;
-    } else if (ctx.SAMPLER3D() != null) {
-      return SamplerType.SAMPLER3D;
-    } else if (ctx.SAMPLERCUBE() != null) {
-      return SamplerType.SAMPLERCUBE;
-    } else if (ctx.SAMPLEREXTERNALOES() != null) {
-      return SamplerType.SAMPLEREXTERNALOES;
-    } else if (ctx.SAMPLER1DSHADOW() != null) {
-      return SamplerType.SAMPLER1DSHADOW;
-    } else if (ctx.SAMPLER2DSHADOW() != null) {
-      return SamplerType.SAMPLER2DSHADOW;
-    } else if (ctx.SAMPLER2DRECTSHADOW() != null) {
-      return SamplerType.SAMPLER2DRECTSHADOW;
-    } else if (ctx.SAMPLERCUBESHADOW() != null) {
-      return SamplerType.SAMPLERCUBESHADOW;
-    } else if (ctx.SAMPLER1DARRAY() != null) {
-      return SamplerType.SAMPLER1DARRAY;
-    } else if (ctx.SAMPLER2DARRAY() != null) {
-      return SamplerType.SAMPLER2DARRAY;
-    } else if (ctx.SAMPLER1DARRAYSHADOW() != null) {
-      return SamplerType.SAMPLER1DARRAYSHADOW;
-    } else if (ctx.SAMPLER2DARRAYSHADOW() != null) {
-      return SamplerType.SAMPLER2DARRAYSHADOW;
-    } else if (ctx.SAMPLERBUFFER() != null) {
-      return SamplerType.SAMPLERBUFFER;
-    } else if (ctx.SAMPLERCUBEARRAY() != null) {
-      return SamplerType.SAMPLERCUBEARRAY;
-    } else if (ctx.SAMPLERCUBEARRAYSHADOW() != null) {
-      return SamplerType.SAMPLERCUBEARRAYSHADOW;
-    } else if (ctx.ISAMPLER1D() != null) {
-      return SamplerType.ISAMPLER1D;
-    } else if (ctx.ISAMPLER2D() != null) {
-      return SamplerType.ISAMPLER2D;
-    } else if (ctx.ISAMPLER2DRECT() != null) {
-      return SamplerType.ISAMPLER2DRECT;
-    } else if (ctx.ISAMPLER3D() != null) {
-      return SamplerType.ISAMPLER3D;
-    } else if (ctx.ISAMPLERCUBE() != null) {
-      return SamplerType.ISAMPLERCUBE;
-    } else if (ctx.ISAMPLER1DARRAY() != null) {
-      return SamplerType.ISAMPLER1DARRAY;
-    } else if (ctx.ISAMPLER2DARRAY() != null) {
-      return SamplerType.ISAMPLER2DARRAY;
-    } else if (ctx.ISAMPLERBUFFER() != null) {
-      return SamplerType.ISAMPLERBUFFER;
-    } else if (ctx.ISAMPLERCUBEARRAY() != null) {
-      return SamplerType.ISAMPLERCUBEARRAY;
-    } else if (ctx.USAMPLER1D() != null) {
-      return SamplerType.USAMPLER1D;
-    } else if (ctx.USAMPLER2D() != null) {
-      return SamplerType.USAMPLER2D;
-    } else if (ctx.USAMPLER2DRECT() != null) {
-      return SamplerType.USAMPLER2DRECT;
-    } else if (ctx.USAMPLER3D() != null) {
-      return SamplerType.USAMPLER3D;
-    } else if (ctx.USAMPLERCUBE() != null) {
-      return SamplerType.USAMPLERCUBE;
-    } else if (ctx.USAMPLER1DARRAY() != null) {
-      return SamplerType.USAMPLER1DARRAY;
-    } else if (ctx.USAMPLER2DARRAY() != null) {
-      return SamplerType.USAMPLER2DARRAY;
-    } else if (ctx.USAMPLERBUFFER() != null) {
-      return SamplerType.USAMPLERBUFFER;
-    } else if (ctx.USAMPLERCUBEARRAY() != null) {
-      return SamplerType.USAMPLERCUBEARRAY;
-    } else if (ctx.SAMPLER2DMS() != null) {
-      return SamplerType.SAMPLER2DMS;
-    } else if (ctx.ISAMPLER2DMS() != null) {
-      return SamplerType.ISAMPLER2DMS;
-    } else if (ctx.USAMPLER2DMS() != null) {
-      return SamplerType.USAMPLER2DMS;
-    } else if (ctx.SAMPLER2DMSARRAY() != null) {
-      return SamplerType.SAMPLER2DMSARRAY;
-    } else if (ctx.ISAMPLER2DMSARRAY() != null) {
-      return SamplerType.ISAMPLER2DMSARRAY;
-    } else if (ctx.USAMPLER2DMSARRAY() != null) {
-      return SamplerType.USAMPLER2DMSARRAY;
-    } else if (ctx.IMAGE1D() != null) {
-      return ImageType.IMAGE1D;
-    } else if (ctx.IMAGE2D() != null) {
-      return ImageType.IMAGE2D;
-    } else if (ctx.IMAGE3D() != null) {
-      return ImageType.IMAGE3D;
-    } else if (ctx.IMAGE2DRECT() != null) {
-      return ImageType.IMAGE2DRECT;
-    } else if (ctx.IMAGECUBE() != null) {
-      return ImageType.IMAGECUBE;
-    } else if (ctx.IMAGEBUFFER() != null) {
-      return ImageType.IMAGEBUFFER;
-    } else if (ctx.IMAGE1DARRAY() != null) {
-      return ImageType.IMAGE1DARRAY;
-    } else if (ctx.IMAGE2DARRAY() != null) {
-      return ImageType.IMAGE2DARRAY;
-    } else if (ctx.IMAGECUBEARRAY() != null) {
-      return ImageType.IMAGECUBEARRAY;
-    } else if (ctx.IMAGE2DMS() != null) {
-      return ImageType.IMAGE2DMS;
-    } else if (ctx.IMAGE2DMSARRAY() != null) {
-      return ImageType.IMAGE2DMSARRAY;
-    } else if (ctx.IIMAGE1D() != null) {
-      return ImageType.IIMAGE1D;
-    } else if (ctx.IIMAGE2D() != null) {
-      return ImageType.IIMAGE2D;
-    } else if (ctx.IIMAGE3D() != null) {
-      return ImageType.IIMAGE3D;
-    } else if (ctx.IIMAGE2DRECT() != null) {
-      return ImageType.IIMAGE2DRECT;
-    } else if (ctx.IIMAGECUBE() != null) {
-      return ImageType.IIMAGECUBE;
-    } else if (ctx.IIMAGEBUFFER() != null) {
-      return ImageType.IIMAGEBUFFER;
-    } else if (ctx.IIMAGE1DARRAY() != null) {
-      return ImageType.IIMAGE1DARRAY;
-    } else if (ctx.IIMAGE2DARRAY() != null) {
-      return ImageType.IIMAGE2DARRAY;
-    } else if (ctx.IIMAGECUBEARRAY() != null) {
-      return ImageType.IIMAGECUBEARRAY;
-    } else if (ctx.IIMAGE2DMS() != null) {
-      return ImageType.IIMAGE2DMS;
-    } else if (ctx.IIMAGE2DMSARRAY() != null) {
-      return ImageType.IIMAGE2DMSARRAY;
-    } else if (ctx.UIMAGE1D() != null) {
-      return ImageType.UIMAGE1D;
-    } else if (ctx.UIMAGE2D() != null) {
-      return ImageType.UIMAGE2D;
-    } else if (ctx.UIMAGE3D() != null) {
-      return ImageType.UIMAGE3D;
-    } else if (ctx.UIMAGE2DRECT() != null) {
-      return ImageType.UIMAGE2DRECT;
-    } else if (ctx.UIMAGECUBE() != null) {
-      return ImageType.UIMAGECUBE;
-    } else if (ctx.UIMAGEBUFFER() != null) {
-      return ImageType.UIMAGEBUFFER;
-    } else if (ctx.UIMAGE1DARRAY() != null) {
-      return ImageType.UIMAGE1DARRAY;
-    } else if (ctx.UIMAGE2DARRAY() != null) {
-      return ImageType.UIMAGE2DARRAY;
-    } else if (ctx.UIMAGECUBEARRAY() != null) {
-      return ImageType.UIMAGECUBEARRAY;
-    } else if (ctx.UIMAGE2DMS() != null) {
-      return ImageType.UIMAGE2DMS;
-    } else if (ctx.UIMAGE2DMSARRAY() != null) {
-      return ImageType.UIMAGE2DMSARRAY;
-    } else {
-      assert ctx.ATOMIC_UINT() != null;
-      return AtomicIntType.ATOMIC_UINT;
-    }
-  }
-
-  private List<TypeQualifier> getQualifiers(Parameter_qualifierContext ctx) {
-    if (ctx.parameter_qualifier() == null) {
-      return new LinkedList<>();
-    }
-    List<TypeQualifier> result = getQualifiers(ctx.parameter_qualifier());
-    if (ctx.CONST_TOK() != null) {
-      result.add(0, TypeQualifier.CONST);
-    } else if (ctx.PRECISE() != null) {
-      result.add(0, TypeQualifier.PRECISE);
-    } else if (ctx.parameter_direction_qualifier() != null) {
-      if (ctx.parameter_direction_qualifier().IN_TOK() != null) {
-        result.add(TypeQualifier.IN_PARAM);
-      } else if (ctx.parameter_direction_qualifier().OUT_TOK() != null) {
-        result.add(TypeQualifier.OUT_PARAM);
-      } else {
-        assert ctx.parameter_direction_qualifier().INOUT_TOK() != null;
-        result.add(TypeQualifier.INOUT_PARAM);
-      }
-    } else {
-      assert ctx.precision_qualifier() != null;
-      if (ctx.precision_qualifier().HIGHP() != null) {
-        result.add(TypeQualifier.HIGHP);
-      } else if (ctx.precision_qualifier().MEDIUMP() != null) {
-        result.add(TypeQualifier.MEDIUMP);
-      } else {
-        assert ctx.precision_qualifier().LOWP() != null;
-        result.add(TypeQualifier.LOWP);
-      }
-    }
-    return result;
-  }
-
-  private Deque<TypeQualifier> getQualifiers(Type_qualifierContext ctx) {
-    if (ctx == null) {
-      return new LinkedList<>();
-    }
-    Deque<TypeQualifier> result;
-    if (ctx.type_qualifier() != null) {
-      result = getQualifiers(ctx.type_qualifier());
-    } else {
-      result = new LinkedList<>();
+        return result;
     }
 
-    if (ctx.INVARIANT() != null) {
-      result.addFirst(TypeQualifier.INVARIANT);
-    } else if (ctx.PRECISE() != null) {
-      result.addFirst(TypeQualifier.PRECISE);
-    } else if (ctx.auxiliary_storage_qualifier() != null) {
-      Auxiliary_storage_qualifierContext asq = ctx.auxiliary_storage_qualifier();
-      if (asq.CENTROID() != null) {
-        result.addFirst(TypeQualifier.CENTROID);
-      } else {
-        assert asq.SAMPLE() != null;
-        result.addFirst(TypeQualifier.SAMPLE);
-      }
-    } else if (ctx.storage_qualifier() != null) {
-      Storage_qualifierContext sq = ctx.storage_qualifier();
-      if (sq.CONST_TOK() != null) {
-        result.addFirst(TypeQualifier.CONST);
-      } else if (sq.ATTRIBUTE() != null) {
-        result.addFirst(TypeQualifier.ATTRIBUTE);
-      } else if (sq.VARYING() != null) {
-        result.addFirst(TypeQualifier.VARYING);
-      } else if (sq.IN_TOK() != null) {
-        result.addFirst(TypeQualifier.SHADER_INPUT);
-      } else if (sq.OUT_TOK() != null) {
-        result.addFirst(TypeQualifier.SHADER_OUTPUT);
-      } else if (sq.UNIFORM() != null) {
-        result.addFirst(TypeQualifier.UNIFORM);
-      } else if (sq.COHERENT() != null) {
-        result.addFirst(TypeQualifier.COHERENT);
-      } else if (sq.VOLATILE() != null) {
-        result.addFirst(TypeQualifier.VOLATILE);
-      } else if (sq.RESTRICT() != null) {
-        result.addFirst(TypeQualifier.RESTRICT);
-      } else if (sq.READONLY() != null) {
-        result.addFirst(TypeQualifier.READONLY);
-      } else if (sq.WRITEONLY() != null) {
-        result.addFirst(TypeQualifier.WRITEONLY);
-      } else {
-        assert sq.SHARED() != null;
-        result.addFirst(TypeQualifier.SHARED);
-      }
-    } else if (ctx.interpolation_qualifier() != null) {
-      Interpolation_qualifierContext iq = ctx.interpolation_qualifier();
-      if (iq.SMOOTH() != null) {
-        result.addFirst(TypeQualifier.SMOOTH);
-      } else if (iq.FLAT() != null) {
-        result.addFirst(TypeQualifier.FLAT);
-      } else {
-        assert iq.NOPERSPECTIVE() != null;
-        result.addFirst(TypeQualifier.NOPERSPECTIVE);
-      }
-    } else if (ctx.layout_qualifier() != null) {
-      final Layout_qualifierContext layoutQualifier = ctx.layout_qualifier();
-      result.addFirst(visitLayout_qualifier(layoutQualifier));
-    } else {
-      assert ctx.precision_qualifier() != null;
-      Precision_qualifierContext pq = ctx.precision_qualifier();
-      if (pq.HIGHP() != null) {
-        result.addFirst(TypeQualifier.HIGHP);
-      } else if (pq.MEDIUMP() != null) {
-        result.addFirst(TypeQualifier.MEDIUMP);
-      } else {
-        assert pq.LOWP() != null;
-        result.addFirst(TypeQualifier.LOWP);
-      }
-    }
-    return result;
-  }
-
-  @Override
-  public ParameterDecl visitParameter_declaration(Parameter_declarationContext ctx) {
-    List<TypeQualifier> qualifiers = getQualifiers(ctx.parameter_qualifier());
-    if (ctx.parameter_type_specifier() != null) {
-      final Type type = getType(ctx.parameter_type_specifier().type_specifier(), qualifiers);
-      return new ParameterDecl(null, type, null);
-    } else {
-      final Type type = getType(ctx.parameter_declarator().type_specifier(), qualifiers);
-      return new ParameterDecl(ctx.parameter_declarator().IDENTIFIER().getText(),
-          type, ctx.parameter_declarator().array_specifier() == null ? null :
-              getArrayInfo(ctx.parameter_declarator().array_specifier()));
-    }
-  }
-
-  @Override
-  public FunctionDefinition visitFunction_definition(Function_definitionContext ctx) {
-    return new FunctionDefinition(
-        visitFunction_prototype(ctx.function_prototype()),
-        visitCompound_statement_no_new_scope(ctx.compound_statement_no_new_scope()));
-  }
-
-  @Override
-  public BlockStmt visitCompound_statement_no_new_scope(
-      Compound_statement_no_new_scopeContext ctx) {
-    if (ctx.statement_list() == null) {
-      return new BlockStmt(new ArrayList<>(), false);
-    }
-    return new BlockStmt(visitStatement_list(ctx.statement_list()), false);
-  }
-
-  @Override
-  public List<Stmt> visitStatement_list(Statement_listContext ctx) {
-    if (ctx.statement_list() == null) {
-      List<Stmt> result = new ArrayList<>();
-      result.add(visitStatement(ctx.statement()));
-      return result;
-    }
-    List<Stmt> result = visitStatement_list(ctx.statement_list());
-    result.add(visitStatement(ctx.statement()));
-    return result;
-  }
-
-  @Override
-  public DeclarationStmt visitDeclaration_statement(Declaration_statementContext ctx) {
-    return new DeclarationStmt(
-        visitInit_declarator_list(ctx.declaration().init_declarator_list()));
-  }
-
-  @Override
-  public VariablesDeclaration visitInit_declarator_list(Init_declarator_listContext ctx) {
-    List<VariableDeclInfo> declInfo = new LinkedList<>();
-    Init_declarator_listContext idl = ctx;
-    while (idl.single_declaration() == null) {
-      declInfo.add(0,
-          processVarDeclInfo(idl.IDENTIFIER().getText(), idl.array_specifier(), idl.initializer()));
-      idl = idl.init_declarator_list();
-    }
-    Single_declarationContext sdc = idl.single_declaration();
-    if (sdc.IDENTIFIER() != null) {
-      // Note: a struct declaration on its own is treated as a variables declaration with zero
-      // identifiers.  This seems to be the cleanest approach, since a struct declaration can
-      // be followed by declaration of struct instances.
-      declInfo.add(0,
-          processVarDeclInfo(sdc.IDENTIFIER().getText(), sdc.array_specifier(), sdc.initializer()));
-    }
-    final Type baseType =
-        visitFully_specified_type(sdc.fully_specified_type());
-    return new VariablesDeclaration(baseType, declInfo);
-  }
-
-  private VariableDeclInfo processVarDeclInfo(String identifier,
-      Array_specifierContext arraySpecifier, InitializerContext initializer) {
-    return new VariableDeclInfo(identifier,
-        arraySpecifier == null ? null : getArrayInfo(arraySpecifier),
-        visitInitializer(initializer));
-  }
-
-  @Override
-  public Initializer visitInitializer(InitializerContext ctx) {
-    if (ctx == null) {
-      return null;
-    }
-    if (ctx.assignment_expression() != null) {
-      return new Initializer(visitAssignment_expression(ctx.assignment_expression()));
-    }
-    throw new UnsupportedLanguageFeatureException("Initializer lists are not currently supported.");
-  }
-
-  @Override
-  public Stmt visitExpression_statement(Expression_statementContext ctx) {
-    if (ctx.expression() == null) {
-      return new NullStmt();
-    }
-    return new ExprStmt(visitExpression(ctx.expression()));
-  }
-
-  @Override
-  public IfStmt visitSelection_statement(Selection_statementContext ctx) {
-    Stmt thenStmt = visitStatement(ctx.selection_rest_statement().statement(0));
-    StatementContext maybeElseBranch = ctx.selection_rest_statement().statement(1);
-    Stmt elseStmt = (maybeElseBranch == null ? null : visitStatement(maybeElseBranch));
-    return new IfStmt(visitExpression(ctx.expression()), thenStmt, elseStmt);
-  }
-
-  @Override
-  public Expr visitExpression(ExpressionContext ctx) {
-    return handleBinary(ctx.operands, ctx.operators, this::visitAssignment_expression);
-  }
-
-  @Override
-  public Stmt visitSwitch_statement(Switch_statementContext ctx) {
-    return new SwitchStmt(visitExpression(ctx.expression()), visitSwitch_body(ctx.switch_body()));
-  }
-
-  @Override
-  public BlockStmt visitSwitch_body(Switch_bodyContext ctx) {
-    if (ctx.case_statement_list() == null) {
-      return new BlockStmt(new ArrayList<>(), true);
-    }
-    Deque<Case_statementContext> cases = new LinkedList<>();
-    {
-      Case_statement_listContext temp = ctx.case_statement_list();
-      while (true) {
-        cases.addFirst(temp.case_statement());
-        if (temp.case_statement_list() == null) {
-          break;
+    private Deque<TypeQualifier> getQualifiers(Type_qualifierContext ctx) {
+        if (ctx == null) {
+            return new LinkedList<>();
         }
-        temp = temp.case_statement_list();
-      }
-    }
-    final List<Stmt> stmts = new ArrayList<>();
-    for (Case_statementContext caseCtx : cases) {
-      stmts.addAll(visitCase_statement(caseCtx));
-    }
-    return new BlockStmt(stmts, true);
-  }
-
-  @Override
-  public List<Stmt> visitCase_statement(Case_statementContext ctx) {
-    Deque<StatementContext> statements = new LinkedList<>();
-    Case_statementContext temp = ctx;
-    while (true) {
-      statements.addFirst(temp.statement());
-      if (temp.case_statement() == null) {
-        break;
-      }
-      temp = temp.case_statement();
-    }
-    List<Stmt> stmts = new ArrayList<>();
-    stmts.addAll(visitCase_label_list(temp.case_label_list()));
-    for (StatementContext statementContext : statements) {
-      stmts.add(visitStatement(statementContext));
-    }
-    return stmts;
-  }
-
-  @Override
-  public List<CaseLabel> visitCase_label_list(Case_label_listContext ctx) {
-    Deque<Case_labelContext> labels = new LinkedList<>();
-    {
-      Case_label_listContext temp = ctx;
-      while (true) {
-        labels.addFirst(temp.case_label());
-        if (temp.case_label_list() == null) {
-          break;
+        Deque<TypeQualifier> result;
+        if (ctx.type_qualifier() != null) {
+            result = getQualifiers(ctx.type_qualifier());
+        } else {
+            result = new LinkedList<>();
         }
-        temp = temp.case_label_list();
-      }
-    }
-    List<CaseLabel> result = new ArrayList<>();
-    for (Case_labelContext caseLabel : labels) {
-      result.add(visitCase_label(caseLabel));
-    }
-    return result;
-  }
 
-  @Override
-  public CaseLabel visitCase_label(Case_labelContext ctx) {
-    if (ctx.DEFAULT() != null) {
-      return new DefaultCaseLabel();
+        if (ctx.INVARIANT() != null) {
+            result.addFirst(TypeQualifier.INVARIANT);
+        } else if (ctx.PRECISE() != null) {
+            result.addFirst(TypeQualifier.PRECISE);
+        } else if (ctx.auxiliary_storage_qualifier() != null) {
+            Auxiliary_storage_qualifierContext asq = ctx.auxiliary_storage_qualifier();
+            if (asq.CENTROID() != null) {
+                result.addFirst(TypeQualifier.CENTROID);
+            } else {
+                assert asq.SAMPLE() != null;
+                result.addFirst(TypeQualifier.SAMPLE);
+            }
+        } else if (ctx.storage_qualifier() != null) {
+            Storage_qualifierContext sq = ctx.storage_qualifier();
+            if (sq.CONST_TOK() != null) {
+                result.addFirst(TypeQualifier.CONST);
+            } else if (sq.ATTRIBUTE() != null) {
+                result.addFirst(TypeQualifier.ATTRIBUTE);
+            } else if (sq.VARYING() != null) {
+                result.addFirst(TypeQualifier.VARYING);
+            } else if (sq.IN_TOK() != null) {
+                result.addFirst(TypeQualifier.SHADER_INPUT);
+            } else if (sq.OUT_TOK() != null) {
+                result.addFirst(TypeQualifier.SHADER_OUTPUT);
+            } else if (sq.UNIFORM() != null) {
+                result.addFirst(TypeQualifier.UNIFORM);
+            } else if (sq.COHERENT() != null) {
+                result.addFirst(TypeQualifier.COHERENT);
+            } else if (sq.VOLATILE() != null) {
+                result.addFirst(TypeQualifier.VOLATILE);
+            } else if (sq.RESTRICT() != null) {
+                result.addFirst(TypeQualifier.RESTRICT);
+            } else if (sq.READONLY() != null) {
+                result.addFirst(TypeQualifier.READONLY);
+            } else if (sq.WRITEONLY() != null) {
+                result.addFirst(TypeQualifier.WRITEONLY);
+            } else {
+                assert sq.SHARED() != null;
+                result.addFirst(TypeQualifier.SHARED);
+            }
+        } else if (ctx.interpolation_qualifier() != null) {
+            Interpolation_qualifierContext iq = ctx.interpolation_qualifier();
+            if (iq.SMOOTH() != null) {
+                result.addFirst(TypeQualifier.SMOOTH);
+            } else if (iq.FLAT() != null) {
+                result.addFirst(TypeQualifier.FLAT);
+            } else {
+                assert iq.NOPERSPECTIVE() != null;
+                result.addFirst(TypeQualifier.NOPERSPECTIVE);
+            }
+        } else if (ctx.layout_qualifier() != null) {
+            final Layout_qualifierContext layoutQualifier = ctx.layout_qualifier();
+            result.addFirst(visitLayout_qualifier(layoutQualifier));
+        } else {
+            assert ctx.precision_qualifier() != null;
+            Precision_qualifierContext pq = ctx.precision_qualifier();
+            if (pq.HIGHP() != null) {
+                result.addFirst(TypeQualifier.HIGHP);
+            } else if (pq.MEDIUMP() != null) {
+                result.addFirst(TypeQualifier.MEDIUMP);
+            } else {
+                assert pq.LOWP() != null;
+                result.addFirst(TypeQualifier.LOWP);
+            }
+        }
+        return result;
     }
-    return new ExprCaseLabel(visitExpression(ctx.expression()));
-  }
 
-  @Override
-  public Stmt visitStatement(StatementContext ctx) {
-    return (Stmt) super.visitStatement(ctx);
-  }
+    private StructDefinitionType getStructDefinitionAndRecordStructType(
+            Struct_specifierContext ctx) {
+        StructNameType structNameType = null;
+        if (ctx.IDENTIFIER() != null) {
+            structNameType = new StructNameType(ctx.IDENTIFIER().getText());
+            assert !structs.contains(structNameType);
+            structs.add(structNameType);
+        }
+        return makeStructDefinition(Optional.ofNullable(structNameType), ctx.member_list());
+    }
 
-  @Override
-  public Stmt visitStatement_no_new_scope(Statement_no_new_scopeContext ctx) {
-    return (Stmt) super.visitStatement_no_new_scope(ctx);
-  }
+    private Type getType(Type_qualifierContext qualifiersCtx,
+                         Type_specifierContext specifierCtx) {
+        return getType(specifierCtx, new ArrayList<>(getQualifiers(qualifiersCtx)));
+    }
 
-  @Override
-  public Stmt visitIteration_statement(Iteration_statementContext ctx) {
-    if (ctx.DO() != null) {
-      return new DoStmt(visitStatement(ctx.statement()), visitExpression(ctx.expression()));
+    private Type getType(Type_specifierContext typeSpecifier,
+                         List<TypeQualifier> qualifiers) {
+        if (typeSpecifier.array_specifier() != null) {
+            throw new UnsupportedLanguageFeatureException("Array information specified at the base type"
+                    + ", e.g. 'int[3] v', is not currently supported; use e.g. 'int A[3]' instead");
+        }
+        if (typeSpecifier.type_specifier_nonarray().builtin_type_specifier_nonarray() != null) {
+            return new QualifiedType(getBuiltinType(typeSpecifier.type_specifier_nonarray()
+                    .builtin_type_specifier_nonarray()), qualifiers);
+        } else if (typeSpecifier.type_specifier_nonarray().struct_specifier() != null) {
+            return getStructDefinitionAndRecordStructType(
+                    typeSpecifier.type_specifier_nonarray().struct_specifier());
+        } else {
+            assert typeSpecifier.type_specifier_nonarray().IDENTIFIER() != null;
+            final StructNameType maybeStructNameType = new StructNameType(
+                    typeSpecifier.type_specifier_nonarray().IDENTIFIER().getText());
+            return new QualifiedType(maybeStructNameType, qualifiers);
+        }
     }
-    if (ctx.WHILE() != null) {
-      return new WhileStmt(visitCondition(ctx.condition()),
-          visitStatement_no_new_scope(ctx.statement_no_new_scope()));
-    }
-    assert ctx.FOR() != null;
-    return new ForStmt(visitFor_init_statement(ctx.for_init_statement()),
-        ctx.for_rest_statement().condition() == null ? null :
-            visitCondition(ctx.for_rest_statement().condition()),
-        ctx.for_rest_statement().expression() == null ? null :
-            visitExpression(ctx.for_rest_statement().expression()),
-            visitStatement_no_new_scope(ctx.statement_no_new_scope()));
-  }
 
-  @Override
-  public Expr visitCondition(ConditionContext ctx) {
-    if (ctx.expression() != null) {
-      return visitExpression(ctx.expression());
+    private String getTypeConstructorName(Function_identifierContext ctx) {
+        if (ctx.builtin_type_specifier_nonarray() != null) {
+            return getOriginalSourceText(ctx.builtin_type_specifier_nonarray());
+        }
+        assert isStructTypeConstructor(ctx);
+        return ctx.variable_identifier().getText();
     }
-    assert ctx.ASSIGN_OP() != null;
-    throw new UnsupportedLanguageFeatureException(
-        "We do not yet support the case where the condition of a 'for' or 'while' introduces a "
-        + "new variable: " + getOriginalSourceText(ctx));
-  }
 
-  @Override
-  public Stmt visitFor_rest_statement(For_rest_statementContext ctx) {
-    throw new RuntimeException("By construction, this visitor method should never get executed.");
-  }
+    private <T> Expr handleBinary(List<T> operands, List<Token> operators,
+                                  Function<T, Expr> childVisitor) {
+        assert operands.size() == operators.size() + 1;
+        assert operands.size() >= 1;
+        Expr result = childVisitor.apply(operands.get(0));
+        for (int i = 0; i < operators.size(); i++) {
+            result = new BinaryExpr(result, childVisitor.apply(operands.get(i + 1)),
+                    getBinOp(operators.get(i)));
+        }
+        return result;
+    }
 
-  @Override
-  public Stmt visitFor_init_statement(For_init_statementContext ctx) {
-    if (ctx.expression_statement() != null) {
-      return visitExpression_statement(ctx.expression_statement());
+    private boolean isBuiltinTypeConstructor(Function_identifierContext ctx) {
+        return ctx.builtin_type_specifier_nonarray() != null;
     }
-    assert ctx.declaration_statement() != null;
-    return visitDeclaration_statement(ctx.declaration_statement());
-  }
 
-  @Override
-  public Stmt visitJump_statement(Jump_statementContext ctx) {
-    if (ctx.CONTINUE() != null) {
-      return new ContinueStmt();
+    private boolean isRegularFunction(Function_identifierContext ctx) {
+        return ctx.variable_identifier() != null;
     }
-    if (ctx.BREAK() != null) {
-      return new BreakStmt();
-    }
-    if (ctx.RETURN() != null) {
-      if (ctx.expression() == null) {
-        return new ReturnStmt();
-      }
-      return new ReturnStmt(visitExpression(ctx.expression()));
-    }
-    assert ctx.DISCARD() != null;
-    return new DiscardStmt();
-  }
 
-  @Override
-  public BlockStmt visitCompound_statement(Compound_statementContext ctx) {
-    if (ctx.statement_list() == null) {
-      return new BlockStmt(new ArrayList<>(), true);
+    private boolean isStructTypeConstructor(Function_identifierContext ctx) {
+        if (ctx.variable_identifier() == null) {
+            return false;
+        }
+        return structs.stream()
+                .map(StructNameType::getName)
+                .anyMatch(ctx.variable_identifier().getText()::equals);
     }
-    return new BlockStmt(visitStatement_list(ctx.statement_list()), true);
-  }
 
-  private String getOriginalSourceText(ParserRuleContext ctx) {
-    return ctx.start.getInputStream()
-        .getText(new Interval(ctx.start.getStartIndex(), ctx.stop.getStopIndex()));
-  }
+    private StructDefinitionType makeStructDefinition(Optional<StructNameType> structNameType,
+                                                      Member_listContext memberListContext) {
+        final Pair<List<String>, List<Type>> members = getMembers(memberListContext);
+        return new StructDefinitionType(structNameType, members.a, members.b);
+    }
 
-  @Override
-  public PragmaStatement visitPragma_statement(Pragma_statementContext ctx) {
-    if (ctx.PRAGMA_OPTIMIZE_ON() != null) {
-      return PragmaStatement.OPTIMIZE_ON;
+    private BinOp processAssignmentOperator(Assignment_operatorContext op) {
+        if (op.ASSIGN_OP() != null) {
+            return BinOp.ASSIGN;
+        }
+        if (op.MUL_ASSIGN() != null) {
+            return BinOp.MUL_ASSIGN;
+        }
+        if (op.DIV_ASSIGN() != null) {
+            return BinOp.DIV_ASSIGN;
+        }
+        if (op.MOD_ASSIGN() != null) {
+            return BinOp.MOD_ASSIGN;
+        }
+        if (op.ADD_ASSIGN() != null) {
+            return BinOp.ADD_ASSIGN;
+        }
+        if (op.SUB_ASSIGN() != null) {
+            return BinOp.SUB_ASSIGN;
+        }
+        if (op.LEFT_ASSIGN() != null) {
+            return BinOp.SHL_ASSIGN;
+        }
+        if (op.RIGHT_ASSIGN() != null) {
+            return BinOp.SHR_ASSIGN;
+        }
+        if (op.AND_ASSIGN() != null) {
+            return BinOp.BAND_ASSIGN;
+        }
+        if (op.XOR_ASSIGN() != null) {
+            return BinOp.BXOR_ASSIGN;
+        }
+        assert op.OR_ASSIGN() != null;
+        return BinOp.BOR_ASSIGN;
     }
-    if (ctx.PRAGMA_OPTIMIZE_OFF() != null) {
-      return PragmaStatement.OPTIMIZE_OFF;
-    }
-    if (ctx.PRAGMA_DEBUG_ON() != null) {
-      return PragmaStatement.DEBUG_ON;
-    }
-    if (ctx.PRAGMA_DEBUG_OFF() != null) {
-      return PragmaStatement.DEBUG_OFF;
-    }
-    if (ctx.PRAGMA_INVARIANT_ALL() != null) {
-      return PragmaStatement.INVARIANT_ALL;
-    }
-    // The above captures all the possibilities for a pragma statement, so reaching the following
-    // line indicates that the shader is invalid, rather than that support is missing.
-    throw new RuntimeException("Unknown pragma statement " + ctx.getText());
-  }
 
-  @Override
-  public DefaultLayout visitLayout_defaults(Layout_defaultsContext ctx) {
-    final LayoutQualifierSequence layoutQualifierSequence =
-        visitLayout_qualifier(ctx.layout_qualifier());
-    TypeQualifier typeQualifier;
-    if (ctx.IN_TOK() != null) {
-      typeQualifier = TypeQualifier.SHADER_INPUT;
-    } else if (ctx.OUT_TOK() != null) {
-      typeQualifier = TypeQualifier.SHADER_OUTPUT;
-    } else if (ctx.UNIFORM() != null) {
-      typeQualifier = TypeQualifier.UNIFORM;
-    } else {
-      assert ctx.BUFFER() != null;
-      typeQualifier = TypeQualifier.BUFFER;
+    private LayoutQualifier processLayoutQualifierId(
+            GLSLParser.Layout_qualifier_idContext layoutQualifierId) {
+        if (layoutQualifierId.integer_constant() != null) {
+            assert layoutQualifierId.IDENTIFIER() != null;
+            final int associatedValue =
+                    Integer.parseInt(layoutQualifierId.integer_constant().getText());
+            switch (layoutQualifierId.IDENTIFIER().getText()) {
+                case "binding":
+                    return new BindingLayoutQualifier(associatedValue);
+                case "local_size_x":
+                    return new LocalSizeLayoutQualifier("x", associatedValue);
+                case "local_size_y":
+                    return new LocalSizeLayoutQualifier("y", associatedValue);
+                case "local_size_z":
+                    return new LocalSizeLayoutQualifier("z", associatedValue);
+                case "location":
+                    return new LocationLayoutQualifier(associatedValue);
+                case "set":
+                    return new SetLayoutQualifier(associatedValue);
+                default:
+                    return new UnknownLayoutQualifier(layoutQualifierId.getText());
+            }
+        }
+        if (layoutQualifierId.IDENTIFIER() != null) {
+            switch (layoutQualifierId.IDENTIFIER().getText()) {
+                case "std430":
+                    return new Std430LayoutQualifier();
+                default:
+                    return new UnknownLayoutQualifier(layoutQualifierId.getText());
+            }
+        }
+        return new UnknownLayoutQualifier(layoutQualifierId.getText());
     }
-    return new DefaultLayout(layoutQualifierSequence, typeQualifier);
-  }
 
-  @Override
-  public ExtensionStatement visitExtension_statement(Extension_statementContext ctx) {
-    return new ExtensionStatement(ctx.extension_name.getText(), ctx.extension_status.getText());
-  }
+    private UnOp processUnaryOperator(Unary_operatorContext uopCtx) {
+        if (uopCtx.PLUS_OP() != null) {
+            return UnOp.PLUS;
+        }
+        if (uopCtx.MINUS_OP() != null) {
+            return UnOp.MINUS;
+        }
+        if (uopCtx.NOT_OP() != null) {
+            return UnOp.LNOT;
+        }
+        assert uopCtx.BNEG_OP() != null;
+        return UnOp.BNEG;
+    }
 
-  @Override
-  public Expr visitPrimary_expression(Primary_expressionContext ctx) {
-    if (ctx.variable_identifier() != null) {
-      return new VariableIdentifierExpr(ctx.variable_identifier().getText());
+    private VariableDeclInfo processVarDeclInfo(String identifier,
+                                                Array_specifierContext arraySpecifier, InitializerContext initializer) {
+        return new VariableDeclInfo(identifier,
+                arraySpecifier == null ? null : getArrayInfo(arraySpecifier),
+                visitInitializer(initializer));
     }
-    if (ctx.INTCONSTANT() != null) {
-      return new IntConstantExpr(ctx.INTCONSTANT().getText());
-    }
-    if (ctx.UINTCONSTANT() != null) {
-      return new UIntConstantExpr(ctx.UINTCONSTANT().getText());
-    }
-    if (ctx.FLOATCONSTANT() != null) {
-      return new FloatConstantExpr(ctx.FLOATCONSTANT().getText());
-    }
-    if (ctx.BOOLCONSTANT() != null) {
-      if (ctx.BOOLCONSTANT().getText().equals("true")) {
-        return new BoolConstantExpr(true);
-      }
-      assert (ctx.BOOLCONSTANT().getText().equals("false"));
-      return new BoolConstantExpr(false);
-    }
-    assert ctx.LPAREN() != null;
-    return new ParenExpr(visitExpression(ctx.expression()));
-  }
-
-  @Override
-  public Expr visitPostfix_expression(Postfix_expressionContext ctx) {
-    if (ctx.primary_expression() != null) {
-      return visitPrimary_expression(ctx.primary_expression());
-    }
-    if (ctx.LBRACKET() != null) {
-      return new ArrayIndexExpr(visitPostfix_expression(ctx.postfix_expression()),
-          visitExpression(ctx.integer_expression().expression()));
-    }
-    if (ctx.method_call_generic() != null) {
-      throw new UnsupportedLanguageFeatureException("Method calls are not currently supported: "
-          + getOriginalSourceText(ctx));
-    }
-    if (ctx.IDENTIFIER() != null) {
-      return new MemberLookupExpr(visitPostfix_expression(ctx.postfix_expression()),
-          ctx.IDENTIFIER().getText());
-    }
-    if (ctx.INC_OP() != null) {
-      return new UnaryExpr(visitPostfix_expression(ctx.postfix_expression()), UnOp.POST_INC);
-    }
-    if (ctx.DEC_OP() != null) {
-      return new UnaryExpr(visitPostfix_expression(ctx.postfix_expression()), UnOp.POST_DEC);
-    }
-    assert ctx.function_call_generic() != null;
-    Expr result = visitFunction_call_generic(ctx.function_call_generic());
-    assert result != null;
-    return result;
-  }
-
-  @Override
-  public Expr visitFunction_call_generic(Function_call_genericContext ctx) {
-    if (ctx.function_call_header_no_parameters() != null) {
-      return visitFunction_call_header_no_parameters(ctx.function_call_header_no_parameters());
-    }
-    assert ctx.function_call_header_with_parameters() != null;
-    return visitFunction_call_header_with_parameters(ctx.function_call_header_with_parameters());
-  }
-
-  @Override
-  public Expr visitFunction_call_header_no_parameters(
-      Function_call_header_no_parametersContext ctx) {
-    if (isBuiltinTypeConstructor(ctx.function_call_header().function_identifier())
-        || isStructTypeConstructor(ctx.function_call_header().function_identifier())) {
-      // This is illegal, so indicates an invalid shader rather than lack of support.
-      throw new RuntimeException(
-          "Found type constructor with no arguments at line " + ctx.start.getLine() + ": "
-              + getOriginalSourceText(ctx));
-    }
-    if (isRegularFunction(ctx.function_call_header().function_identifier())) {
-      return new FunctionCallExpr(getCallee(ctx.function_call_header().function_identifier()),
-          new ArrayList<>());
-    }
-    // The above logic is intended to capture all cases, so the following indicates an invalid
-    // shader, rather than lack of support.
-    throw new RuntimeException("Unsupported function call at line " + ctx.start.getLine() + ": "
-        + getOriginalSourceText(ctx));
-  }
-
-  @Override
-  public Expr visitFunction_call_header_with_parameters(
-      Function_call_header_with_parametersContext ctx) {
-    List<Expr> params = new LinkedList<>();
-    Function_call_header_with_parametersContext fchwp = ctx;
-    while (fchwp.function_call_header_with_parameters() != null) {
-      params.add(0, visitAssignment_expression(fchwp.assignment_expression()));
-      fchwp = fchwp.function_call_header_with_parameters();
-    }
-    params.add(0, visitAssignment_expression(fchwp.assignment_expression()));
-    Function_call_headerContext header = fchwp.function_call_header();
-    if (isBuiltinTypeConstructor(header.function_identifier())) {
-      if (header.array_specifier() != null) {
-        return new ArrayConstructorExpr(
-            new ArrayType(
-                getBuiltinType(header.function_identifier().builtin_type_specifier_nonarray()),
-                getArrayInfo(header.array_specifier())), params);
-      }
-      return new TypeConstructorExpr(getTypeConstructorName(header.function_identifier()), params);
-    }
-    if (isStructTypeConstructor(header.function_identifier())) {
-      if (header.array_specifier() != null) {
-        final StructNameType structType = new StructNameType(
-            header.function_identifier().variable_identifier().getText());
-        return new ArrayConstructorExpr(
-            new ArrayType(structType,
-                getArrayInfo(header.array_specifier())), params);
-      }
-      return new TypeConstructorExpr(getTypeConstructorName(header.function_identifier()), params);
-    }
-    if (isRegularFunction(header.function_identifier())) {
-      return new FunctionCallExpr(getCallee(header.function_identifier()), params);
-    }
-    // The above logic is intended to capture all cases, so the following indicates an invalid
-    // shader, rather than lack of support.
-    throw new RuntimeException("Unsupported function call: " + getOriginalSourceText(ctx));
-  }
-
-  private String getCallee(Function_identifierContext ctx) {
-    assert ctx.variable_identifier() != null;
-    return ctx.variable_identifier().getText();
-  }
-
-  private boolean isRegularFunction(Function_identifierContext ctx) {
-    return ctx.variable_identifier() != null;
-  }
-
-  private String getTypeConstructorName(Function_identifierContext ctx) {
-    if (ctx.builtin_type_specifier_nonarray() != null) {
-      return getOriginalSourceText(ctx.builtin_type_specifier_nonarray());
-    }
-    assert isStructTypeConstructor(ctx);
-    return ctx.variable_identifier().getText();
-  }
-
-  private boolean isBuiltinTypeConstructor(Function_identifierContext ctx) {
-    return ctx.builtin_type_specifier_nonarray() != null;
-  }
-
-  private boolean isStructTypeConstructor(Function_identifierContext ctx) {
-    if (ctx.variable_identifier() == null) {
-      return false;
-    }
-    return structs.stream()
-        .map(StructNameType::getName)
-        .anyMatch(ctx.variable_identifier().getText()::equals);
-  }
-
-  @Override
-  public Expr visitUnary_expression(Unary_expressionContext ctx) {
-    if (ctx.postfix_expression() != null) {
-      return visitPostfix_expression(ctx.postfix_expression());
-    }
-    if (ctx.INC_OP() != null) {
-      return new UnaryExpr(visitUnary_expression(ctx.unary_expression()), UnOp.PRE_INC);
-    }
-    if (ctx.DEC_OP() != null) {
-      return new UnaryExpr(visitUnary_expression(ctx.unary_expression()), UnOp.PRE_DEC);
-    }
-    assert ctx.unary_operator() != null;
-    return new UnaryExpr(visitUnary_expression(ctx.unary_expression()),
-        processUnaryOperator(ctx.unary_operator()));
-  }
-
-  private UnOp processUnaryOperator(Unary_operatorContext uopCtx) {
-    if (uopCtx.PLUS_OP() != null) {
-      return UnOp.PLUS;
-    }
-    if (uopCtx.MINUS_OP() != null) {
-      return UnOp.MINUS;
-    }
-    if (uopCtx.NOT_OP() != null) {
-      return UnOp.LNOT;
-    }
-    assert uopCtx.BNEG_OP() != null;
-    return UnOp.BNEG;
-  }
-
-  @Override
-  public Expr visitMultiplicative_expression(Multiplicative_expressionContext ctx) {
-    return handleBinary(ctx.operands, ctx.operators, this::visitUnary_expression);
-  }
-
-  @Override
-  public Expr visitAdditive_expression(Additive_expressionContext ctx) {
-    return handleBinary(ctx.operands, ctx.operators, this::visitMultiplicative_expression);
-  }
-
-  @Override
-  public Expr visitShift_expression(Shift_expressionContext ctx) {
-    return handleBinary(ctx.operands, ctx.operators, this::visitAdditive_expression);
-  }
-
-  @Override
-  public Expr visitRelational_expression(Relational_expressionContext ctx) {
-    return handleBinary(ctx.operands, ctx.operators, this::visitShift_expression);
-  }
-
-  @Override
-  public Expr visitEquality_expression(Equality_expressionContext ctx) {
-    return handleBinary(ctx.operands, ctx.operators, this::visitRelational_expression);
-  }
-
-  @Override
-  public Expr visitAnd_expression(And_expressionContext ctx) {
-    return handleBinary(ctx.operands, ctx.operators, this::visitEquality_expression);
-  }
-
-  @Override
-  public Expr visitExclusive_or_expression(Exclusive_or_expressionContext ctx) {
-    return handleBinary(ctx.operands, ctx.operators, this::visitAnd_expression);
-  }
-
-  @Override
-  public Expr visitInclusive_or_expression(Inclusive_or_expressionContext ctx) {
-    return handleBinary(ctx.operands, ctx.operators, this::visitExclusive_or_expression);
-  }
-
-  @Override
-  public Expr visitLogical_and_expression(Logical_and_expressionContext ctx) {
-    return handleBinary(ctx.operands, ctx.operators, this::visitInclusive_or_expression);
-  }
-
-  @Override
-  public Expr visitLogical_xor_expression(Logical_xor_expressionContext ctx) {
-    return handleBinary(ctx.operands, ctx.operators, this::visitLogical_and_expression);
-  }
-
-  @Override
-  public Expr visitLogical_or_expression(Logical_or_expressionContext ctx) {
-    return handleBinary(ctx.operands, ctx.operators, this::visitLogical_xor_expression);
-  }
-
-  @Override
-  public Expr visitConditional_expression(Conditional_expressionContext ctx) {
-    assert ctx.expression().size() == ctx.assignment_expression().size();
-
-    // First, visit all the args, slapping them into a list
-    List<Expr> argsInOrder = new ArrayList<>();
-    argsInOrder.add(visitLogical_or_expression(ctx.logical_or_expression()));
-    for (int i = 0; i < ctx.expression().size(); i++) {
-      argsInOrder.add(visitExpression(ctx.expression(i)));
-      argsInOrder.add(visitAssignment_expression(ctx.assignment_expression(i)));
-    }
-    assert (argsInOrder.size() % 2) == 1; // should be an odd number of args in total
-
-    // Now visit the list in reverse order, building up the ternary
-    Expr result = argsInOrder.get(argsInOrder.size() - 1);
-    for (int i = argsInOrder.size() - 2; i >= 0; i -= 2) {
-      assert (i % 2) == 1;
-      final Expr thenExpr = argsInOrder.get(i);
-      result = new TernaryExpr(argsInOrder.get(i - 1), thenExpr, result);
-    }
-    return result;
-  }
-
-  @Override
-  public Expr visitAssignment_expression(Assignment_expressionContext ctx) {
-    if (ctx.conditional_expression() != null) {
-      return visitConditional_expression(ctx.conditional_expression());
-    }
-    return new BinaryExpr(visitUnary_expression(ctx.unary_expression()),
-        visitAssignment_expression(ctx.assignment_expression()),
-        processAssignmentOperator(ctx.assignment_operator()));
-  }
-
-  @Override
-  public LayoutQualifierSequence visitLayout_qualifier(Layout_qualifierContext ctx) {
-    final LinkedList<LayoutQualifier> layoutQualifiers = new LinkedList<>();
-    for (Layout_qualifier_id_listContext iterator = ctx.layout_qualifier_id_list();
-         iterator != null;
-         iterator = iterator.layout_qualifier_id_list()) {
-      layoutQualifiers.addFirst(processLayoutQualifierId(iterator.layout_qualifier_id()));
-    }
-    return new LayoutQualifierSequence(layoutQualifiers);
-  }
-
-  private LayoutQualifier processLayoutQualifierId(
-      GLSLParser.Layout_qualifier_idContext layoutQualifierId) {
-    if (layoutQualifierId.integer_constant() != null) {
-      assert layoutQualifierId.IDENTIFIER() != null;
-      final int associatedValue =
-          Integer.parseInt(layoutQualifierId.integer_constant().getText());
-      switch (layoutQualifierId.IDENTIFIER().getText()) {
-        case "binding":
-          return new BindingLayoutQualifier(associatedValue);
-        case "local_size_x":
-          return new LocalSizeLayoutQualifier("x", associatedValue);
-        case "local_size_y":
-          return new LocalSizeLayoutQualifier("y", associatedValue);
-        case "local_size_z":
-          return new LocalSizeLayoutQualifier("z", associatedValue);
-        case "location":
-          return new LocationLayoutQualifier(associatedValue);
-        case "set":
-          return new SetLayoutQualifier(associatedValue);
-        default:
-          return new UnknownLayoutQualifier(layoutQualifierId.getText());
-      }
-    }
-    if (layoutQualifierId.IDENTIFIER() != null) {
-      switch (layoutQualifierId.IDENTIFIER().getText()) {
-        case "std430":
-          return new Std430LayoutQualifier();
-        default:
-          return new UnknownLayoutQualifier(layoutQualifierId.getText());
-      }
-    }
-    return new UnknownLayoutQualifier(layoutQualifierId.getText());
-  }
-
-  private BinOp processAssignmentOperator(Assignment_operatorContext op) {
-    if (op.ASSIGN_OP() != null) {
-      return BinOp.ASSIGN;
-    }
-    if (op.MUL_ASSIGN() != null) {
-      return BinOp.MUL_ASSIGN;
-    }
-    if (op.DIV_ASSIGN() != null) {
-      return BinOp.DIV_ASSIGN;
-    }
-    if (op.MOD_ASSIGN() != null) {
-      return BinOp.MOD_ASSIGN;
-    }
-    if (op.ADD_ASSIGN() != null) {
-      return BinOp.ADD_ASSIGN;
-    }
-    if (op.SUB_ASSIGN() != null) {
-      return BinOp.SUB_ASSIGN;
-    }
-    if (op.LEFT_ASSIGN() != null) {
-      return BinOp.SHL_ASSIGN;
-    }
-    if (op.RIGHT_ASSIGN() != null) {
-      return BinOp.SHR_ASSIGN;
-    }
-    if (op.AND_ASSIGN() != null) {
-      return BinOp.BAND_ASSIGN;
-    }
-    if (op.XOR_ASSIGN() != null) {
-      return BinOp.BXOR_ASSIGN;
-    }
-    assert op.OR_ASSIGN() != null;
-    return BinOp.BOR_ASSIGN;
-  }
-
-  private BinOp getBinOp(Token token) {
-    for (BinOp op : BinOp.values()) {
-      if (token.getText().equals(op.getText())) {
-        return op;
-      }
-    }
-    // The BinOp class includes all binary operators, so the following indicates an invalid shader,
-    // rather than lack of support.
-    throw new RuntimeException("Unknown binary operator: " + token.getText());
-  }
-
-  private <T> Expr handleBinary(List<T> operands, List<Token> operators,
-      Function<T, Expr> childVisitor) {
-    assert operands.size() == operators.size() + 1;
-    assert operands.size() >= 1;
-    Expr result = childVisitor.apply(operands.get(0));
-    for (int i = 0; i < operators.size(); i++) {
-      result = new BinaryExpr(result, childVisitor.apply(operands.get(i + 1)),
-          getBinOp(operators.get(i)));
-    }
-    return result;
-  }
 
 }

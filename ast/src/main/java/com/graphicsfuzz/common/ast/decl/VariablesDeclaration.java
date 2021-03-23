@@ -26,67 +26,68 @@ import java.util.stream.Collectors;
 
 public class VariablesDeclaration extends Declaration {
 
-  private Type baseType;
-  private List<VariableDeclInfo> declInfos;
+    private Type baseType;
+    private List<VariableDeclInfo> declInfos;
 
-  public VariablesDeclaration(Type baseType,
-                              List<VariableDeclInfo> declInfos) {
-    assert baseType != null;
-    this.baseType = baseType;
-    this.declInfos = new ArrayList<>();
-    this.declInfos.addAll(declInfos);
-  }
+    public VariablesDeclaration(Type baseType,
+                                List<VariableDeclInfo> declInfos) {
+        assert baseType != null;
+        this.baseType = baseType;
+        this.declInfos = new ArrayList<>();
+        this.declInfos.addAll(declInfos);
+    }
 
-  public VariablesDeclaration(Type baseType, VariableDeclInfo declInfo) {
-    this(baseType, Arrays.asList(declInfo));
-  }
+    public VariablesDeclaration(Type baseType, VariableDeclInfo declInfo) {
+        this(baseType, Arrays.asList(declInfo));
+    }
 
-  /**
-   * Constructs a variables declaration with no variables attached.  Useful for making a lone
-   * struct.
-   * @param baseType The base type for the empty variables declaration.
-   */
-  public VariablesDeclaration(Type baseType) {
-    this(baseType, new ArrayList<>());
-  }
+    /**
+     * Constructs a variables declaration with no variables attached.  Useful for making a lone
+     * struct.
+     *
+     * @param baseType The base type for the empty variables declaration.
+     */
+    public VariablesDeclaration(Type baseType) {
+        this(baseType, new ArrayList<>());
+    }
 
-  public Type getBaseType() {
-    return baseType;
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitVariablesDeclaration(this);
+    }
 
-  public void setBaseType(Type baseType) {
-    this.baseType = baseType;
-  }
+    @Override
+    public VariablesDeclaration clone() {
+        return new VariablesDeclaration(baseType.clone(),
+                declInfos.stream().map(x -> x.clone()).collect(Collectors.toList()));
+    }
 
-  public VariableDeclInfo getDeclInfo(int index) {
-    return declInfos.get(index);
-  }
+    public Type getBaseType() {
+        return baseType;
+    }
 
-  public List<VariableDeclInfo> getDeclInfos() {
-    return Collections.unmodifiableList(declInfos);
-  }
+    public void setBaseType(Type baseType) {
+        this.baseType = baseType;
+    }
 
-  public void setDeclInfo(int index, VariableDeclInfo variableDeclInfo) {
-    declInfos.set(index, variableDeclInfo);
-  }
+    public VariableDeclInfo getDeclInfo(int index) {
+        return declInfos.get(index);
+    }
 
-  public int getNumDecls() {
-    return declInfos.size();
-  }
+    public List<VariableDeclInfo> getDeclInfos() {
+        return Collections.unmodifiableList(declInfos);
+    }
 
-  public void removeDeclInfo(int index) {
-    declInfos.remove(index);
-  }
+    public int getNumDecls() {
+        return declInfos.size();
+    }
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitVariablesDeclaration(this);
-  }
+    public void removeDeclInfo(int index) {
+        declInfos.remove(index);
+    }
 
-  @Override
-  public VariablesDeclaration clone() {
-    return new VariablesDeclaration(baseType.clone(),
-        declInfos.stream().map(x -> x.clone()).collect(Collectors.toList()));
-  }
+    public void setDeclInfo(int index, VariableDeclInfo variableDeclInfo) {
+        declInfos.set(index, variableDeclInfo);
+    }
 
 }

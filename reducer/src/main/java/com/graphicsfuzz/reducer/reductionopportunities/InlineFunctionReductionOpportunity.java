@@ -26,37 +26,37 @@ import com.graphicsfuzz.common.util.IdGenerator;
 
 public class InlineFunctionReductionOpportunity extends AbstractReductionOpportunity {
 
-  private final FunctionCallExpr functionCallExpr;
-  private final TranslationUnit tu;
-  private final ShadingLanguageVersion shadingLanguageVersion;
-  private final IdGenerator idGenerator;
+    private final FunctionCallExpr functionCallExpr;
+    private final TranslationUnit tu;
+    private final ShadingLanguageVersion shadingLanguageVersion;
+    private final IdGenerator idGenerator;
 
-  public InlineFunctionReductionOpportunity(FunctionCallExpr functionCallExpr, TranslationUnit tu,
-        ShadingLanguageVersion shadingLanguageVersion, IdGenerator idGenerator,
-        VisitationDepth depth) {
-    super(depth);
-    this.functionCallExpr = functionCallExpr;
-    this.tu = tu;
-    this.shadingLanguageVersion = shadingLanguageVersion;
-    this.idGenerator = idGenerator;
-  }
-
-  @Override
-  void applyReductionImpl() {
-    try {
-      Inliner.inline(functionCallExpr, tu, shadingLanguageVersion, idGenerator);
-    } catch (CannotInlineCallException exception) {
-      // Precondition ensures that this cannot happen.
-      assert false;
+    public InlineFunctionReductionOpportunity(FunctionCallExpr functionCallExpr, TranslationUnit tu,
+                                              ShadingLanguageVersion shadingLanguageVersion, IdGenerator idGenerator,
+                                              VisitationDepth depth) {
+        super(depth);
+        this.functionCallExpr = functionCallExpr;
+        this.tu = tu;
+        this.shadingLanguageVersion = shadingLanguageVersion;
+        this.idGenerator = idGenerator;
     }
-  }
 
-  @Override
-  public boolean preconditionHolds() {
-    // We use a node limit of 0 (to say "no limit") because we already checked the limit on
-    // creation of this opportunity, and we're OK with the possibility that the limit might now
-    // be exceeded due to other transformations.
-    return Inliner.canInline(functionCallExpr, tu, shadingLanguageVersion, 0);
-  }
+    @Override
+    void applyReductionImpl() {
+        try {
+            Inliner.inline(functionCallExpr, tu, shadingLanguageVersion, idGenerator);
+        } catch (CannotInlineCallException exception) {
+            // Precondition ensures that this cannot happen.
+            assert false;
+        }
+    }
+
+    @Override
+    public boolean preconditionHolds() {
+        // We use a node limit of 0 (to say "no limit") because we already checked the limit on
+        // creation of this opportunity, and we're OK with the possibility that the limit might now
+        // be exceeded due to other transformations.
+        return Inliner.canInline(functionCallExpr, tu, shadingLanguageVersion, 0);
+    }
 
 }

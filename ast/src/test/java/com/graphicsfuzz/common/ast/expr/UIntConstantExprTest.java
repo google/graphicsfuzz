@@ -16,30 +16,30 @@
 
 package com.graphicsfuzz.common.ast.expr;
 
+import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-import org.junit.Test;
-
 public class UIntConstantExprTest {
 
-  @Test
-  public void getValue() throws Exception {
-    UIntConstantExpr uice = new UIntConstantExpr("3u");
-    assertEquals("3u", uice.getValue());
-  }
+    @Test
+    public void accept() throws Exception {
+        assertEquals("4u", new UIntConstantExpr("4u").getText());
+    }
 
-  @Test
-  public void accept() throws Exception {
-    assertEquals("4u", new UIntConstantExpr("4u").getText());
-  }
+    @Test
+    public void getValue() throws Exception {
+        UIntConstantExpr uice = new UIntConstantExpr("3u");
+        assertEquals("3u", uice.getValue());
+    }
 
-  @Test
-  public void testClone() throws Exception {
-    UIntConstantExpr uice = new UIntConstantExpr("3u");
-    UIntConstantExpr uice2 = uice.clone();
-    assertFalse(uice == uice2);
-    assertEquals(uice.getValue(), uice2.getValue());
-  }
+    @Test
+    public void testClone() throws Exception {
+        UIntConstantExpr uice = new UIntConstantExpr("3u");
+        UIntConstantExpr uice2 = uice.clone();
+        assertFalse(uice == uice2);
+        assertEquals(uice.getValue(), uice2.getValue());
+    }
 
 }

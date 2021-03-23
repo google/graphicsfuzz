@@ -18,19 +18,19 @@ package com.graphicsfuzz.common.ast.expr;
 
 public abstract class ConstantExpr extends Expr {
 
-  @Override
-  public final Expr getChild(int index) {
-    throw new IndexOutOfBoundsException("ConstExpr has no children");
-  }
+    @Override
+    public final Expr getChild(int index) {
+        throw new IndexOutOfBoundsException("ConstExpr has no children");
+    }
 
-  @Override
-  public final void setChild(int index, Expr expr) {
-    throw new IndexOutOfBoundsException("ConstExpr has no children");
-  }
+    @Override
+    public final int getNumChildren() {
+        return 0;
+    }
 
-  @Override
-  public final int getNumChildren() {
-    return 0;
-  }
+    @Override
+    public final void setChild(int index, Expr expr) {
+        throw new IndexOutOfBoundsException("ConstExpr has no children");
+    }
 
 }

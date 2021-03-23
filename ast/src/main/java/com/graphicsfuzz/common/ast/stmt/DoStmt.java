@@ -21,23 +21,23 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class DoStmt extends LoopStmt {
 
-  public DoStmt(Stmt body, Expr condition) {
-    super(condition, body);
-  }
+    public DoStmt(Stmt body, Expr condition) {
+        super(condition, body);
+    }
 
-  @Override
-  public boolean hasCondition() {
-    return true;
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitDoStmt(this);
+    }
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitDoStmt(this);
-  }
+    @Override
+    public DoStmt clone() {
+        return new DoStmt(getBody().clone(), getCondition().clone());
+    }
 
-  @Override
-  public DoStmt clone() {
-    return new DoStmt(getBody().clone(), getCondition().clone());
-  }
+    @Override
+    public boolean hasCondition() {
+        return true;
+    }
 
 }

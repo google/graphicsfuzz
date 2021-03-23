@@ -22,30 +22,30 @@ import com.graphicsfuzz.common.typing.Scope;
 
 public class AtomicIntType extends BuiltinType {
 
-  private AtomicIntType() {
-    // AtomicIntType is a singleton
-  }
+    public static final AtomicIntType ATOMIC_UINT = new AtomicIntType();
 
-  public static final AtomicIntType ATOMIC_UINT = new AtomicIntType();
+    private AtomicIntType() {
+        // AtomicIntType is a singleton
+    }
 
-  @Override
-  public String toString() {
-    return "atomic_uint";
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitAtomicIntType(this);
+    }
 
-  @Override
-  public boolean hasCanonicalConstant(Scope unused) {
-    return false;
-  }
+    @Override
+    public Expr getCanonicalConstant(Scope scope) {
+        assert !hasCanonicalConstant(scope);
+        throw new RuntimeException("No canonical constant for " + this);
+    }
 
-  @Override
-  public Expr getCanonicalConstant(Scope scope) {
-    assert !hasCanonicalConstant(scope);
-    throw new RuntimeException("No canonical constant for " + this);
-  }
+    @Override
+    public boolean hasCanonicalConstant(Scope unused) {
+        return false;
+    }
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitAtomicIntType(this);
-  }
+    @Override
+    public String toString() {
+        return "atomic_uint";
+    }
 }

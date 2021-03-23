@@ -18,19 +18,19 @@ package com.graphicsfuzz.common.ast.type;
 
 public class BindingLayoutQualifier implements LayoutQualifier {
 
-  private final int index;
+    private final int index;
 
-  public BindingLayoutQualifier(int index) {
-    this.index = index;
-  }
+    public BindingLayoutQualifier(int index) {
+        this.index = index;
+    }
 
-  public int getIndex() {
-    return index;
-  }
+    public int getIndex() {
+        return index;
+    }
 
-  @Override
-  public String toString() {
-    return "binding = " + index;
-  }
+    @Override
+    public String toString() {
+        return "binding = " + index;
+    }
 
 }

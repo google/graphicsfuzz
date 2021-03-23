@@ -71,108 +71,108 @@ import com.graphicsfuzz.common.ast.type.VoidType;
 
 public interface IAstVisitor {
 
-  void visit(IAstNode node);
+    void visit(IAstNode node);
 
-  void visitFunctionDefinition(FunctionDefinition functionDefinition);
+    void visitArrayConstructorExpr(ArrayConstructorExpr arrayConstructorExpr);
 
-  void visitTranslationUnit(TranslationUnit translationUnit);
+    void visitArrayIndexExpr(ArrayIndexExpr arrayIndexExpr);
 
-  void visitBlockStmt(BlockStmt stmt);
+    void visitArrayInfo(ArrayInfo arrayInfo);
 
-  void visitFunctionPrototype(FunctionPrototype functionPrototype);
+    void visitArrayType(ArrayType arrayType);
 
-  void visitIfStmt(IfStmt ifStmt);
+    void visitAtomicIntType(AtomicIntType atomicIntType);
 
-  void visitDeclarationStmt(DeclarationStmt declarationStmt);
+    void visitBasicType(BasicType basicType);
 
-  void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration);
+    void visitBinaryExpr(BinaryExpr binaryExpr);
 
-  void visitPrecisionDeclaration(PrecisionDeclaration precisionDeclaration);
+    void visitBlockStmt(BlockStmt stmt);
 
-  void visitInitializer(Initializer initializer);
+    void visitBoolConstantExpr(BoolConstantExpr boolConstantExpr);
 
-  void visitBinaryExpr(BinaryExpr binaryExpr);
+    void visitBreakStmt(BreakStmt breakStmt);
 
-  void visitParenExpr(ParenExpr parenExpr);
+    void visitContinueStmt(ContinueStmt continueStmt);
 
-  void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr);
+    void visitDeclarationStmt(DeclarationStmt declarationStmt);
 
-  void visitUnaryExpr(UnaryExpr unaryExpr);
+    void visitDefaultCaseLabel(DefaultCaseLabel defaultCaseLabel);
 
-  void visitMemberLookupExpr(MemberLookupExpr memberLookupExpr);
+    void visitDefaultLayout(DefaultLayout defaultLayout);
 
-  void visitDiscardStmt(DiscardStmt discardStmt);
+    void visitDiscardStmt(DiscardStmt discardStmt);
 
-  void visitBreakStmt(BreakStmt breakStmt);
+    void visitDoStmt(DoStmt doStmt);
 
-  void visitContinueStmt(ContinueStmt continueStmt);
+    void visitExprCaseLabel(ExprCaseLabel exprCaseLabel);
 
-  void visitReturnStmt(ReturnStmt returnStmt);
+    void visitExprStmt(ExprStmt exprStmt);
 
-  void visitFunctionCallExpr(FunctionCallExpr functionCallExpr);
+    void visitExtensionStatement(ExtensionStatement extensionStatement);
 
-  void visitExprStmt(ExprStmt exprStmt);
+    void visitFloatConstantExpr(FloatConstantExpr floatConstantExpr);
 
-  void visitTypeConstructorExpr(TypeConstructorExpr typeConstructorExpr);
+    void visitForStmt(ForStmt forStmt);
 
-  void visitBasicType(BasicType basicType);
+    void visitFunctionCallExpr(FunctionCallExpr functionCallExpr);
 
-  void visitSamplerType(SamplerType samplerType);
+    void visitFunctionDefinition(FunctionDefinition functionDefinition);
 
-  void visitImageType(ImageType imageType);
+    void visitFunctionPrototype(FunctionPrototype functionPrototype);
 
-  void visitVoidType(VoidType voidType);
+    void visitIfStmt(IfStmt ifStmt);
 
-  void visitAtomicIntType(AtomicIntType atomicIntType);
+    void visitImageType(ImageType imageType);
 
-  void visitQualifiedType(QualifiedType qualifiedType);
+    void visitInitializer(Initializer initializer);
 
-  void visitForStmt(ForStmt forStmt);
+    void visitIntConstantExpr(IntConstantExpr intConstantExpr);
 
-  void visitNullStmt(NullStmt nullStmt);
+    void visitInterfaceBlock(InterfaceBlock interfaceBlock);
 
-  void visitDoStmt(DoStmt doStmt);
+    void visitMemberLookupExpr(MemberLookupExpr memberLookupExpr);
 
-  void visitWhileStmt(WhileStmt whileStmt);
+    void visitNullStmt(NullStmt nullStmt);
 
-  void visitTernaryExpr(TernaryExpr ternaryExpr);
+    void visitParameterDecl(ParameterDecl parameterDecl);
 
-  void visitParameterDecl(ParameterDecl parameterDecl);
+    void visitParenExpr(ParenExpr parenExpr);
 
-  void visitArrayInfo(ArrayInfo arrayInfo);
+    void visitPragmaStatement(PragmaStatement pragmaStatement);
 
-  void visitVariableDeclInfo(VariableDeclInfo variableDeclInfo);
+    void visitPrecisionDeclaration(PrecisionDeclaration precisionDeclaration);
 
-  void visitArrayIndexExpr(ArrayIndexExpr arrayIndexExpr);
+    void visitQualifiedType(QualifiedType qualifiedType);
 
-  void visitIntConstantExpr(IntConstantExpr intConstantExpr);
+    void visitReturnStmt(ReturnStmt returnStmt);
 
-  void visitUIntConstantExpr(UIntConstantExpr uintConstantExpr);
+    void visitSamplerType(SamplerType samplerType);
 
-  void visitFloatConstantExpr(FloatConstantExpr floatConstantExpr);
+    void visitStructDefinitionType(StructDefinitionType structDefinitionType);
 
-  void visitBoolConstantExpr(BoolConstantExpr boolConstantExpr);
+    void visitStructNameType(StructNameType structNameType);
 
-  void visitStructDefinitionType(StructDefinitionType structDefinitionType);
+    void visitSwitchStmt(SwitchStmt switchStmt);
 
-  void visitArrayConstructorExpr(ArrayConstructorExpr arrayConstructorExpr);
+    void visitTernaryExpr(TernaryExpr ternaryExpr);
 
-  void visitArrayType(ArrayType arrayType);
+    void visitTranslationUnit(TranslationUnit translationUnit);
 
-  void visitSwitchStmt(SwitchStmt switchStmt);
+    void visitTypeConstructorExpr(TypeConstructorExpr typeConstructorExpr);
 
-  void visitDefaultCaseLabel(DefaultCaseLabel defaultCaseLabel);
+    void visitUIntConstantExpr(UIntConstantExpr uintConstantExpr);
 
-  void visitExprCaseLabel(ExprCaseLabel exprCaseLabel);
+    void visitUnaryExpr(UnaryExpr unaryExpr);
 
-  void visitInterfaceBlock(InterfaceBlock interfaceBlock);
+    void visitVariableDeclInfo(VariableDeclInfo variableDeclInfo);
 
-  void visitDefaultLayout(DefaultLayout defaultLayout);
+    void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr);
 
-  void visitStructNameType(StructNameType structNameType);
+    void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration);
 
-  void visitExtensionStatement(ExtensionStatement extensionStatement);
+    void visitVoidType(VoidType voidType);
 
-  void visitPragmaStatement(PragmaStatement pragmaStatement);
+    void visitWhileStmt(WhileStmt whileStmt);
 
 }

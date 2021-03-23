@@ -22,25 +22,25 @@ import java.util.Optional;
 
 class StructifiedVariableInfo {
 
-  private final String name;
-  private final Type type;
-  private final Optional<Initializer> initializer;
+    private final String name;
+    private final Type type;
+    private final Optional<Initializer> initializer;
 
-  StructifiedVariableInfo(String name, Type type, Optional<Initializer> initializer) {
-    this.name = name;
-    this.type = type;
-    this.initializer = initializer;
-  }
+    StructifiedVariableInfo(String name, Type type, Optional<Initializer> initializer) {
+        this.name = name;
+        this.type = type;
+        this.initializer = initializer;
+    }
 
-  public String getName() {
-    return name;
-  }
+    public Optional<Initializer> getInitializer() {
+        return initializer;
+    }
 
-  public Type getType() {
-    return type;
-  }
+    public String getName() {
+        return name;
+    }
 
-  public Optional<Initializer> getInitializer() {
-    return initializer;
-  }
+    public Type getType() {
+        return type;
+    }
 }

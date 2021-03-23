@@ -20,25 +20,25 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class PrecisionDeclaration extends Declaration {
 
-  private String text;
+    private String text;
 
-  public PrecisionDeclaration(String text) {
-    this.text = text;
-  }
+    public PrecisionDeclaration(String text) {
+        this.text = text;
+    }
 
-  @Override
-  public String getText() {
-    return text;
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitPrecisionDeclaration(this);
+    }
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitPrecisionDeclaration(this);
-  }
+    @Override
+    public PrecisionDeclaration clone() {
+        return new PrecisionDeclaration(text);
+    }
 
-  @Override
-  public PrecisionDeclaration clone() {
-    return new PrecisionDeclaration(text);
-  }
+    @Override
+    public String getText() {
+        return text;
+    }
 
 }

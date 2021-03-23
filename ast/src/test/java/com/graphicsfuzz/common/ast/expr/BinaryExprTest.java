@@ -16,123 +16,123 @@
 
 package com.graphicsfuzz.common.ast.expr;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
 public class BinaryExprTest {
 
-  @Test
-  public void getLhs() throws Exception {
-    VariableIdentifierExpr vie = new VariableIdentifierExpr("x");
-    BinaryExpr be = new BinaryExpr(
-        vie,
-        new BoolConstantExpr(true),
-        BinOp.LAND);
-    assertEquals(vie, be.getLhs());
-  }
+    @Test
+    public void accept() throws Exception {
+        BinaryExpr be = new BinaryExpr(new IntConstantExpr("1"),
+                new IntConstantExpr("1"), BinOp.ADD);
+        BinaryExpr theExpr = new BinaryExpr(be.clone(), be.clone(), BinOp.ADD);
+        theExpr = new BinaryExpr(theExpr.clone(), theExpr.clone(), BinOp.ADD);
 
-  @Test
-  public void getRhs() throws Exception {
-    FloatConstantExpr fce = new FloatConstantExpr("10.2");
-    BinaryExpr be = new BinaryExpr(
-        new TypeConstructorExpr("float", new IntConstantExpr("1")),
-        fce,
-        BinOp.MOD);
-    assertEquals(fce, be.getRhs());
-  }
+        int numBinariesInExpr =
+                new StandardVisitor() {
+                    private int numBinaries;
 
-  @Test
-  public void getOp() throws Exception {
-    assertEquals(BinOp.ADD_ASSIGN,
-        new BinaryExpr(new VariableIdentifierExpr("x"),
-            new UIntConstantExpr("3u"),
-            BinOp.ADD_ASSIGN).getOp());
-  }
+                    int getNumBinaries(Expr e) {
+                        numBinaries = 0;
+                        visit(e);
+                        return numBinaries;
+                    }
 
-  @Test
-  public void accept() throws Exception {
-    BinaryExpr be = new BinaryExpr(new IntConstantExpr("1"),
-        new IntConstantExpr("1"), BinOp.ADD);
-    BinaryExpr theExpr = new BinaryExpr(be.clone(), be.clone(), BinOp.ADD);
-    theExpr = new BinaryExpr(theExpr.clone(), theExpr.clone(), BinOp.ADD);
+                    @Override
+                    public void visitBinaryExpr(BinaryExpr binaryExpr) {
+                        super.visitBinaryExpr(binaryExpr);
+                        numBinaries++;
+                    }
+                }.getNumBinaries(theExpr);
 
-    int numBinariesInExpr =
-        new StandardVisitor() {
-          private int numBinaries;
+        assertEquals(7, numBinariesInExpr);
 
-          @Override
-          public void visitBinaryExpr(BinaryExpr binaryExpr) {
-            super.visitBinaryExpr(binaryExpr);
-            numBinaries++;
-          }
+    }
 
-          int getNumBinaries(Expr e) {
-            numBinaries = 0;
-            visit(e);
-            return numBinaries;
-          }
-        }.getNumBinaries(theExpr);
+    @Test
+    public void getAndSetChild() throws Exception {
+        VariableIdentifierExpr e1 = new VariableIdentifierExpr("x");
+        VariableIdentifierExpr e2 = new VariableIdentifierExpr("y");
 
-    assertEquals(7, numBinariesInExpr);
+        BinaryExpr be = new BinaryExpr(e1, e2, BinOp.MUL);
 
-  }
+        assertEquals(e1, be.getChild(0));
+        assertEquals(be.getLhs(), be.getChild(0));
 
-  @Test
-  public void testClone() {
-    BinaryExpr be = new BinaryExpr(new VariableIdentifierExpr("x"),
-        new VariableIdentifierExpr("y"), BinOp.ADD);
-    BinaryExpr be2 = be.clone();
-    assertFalse(be == be2);
-    assertFalse(be.getLhs() == be2.getLhs());
-    assertEquals(((VariableIdentifierExpr) be.getLhs()).getName(),
-        ((VariableIdentifierExpr) be2.getLhs()).getName());
-    assertEquals(((VariableIdentifierExpr) be.getRhs()).getName(),
-        ((VariableIdentifierExpr) be2.getRhs()).getName());
-  }
+        assertEquals(e2, be.getChild(1));
+        assertEquals(be.getRhs(), be.getChild(1));
 
-  @Test
-  public void getAndSetChild() throws Exception {
-    VariableIdentifierExpr e1 = new VariableIdentifierExpr("x");
-    VariableIdentifierExpr e2 = new VariableIdentifierExpr("y");
+        be.setChild(0, e2);
+        assertEquals(be.getChild(0), be.getChild(1));
+        be.setChild(1, e1);
 
-    BinaryExpr be = new BinaryExpr(e1, e2, BinOp.MUL);
+        assertEquals(e2, be.getChild(0));
+        assertEquals(e1, be.getChild(1));
 
-    assertEquals(e1, be.getChild(0));
-    assertEquals(be.getLhs(), be.getChild(0));
+    }
 
-    assertEquals(e2, be.getChild(1));
-    assertEquals(be.getRhs(), be.getChild(1));
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void getChildBad() {
+        new BinaryExpr(new BoolConstantExpr(true),
+                new BoolConstantExpr(false), BinOp.LXOR).getChild(2);
+    }
 
-    be.setChild(0, e2);
-    assertEquals(be.getChild(0), be.getChild(1));
-    be.setChild(1, e1);
+    @Test
+    public void getLhs() throws Exception {
+        VariableIdentifierExpr vie = new VariableIdentifierExpr("x");
+        BinaryExpr be = new BinaryExpr(
+                vie,
+                new BoolConstantExpr(true),
+                BinOp.LAND);
+        assertEquals(vie, be.getLhs());
+    }
 
-    assertEquals(e2, be.getChild(0));
-    assertEquals(e1, be.getChild(1));
+    @Test
+    public void getNumChildren() throws Exception {
+        BinaryExpr be = new BinaryExpr(new BoolConstantExpr(true),
+                new BoolConstantExpr(false), BinOp.LXOR);
+        assertEquals(2, be.getNumChildren());
+    }
 
-  }
+    @Test
+    public void getOp() throws Exception {
+        assertEquals(BinOp.ADD_ASSIGN,
+                new BinaryExpr(new VariableIdentifierExpr("x"),
+                        new UIntConstantExpr("3u"),
+                        BinOp.ADD_ASSIGN).getOp());
+    }
 
-  @Test
-  public void getNumChildren() throws Exception {
-    BinaryExpr be = new BinaryExpr(new BoolConstantExpr(true),
-        new BoolConstantExpr(false), BinOp.LXOR);
-    assertEquals(2, be.getNumChildren());
-  }
+    @Test
+    public void getRhs() throws Exception {
+        FloatConstantExpr fce = new FloatConstantExpr("10.2");
+        BinaryExpr be = new BinaryExpr(
+                new TypeConstructorExpr("float", new IntConstantExpr("1")),
+                fce,
+                BinOp.MOD);
+        assertEquals(fce, be.getRhs());
+    }
 
-  @Test(expected = IndexOutOfBoundsException.class)
-  public void getChildBad() {
-    new BinaryExpr(new BoolConstantExpr(true),
-        new BoolConstantExpr(false), BinOp.LXOR).getChild(2);
-  }
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void setChildBad() {
+        new BinaryExpr(new BoolConstantExpr(true),
+                new BoolConstantExpr(false), BinOp.LXOR).setChild(2,
+                new BoolConstantExpr(false));
+    }
 
-  @Test(expected = IndexOutOfBoundsException.class)
-  public void setChildBad() {
-    new BinaryExpr(new BoolConstantExpr(true),
-        new BoolConstantExpr(false), BinOp.LXOR).setChild(2,
-          new BoolConstantExpr(false));
-  }
+    @Test
+    public void testClone() {
+        BinaryExpr be = new BinaryExpr(new VariableIdentifierExpr("x"),
+                new VariableIdentifierExpr("y"), BinOp.ADD);
+        BinaryExpr be2 = be.clone();
+        assertFalse(be == be2);
+        assertFalse(be.getLhs() == be2.getLhs());
+        assertEquals(((VariableIdentifierExpr) be.getLhs()).getName(),
+                ((VariableIdentifierExpr) be2.getLhs()).getName());
+        assertEquals(((VariableIdentifierExpr) be.getRhs()).getName(),
+                ((VariableIdentifierExpr) be2.getRhs()).getName());
+    }
 
 }

@@ -16,18 +16,18 @@
 
 package com.graphicsfuzz.common.ast.stmt;
 
+import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 
-import org.junit.Test;
-
 public class DefaultCaseLabelTest {
 
-  @Test
-  public void testDefaultCaseLabel() {
-    assertEquals("default:\n", new DefaultCaseLabel().getText());
-    final DefaultCaseLabel defaultCaseLabel = new DefaultCaseLabel();
-    assertNotSame(defaultCaseLabel, defaultCaseLabel.clone());
-  }
+    @Test
+    public void testDefaultCaseLabel() {
+        assertEquals("default:\n", new DefaultCaseLabel().getText());
+        final DefaultCaseLabel defaultCaseLabel = new DefaultCaseLabel();
+        assertNotSame(defaultCaseLabel, defaultCaseLabel.clone());
+    }
 
 }

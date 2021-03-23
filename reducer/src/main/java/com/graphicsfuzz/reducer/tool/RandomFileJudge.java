@@ -28,46 +28,45 @@ import java.io.IOException;
  */
 public class RandomFileJudge implements IFileJudge {
 
-  private boolean first;
-  private final IRandom generator;
-  private final int threshold;
-  private final boolean throwExceptionOnInvalid;
-  private final ShaderJobFileOperations fileOps;
+    private static final int LIMIT = 100;
+    private final IRandom generator;
+    private final int threshold;
+    private final boolean throwExceptionOnInvalid;
+    private final ShaderJobFileOperations fileOps;
+    private boolean first;
 
-  private static final int LIMIT = 100;
+    public RandomFileJudge(
+            IRandom generator,
+            int threshold,
+            boolean throwExceptionOnInvalid,
+            ShaderJobFileOperations fileOps) {
+        if (threshold < 0 || threshold >= LIMIT) {
+            throw new IllegalArgumentException("Threshold must be in range [0, " + (LIMIT - 1) + "]");
+        }
+        this.first = true;
+        this.generator = generator;
+        this.threshold = threshold;
+        this.throwExceptionOnInvalid = throwExceptionOnInvalid;
+        this.fileOps = fileOps;
+    }
 
-  public RandomFileJudge(
-      IRandom generator,
-      int threshold,
-      boolean throwExceptionOnInvalid,
-      ShaderJobFileOperations fileOps) {
-    if (threshold < 0 || threshold >= LIMIT) {
-      throw new IllegalArgumentException("Threshold must be in range [0, " + (LIMIT - 1) + "]");
+    @Override
+    public boolean isInteresting(
+            File shaderJobFile,
+            File shaderResultFileOutput
+    ) {
+        try {
+            if (!fileOps.areShadersValid(shaderJobFile, throwExceptionOnInvalid)) {
+                return false;
+            }
+        } catch (IOException | InterruptedException ex) {
+            throw new RuntimeException(ex);
+        }
+        if (first) {
+            first = false;
+            return true;
+        }
+        return generator.nextInt(LIMIT) < threshold;
     }
-    this.first = true;
-    this.generator = generator;
-    this.threshold = threshold;
-    this.throwExceptionOnInvalid = throwExceptionOnInvalid;
-    this.fileOps = fileOps;
-  }
-
-  @Override
-  public boolean isInteresting(
-      File shaderJobFile,
-      File shaderResultFileOutput
-  ) {
-    try {
-      if (!fileOps.areShadersValid(shaderJobFile, throwExceptionOnInvalid)) {
-        return false;
-      }
-    } catch (IOException | InterruptedException ex) {
-      throw new RuntimeException(ex);
-    }
-    if (first) {
-      first = false;
-      return true;
-    }
-    return generator.nextInt(LIMIT) < threshold;
-  }
 
 }

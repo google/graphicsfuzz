@@ -26,54 +26,54 @@ import java.util.Arrays;
 import java.util.List;
 
 public class IdentityMutationReductionOpportunities
-      extends ReductionOpportunitiesBase<IdentityMutationReductionOpportunity> {
+        extends ReductionOpportunitiesBase<IdentityMutationReductionOpportunity> {
 
-  private IdentityMutationReductionOpportunities(
-        TranslationUnit tu,
-        ReducerContext context) {
-    super(tu, context);
-  }
-
-  @Override
-  void identifyReductionOpportunitiesForChild(IAstNode parent, Expr child) {
-    if (MacroNames.isIdentity(child)) {
-      addOpportunity(new IdentityMutationReductionOpportunity(parent, child,
-                  OpaqueFunctionType.IDENTITY,
-                  getVistitationDepth()));
-    } else if (MacroNames.isZero(child)) {
-      addOpportunity(new IdentityMutationReductionOpportunity(parent, child,
-            OpaqueFunctionType.ZERO,
-            getVistitationDepth()));
-    } else if (MacroNames.isOne(child)) {
-      addOpportunity(new IdentityMutationReductionOpportunity(parent, child,
-            OpaqueFunctionType.ONE,
-            getVistitationDepth()));
-    } else if (MacroNames.isFalse(child)) {
-      addOpportunity(new IdentityMutationReductionOpportunity(parent, child,
-            OpaqueFunctionType.FALSE,
-            getVistitationDepth()));
-    } else if (MacroNames.isTrue(child)) {
-      addOpportunity(new IdentityMutationReductionOpportunity(parent, child,
-            OpaqueFunctionType.TRUE,
-            getVistitationDepth()));
+    private IdentityMutationReductionOpportunities(
+            TranslationUnit tu,
+            ReducerContext context) {
+        super(tu, context);
     }
-  }
 
-  static List<IdentityMutationReductionOpportunity> findOpportunities(
-        ShaderJob shaderJob,
-        ReducerContext context) {
-    return shaderJob.getShaders()
-        .stream()
-        .map(item -> findOpportunitiesForShader(item, context))
-        .reduce(Arrays.asList(), ListConcat::concatenate);
-  }
+    static List<IdentityMutationReductionOpportunity> findOpportunities(
+            ShaderJob shaderJob,
+            ReducerContext context) {
+        return shaderJob.getShaders()
+                .stream()
+                .map(item -> findOpportunitiesForShader(item, context))
+                .reduce(Arrays.asList(), ListConcat::concatenate);
+    }
 
-  private static List<IdentityMutationReductionOpportunity> findOpportunitiesForShader(
-      TranslationUnit tu,
-      ReducerContext context) {
-    IdentityMutationReductionOpportunities finder = new IdentityMutationReductionOpportunities(tu,
-          context);
-    finder.visit(tu);
-    return finder.getOpportunities();
-  }
+    @Override
+    void identifyReductionOpportunitiesForChild(IAstNode parent, Expr child) {
+        if (MacroNames.isIdentity(child)) {
+            addOpportunity(new IdentityMutationReductionOpportunity(parent, child,
+                    OpaqueFunctionType.IDENTITY,
+                    getVistitationDepth()));
+        } else if (MacroNames.isZero(child)) {
+            addOpportunity(new IdentityMutationReductionOpportunity(parent, child,
+                    OpaqueFunctionType.ZERO,
+                    getVistitationDepth()));
+        } else if (MacroNames.isOne(child)) {
+            addOpportunity(new IdentityMutationReductionOpportunity(parent, child,
+                    OpaqueFunctionType.ONE,
+                    getVistitationDepth()));
+        } else if (MacroNames.isFalse(child)) {
+            addOpportunity(new IdentityMutationReductionOpportunity(parent, child,
+                    OpaqueFunctionType.FALSE,
+                    getVistitationDepth()));
+        } else if (MacroNames.isTrue(child)) {
+            addOpportunity(new IdentityMutationReductionOpportunity(parent, child,
+                    OpaqueFunctionType.TRUE,
+                    getVistitationDepth()));
+        }
+    }
+
+    private static List<IdentityMutationReductionOpportunity> findOpportunitiesForShader(
+            TranslationUnit tu,
+            ReducerContext context) {
+        IdentityMutationReductionOpportunities finder = new IdentityMutationReductionOpportunities(tu,
+                context);
+        finder.visit(tu);
+        return finder.getOpportunities();
+    }
 }

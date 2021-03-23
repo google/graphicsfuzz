@@ -18,9 +18,9 @@ package com.graphicsfuzz.common.ast.type;
 
 public class Std430LayoutQualifier implements LayoutQualifier {
 
-  @Override
-  public String toString() {
-    return "std430";
-  }
+    @Override
+    public String toString() {
+        return "std430";
+    }
 
 }

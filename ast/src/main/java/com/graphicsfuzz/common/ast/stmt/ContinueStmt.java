@@ -20,14 +20,14 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public final class ContinueStmt extends Stmt {
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitContinueStmt(this);
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitContinueStmt(this);
+    }
 
-  @Override
-  public ContinueStmt clone() {
-    return new ContinueStmt();
-  }
+    @Override
+    public ContinueStmt clone() {
+        return new ContinueStmt();
+    }
 
 }

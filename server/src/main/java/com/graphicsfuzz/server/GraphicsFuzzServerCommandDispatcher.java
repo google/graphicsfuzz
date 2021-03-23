@@ -28,25 +28,25 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 
 public class GraphicsFuzzServerCommandDispatcher implements ICommandDispatcher {
 
-  @Override
-  public void dispatchCommand(List<String> command, Iface fuzzerServiceManager)
-      throws ShaderDispatchException, ArgumentParserException, InterruptedException,
-      IOException, ParseTimeoutException, GlslParserException {
-    switch (command.get(0)) {
-      case "run_shader_family":
-        RunShaderFamily.mainHelper(
-              command.subList(1, command.size()).toArray(new String[0]),
-              fuzzerServiceManager
-        );
-        break;
-      case "glsl-reduce":
-        GlslReduce.mainHelper(
-              command.subList(1, command.size()).toArray(new String[0]),
-              fuzzerServiceManager
-        );
-        break;
-      default:
-        throw new RuntimeException("Unknown command: " + command.get(0));
+    @Override
+    public void dispatchCommand(List<String> command, Iface fuzzerServiceManager)
+            throws ShaderDispatchException, ArgumentParserException, InterruptedException,
+            IOException, ParseTimeoutException, GlslParserException {
+        switch (command.get(0)) {
+            case "run_shader_family":
+                RunShaderFamily.mainHelper(
+                        command.subList(1, command.size()).toArray(new String[0]),
+                        fuzzerServiceManager
+                );
+                break;
+            case "glsl-reduce":
+                GlslReduce.mainHelper(
+                        command.subList(1, command.size()).toArray(new String[0]),
+                        fuzzerServiceManager
+                );
+                break;
+            default:
+                throw new RuntimeException("Unknown command: " + command.get(0));
+        }
     }
-  }
 }

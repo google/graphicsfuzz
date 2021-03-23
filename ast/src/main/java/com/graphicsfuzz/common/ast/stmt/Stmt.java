@@ -20,7 +20,7 @@ import com.graphicsfuzz.common.ast.IAstNode;
 
 public abstract class Stmt implements IAstNode {
 
-  @Override
-  public abstract Stmt clone();
+    @Override
+    public abstract Stmt clone();
 
 }

@@ -28,61 +28,61 @@ import java.util.List;
 import java.util.Optional;
 
 public class LiveOutputVariableWriteReductionOpportunities
-    extends ReductionOpportunitiesBase<LiveOutputVariableWriteReductionOpportunity> {
+        extends ReductionOpportunitiesBase<LiveOutputVariableWriteReductionOpportunity> {
 
-  static List<LiveOutputVariableWriteReductionOpportunity> findOpportunities(
-        ShaderJob shaderJob,
-        ReducerContext context) {
-    return shaderJob.getShaders()
-        .stream()
-        .map(item -> findOpportunitiesForShader(item, context))
-        .reduce(Arrays.asList(), ListConcat::concatenate);
-  }
-
-  private static List<LiveOutputVariableWriteReductionOpportunity> findOpportunitiesForShader(
-      TranslationUnit tu,
-      ReducerContext context) {
-    LiveOutputVariableWriteReductionOpportunities finder =
-          new LiveOutputVariableWriteReductionOpportunities(tu, context);
-    finder.visit(tu);
-    return finder.getOpportunities();
-  }
-
-  private LiveOutputVariableWriteReductionOpportunities(
-        TranslationUnit tu,
-        ReducerContext context) {
-    super(tu, context);
-  }
-
-  @Override
-  public void visitBlockStmt(BlockStmt block) {
-    super.visitBlockStmt(block);
-    final Optional<String> backupName = containsOutVariableBackup(block);
-    if (backupName.isPresent()) {
-      addOpportunity(new LiveOutputVariableWriteReductionOpportunity(block,
-          backupName.get(),
-          getVistitationDepth()));
+    private LiveOutputVariableWriteReductionOpportunities(
+            TranslationUnit tu,
+            ReducerContext context) {
+        super(tu, context);
     }
-  }
 
-  private static Optional<String> containsOutVariableBackup(BlockStmt block) {
-    return block.getStmts().stream()
-          .filter(item -> item instanceof DeclarationStmt)
-          .map(item -> (DeclarationStmt) item)
-          .filter(LiveOutputVariableWriteReductionOpportunities::isOutVariableBackup)
-          .findFirst()
-          .map(vdi -> vdi.getVariablesDeclaration().getDeclInfos()
-            .stream().map(item -> item.getName()).findFirst().get());
-  }
+    static List<LiveOutputVariableWriteReductionOpportunity> findOpportunities(
+            ShaderJob shaderJob,
+            ReducerContext context) {
+        return shaderJob.getShaders()
+                .stream()
+                .map(item -> findOpportunitiesForShader(item, context))
+                .reduce(Arrays.asList(), ListConcat::concatenate);
+    }
 
-  private static boolean isOutVariableBackup(DeclarationStmt declarationStmt) {
-    return declarationStmt.getVariablesDeclaration().getDeclInfos()
-        .stream().map(VariableDeclInfo::getName)
-        .anyMatch(LiveOutputVariableWriteReductionOpportunities::isOutVariableBackup);
-  }
+    @Override
+    public void visitBlockStmt(BlockStmt block) {
+        super.visitBlockStmt(block);
+        final Optional<String> backupName = containsOutVariableBackup(block);
+        if (backupName.isPresent()) {
+            addOpportunity(new LiveOutputVariableWriteReductionOpportunity(block,
+                    backupName.get(),
+                    getVistitationDepth()));
+        }
+    }
 
-  private static boolean isOutVariableBackup(String name) {
-    return name.startsWith(Constants.GLF_OUT_VAR_BACKUP_PREFIX);
-  }
+    private static Optional<String> containsOutVariableBackup(BlockStmt block) {
+        return block.getStmts().stream()
+                .filter(item -> item instanceof DeclarationStmt)
+                .map(item -> (DeclarationStmt) item)
+                .filter(LiveOutputVariableWriteReductionOpportunities::isOutVariableBackup)
+                .findFirst()
+                .map(vdi -> vdi.getVariablesDeclaration().getDeclInfos()
+                        .stream().map(item -> item.getName()).findFirst().get());
+    }
+
+    private static List<LiveOutputVariableWriteReductionOpportunity> findOpportunitiesForShader(
+            TranslationUnit tu,
+            ReducerContext context) {
+        LiveOutputVariableWriteReductionOpportunities finder =
+                new LiveOutputVariableWriteReductionOpportunities(tu, context);
+        finder.visit(tu);
+        return finder.getOpportunities();
+    }
+
+    private static boolean isOutVariableBackup(DeclarationStmt declarationStmt) {
+        return declarationStmt.getVariablesDeclaration().getDeclInfos()
+                .stream().map(VariableDeclInfo::getName)
+                .anyMatch(LiveOutputVariableWriteReductionOpportunities::isOutVariableBackup);
+    }
+
+    private static boolean isOutVariableBackup(String name) {
+        return name.startsWith(Constants.GLF_OUT_VAR_BACKUP_PREFIX);
+    }
 
 }

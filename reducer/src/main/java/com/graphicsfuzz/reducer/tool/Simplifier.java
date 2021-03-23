@@ -33,34 +33,34 @@ import org.slf4j.LoggerFactory;
 
 public class Simplifier {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(Simplifier.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Simplifier.class);
 
-  public static void main(String[] args) throws IOException, ParseTimeoutException,
-      InterruptedException, GlslParserException {
-    if (args.length != 1) {
-      System.err.println("Usage: Simplifier <file>.json");
-      System.exit(1);
+    public static void main(String[] args) throws IOException, ParseTimeoutException,
+            InterruptedException, GlslParserException {
+        if (args.length != 1) {
+            System.err.println("Usage: Simplifier <file>.json");
+            System.exit(1);
+        }
+        File inputShaderJobFile = new File(args[0]);
+        ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+        ShaderJob shaderJob = fileOps.readShaderJobFile(inputShaderJobFile);
+
+        // TODO: Warning: assumes only one shader fragment shader.
+        LOGGER.warn("WARNING: assumes only fragment shaders.");
+
+        shaderJob = new GlslShaderJob(
+                shaderJob.getLicense(),
+                shaderJob.getPipelineInfo(),
+                Simplify.simplify(shaderJob.getShaders().get(0)));
+
+        String[] firstTwoLines =
+                fileOps.getFirstTwoLinesOfShader(inputShaderJobFile, ShaderKind.FRAGMENT);
+
+
+        PrintStream ps = fileOps.getStdOut();
+        new PrettyPrinterVisitor(ps, PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
+                PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER, true,
+                Optional.empty(), Optional.empty()).visit(shaderJob.getFragmentShader().get());
+        ps.flush();
     }
-    File inputShaderJobFile = new File(args[0]);
-    ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
-    ShaderJob shaderJob = fileOps.readShaderJobFile(inputShaderJobFile);
-
-    // TODO: Warning: assumes only one shader fragment shader.
-    LOGGER.warn("WARNING: assumes only fragment shaders.");
-
-    shaderJob = new GlslShaderJob(
-        shaderJob.getLicense(),
-        shaderJob.getPipelineInfo(),
-        Simplify.simplify(shaderJob.getShaders().get(0)));
-
-    String[] firstTwoLines =
-        fileOps.getFirstTwoLinesOfShader(inputShaderJobFile, ShaderKind.FRAGMENT);
-
-
-    PrintStream ps = fileOps.getStdOut();
-    new PrettyPrinterVisitor(ps, PrettyPrinterVisitor.DEFAULT_INDENTATION_WIDTH,
-        PrettyPrinterVisitor.DEFAULT_NEWLINE_SUPPLIER, true,
-        Optional.empty(), Optional.empty()).visit(shaderJob.getFragmentShader().get());
-    ps.flush();
-  }
 }

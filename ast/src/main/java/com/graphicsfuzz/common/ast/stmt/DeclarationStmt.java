@@ -21,24 +21,24 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class DeclarationStmt extends Stmt {
 
-  private VariablesDeclaration variablesDeclaration;
+    private VariablesDeclaration variablesDeclaration;
 
-  public DeclarationStmt(VariablesDeclaration variablesDeclaration) {
-    this.variablesDeclaration = variablesDeclaration;
-  }
+    public DeclarationStmt(VariablesDeclaration variablesDeclaration) {
+        this.variablesDeclaration = variablesDeclaration;
+    }
 
-  public VariablesDeclaration getVariablesDeclaration() {
-    return variablesDeclaration;
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitDeclarationStmt(this);
+    }
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitDeclarationStmt(this);
-  }
+    @Override
+    public DeclarationStmt clone() {
+        return new DeclarationStmt(variablesDeclaration.clone());
+    }
 
-  @Override
-  public DeclarationStmt clone() {
-    return new DeclarationStmt(variablesDeclaration.clone());
-  }
+    public VariablesDeclaration getVariablesDeclaration() {
+        return variablesDeclaration;
+    }
 
 }

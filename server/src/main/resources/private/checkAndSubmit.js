@@ -15,8 +15,8 @@
  */
 
 function checkAndSubmit(msg, form) {
-  var c = confirm(msg);
-  if (c === true) {
-    form.submit();
-  }
+    var c = confirm(msg);
+    if (c === true) {
+        form.submit();
+    }
 }

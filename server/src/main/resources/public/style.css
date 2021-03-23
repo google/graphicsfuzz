@@ -49,7 +49,7 @@ p.list {
 }
 
 .smalltext {
-  font-size: 60%;
+    font-size: 60%;
 }
 
 fieldset {
@@ -282,11 +282,11 @@ table.table-button {
 }
 
 .logo {
-  height: 40px;
-  border: 0;
-  display:block;
-  margin-top: 5px;
-  margin-bottom: 5px;
-  margin-right: 10px;
-  margin-left: 10px;
+    height: 40px;
+    border: 0;
+    display: block;
+    margin-top: 5px;
+    margin-bottom: 5px;
+    margin-right: 10px;
+    margin-left: 10px;
 }

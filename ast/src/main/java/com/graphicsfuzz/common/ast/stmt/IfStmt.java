@@ -22,78 +22,78 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class IfStmt extends Stmt {
 
-  private Expr condition;
-  private Stmt thenStmt;
-  private Stmt elseStmt;
+    private Expr condition;
+    private Stmt thenStmt;
+    private Stmt elseStmt;
 
-  public IfStmt(Expr condition, Stmt thenStmt, Stmt elseStmt) {
-    this.condition = condition;
-    this.thenStmt = thenStmt;
-    this.elseStmt = elseStmt;
-  }
-
-  public Expr getCondition() {
-    return condition;
-  }
-
-  public Stmt getThenStmt() {
-    return thenStmt;
-  }
-
-  public Stmt getElseStmt() {
-    return elseStmt;
-  }
-
-  public boolean hasElseStmt() {
-    return elseStmt != null;
-  }
-
-  public void setThenStmt(Stmt thenStmt) {
-    this.thenStmt = thenStmt;
-  }
-
-  public void setElseStmt(Stmt elseStmt) {
-    this.elseStmt = elseStmt;
-  }
-
-  public void setCondition(Expr condition) {
-    this.condition = condition;
-  }
-
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitIfStmt(this);
-  }
-
-  @Override
-  public void replaceChild(IAstNode child, IAstNode newChild) {
-    if (child == condition && newChild instanceof Expr) {
-      setCondition((Expr) newChild);
-      return;
+    public IfStmt(Expr condition, Stmt thenStmt, Stmt elseStmt) {
+        this.condition = condition;
+        this.thenStmt = thenStmt;
+        this.elseStmt = elseStmt;
     }
-    if (child == thenStmt && newChild instanceof Stmt) {
-      setThenStmt((Stmt) newChild);
-      return;
-    }
-    if (child == elseStmt && newChild instanceof Stmt) {
-      setElseStmt((Stmt) newChild);
-      return;
-    }
-    throw new IllegalArgumentException();
-  }
 
-  @Override
-  public boolean hasChild(IAstNode candidateChild) {
-    assert candidateChild != null;
-    return condition == candidateChild
-          || thenStmt == candidateChild
-          || elseStmt == candidateChild;
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitIfStmt(this);
+    }
 
-  @Override
-  public IfStmt clone() {
-    return new IfStmt(condition.clone(), thenStmt.clone(),
-        elseStmt == null ? null : elseStmt.clone());
-  }
+    @Override
+    public IfStmt clone() {
+        return new IfStmt(condition.clone(), thenStmt.clone(),
+                elseStmt == null ? null : elseStmt.clone());
+    }
+
+    public Expr getCondition() {
+        return condition;
+    }
+
+    public void setCondition(Expr condition) {
+        this.condition = condition;
+    }
+
+    public Stmt getElseStmt() {
+        return elseStmt;
+    }
+
+    public void setElseStmt(Stmt elseStmt) {
+        this.elseStmt = elseStmt;
+    }
+
+    public Stmt getThenStmt() {
+        return thenStmt;
+    }
+
+    public void setThenStmt(Stmt thenStmt) {
+        this.thenStmt = thenStmt;
+    }
+
+    @Override
+    public boolean hasChild(IAstNode candidateChild) {
+        assert candidateChild != null;
+        return condition == candidateChild
+                || thenStmt == candidateChild
+                || elseStmt == candidateChild;
+    }
+
+    public boolean hasElseStmt() {
+        return elseStmt != null;
+    }
+
+    @Override
+    public void replaceChild(IAstNode child, IAstNode newChild) {
+        if (child == condition && newChild instanceof Expr) {
+            setCondition((Expr) newChild);
+            return;
+        }
+        if (child == thenStmt && newChild instanceof Stmt) {
+            setThenStmt((Stmt) newChild);
+            return;
+        }
+        if (child == elseStmt && newChild instanceof Stmt) {
+            setElseStmt((Stmt) newChild);
+            return;
+        }
+        throw new IllegalArgumentException();
+    }
 
 }

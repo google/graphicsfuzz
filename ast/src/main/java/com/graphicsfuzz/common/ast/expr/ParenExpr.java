@@ -21,51 +21,51 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class ParenExpr extends Expr {
 
-  private Expr expr;
+    private Expr expr;
 
-  public ParenExpr(Expr expr) {
-    this.expr = expr;
-  }
-
-  public Expr getExpr() {
-    return expr;
-  }
-
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitParenExpr(this);
-  }
-
-  @Override
-  public ParenExpr clone() {
-    return new ParenExpr(expr.clone());
-  }
-
-  @Override
-  public boolean hasChild(IAstNode candidateChild) {
-    return candidateChild == expr;
-  }
-
-  @Override
-  public Expr getChild(int index) {
-    if (index == 0) {
-      return expr;
+    public ParenExpr(Expr expr) {
+        this.expr = expr;
     }
-    throw new IndexOutOfBoundsException("Index for ParenExpr must be 0");
-  }
 
-  @Override
-  public void setChild(int index, Expr expr) {
-    if (index == 0) {
-      this.expr = expr;
-      return;
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitParenExpr(this);
     }
-    throw new IndexOutOfBoundsException("Index for ParenExpr must be 0");
-  }
 
-  @Override
-  public int getNumChildren() {
-    return 1;
-  }
+    @Override
+    public ParenExpr clone() {
+        return new ParenExpr(expr.clone());
+    }
+
+    @Override
+    public Expr getChild(int index) {
+        if (index == 0) {
+            return expr;
+        }
+        throw new IndexOutOfBoundsException("Index for ParenExpr must be 0");
+    }
+
+    public Expr getExpr() {
+        return expr;
+    }
+
+    @Override
+    public int getNumChildren() {
+        return 1;
+    }
+
+    @Override
+    public boolean hasChild(IAstNode candidateChild) {
+        return candidateChild == expr;
+    }
+
+    @Override
+    public void setChild(int index, Expr expr) {
+        if (index == 0) {
+            this.expr = expr;
+            return;
+        }
+        throw new IndexOutOfBoundsException("Index for ParenExpr must be 0");
+    }
 
 }

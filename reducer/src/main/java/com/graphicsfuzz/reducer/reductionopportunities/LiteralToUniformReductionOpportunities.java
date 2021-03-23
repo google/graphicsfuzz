@@ -31,66 +31,66 @@ import java.util.List;
 
 public final class LiteralToUniformReductionOpportunities {
 
-  private LiteralToUniformReductionOpportunities() {
-    // This class just provides a static method.
-  }
-
-  static List<LiteralToUniformReductionOpportunity> findOpportunities(
-      ShaderJob shaderJob,
-      ReducerContext context) {
-
-    final List<LiteralToUniformReductionOpportunity> opportunities = new ArrayList<>();
-
-    for (TranslationUnit tu : shaderJob.getShaders()) {
-      new StandardVisitor() {
-
-        @Override
-        public void visitArrayIndexExpr(ArrayIndexExpr arrayIndexExpr) {
-          // This prevents replacing the uniforms recursively. E.g. _GLF_int_values[0] does not
-          // become _GLF_int_values[_GLF_int_values[1]].
-          if (arrayIndexExpr.getArray() instanceof VariableIdentifierExpr) {
-            String name = ((VariableIdentifierExpr) arrayIndexExpr.getArray()).getName();
-            if (name.equals(Constants.FLOAT_LITERAL_UNIFORM_VALUES)
-                || name.equals(Constants.INT_LITERAL_UNIFORM_VALUES)
-                || name.equals(Constants.UINT_LITERAL_UNIFORM_VALUES)) {
-              return;
-            }
-          }
-          super.visitArrayIndexExpr(arrayIndexExpr);
-        }
-
-        @Override
-        public void visitArrayInfo(ArrayInfo arrayInfo) {
-          // Overriding this prevents replacing the size in array definitions, which must be
-          // initialized with a constant expression, without descending into the internals of
-          // the object in other visit methods.
-        }
-
-        @Override
-        public void visitIntConstantExpr(IntConstantExpr intConstantExpr) {
-          super.visitIntConstantExpr(intConstantExpr);
-          opportunities.add(new LiteralToUniformReductionOpportunity(intConstantExpr, tu,
-              shaderJob, getVistitationDepth()));
-        }
-
-        @Override
-        public void visitFloatConstantExpr(FloatConstantExpr floatConstantExpr) {
-          super.visitFloatConstantExpr(floatConstantExpr);
-          opportunities.add(new LiteralToUniformReductionOpportunity(floatConstantExpr, tu,
-              shaderJob, getVistitationDepth()));
-        }
-
-        @Override
-        public void visitUIntConstantExpr(UIntConstantExpr uintConstantExpr) {
-          super.visitUIntConstantExpr(uintConstantExpr);
-          opportunities.add(new LiteralToUniformReductionOpportunity(uintConstantExpr, tu,
-              shaderJob, getVistitationDepth()));
-        }
-
-      }.visit(tu);
+    private LiteralToUniformReductionOpportunities() {
+        // This class just provides a static method.
     }
 
-    return opportunities;
-  }
+    static List<LiteralToUniformReductionOpportunity> findOpportunities(
+            ShaderJob shaderJob,
+            ReducerContext context) {
+
+        final List<LiteralToUniformReductionOpportunity> opportunities = new ArrayList<>();
+
+        for (TranslationUnit tu : shaderJob.getShaders()) {
+            new StandardVisitor() {
+
+                @Override
+                public void visitArrayIndexExpr(ArrayIndexExpr arrayIndexExpr) {
+                    // This prevents replacing the uniforms recursively. E.g. _GLF_int_values[0] does not
+                    // become _GLF_int_values[_GLF_int_values[1]].
+                    if (arrayIndexExpr.getArray() instanceof VariableIdentifierExpr) {
+                        String name = ((VariableIdentifierExpr) arrayIndexExpr.getArray()).getName();
+                        if (name.equals(Constants.FLOAT_LITERAL_UNIFORM_VALUES)
+                                || name.equals(Constants.INT_LITERAL_UNIFORM_VALUES)
+                                || name.equals(Constants.UINT_LITERAL_UNIFORM_VALUES)) {
+                            return;
+                        }
+                    }
+                    super.visitArrayIndexExpr(arrayIndexExpr);
+                }
+
+                @Override
+                public void visitArrayInfo(ArrayInfo arrayInfo) {
+                    // Overriding this prevents replacing the size in array definitions, which must be
+                    // initialized with a constant expression, without descending into the internals of
+                    // the object in other visit methods.
+                }
+
+                @Override
+                public void visitFloatConstantExpr(FloatConstantExpr floatConstantExpr) {
+                    super.visitFloatConstantExpr(floatConstantExpr);
+                    opportunities.add(new LiteralToUniformReductionOpportunity(floatConstantExpr, tu,
+                            shaderJob, getVistitationDepth()));
+                }
+
+                @Override
+                public void visitIntConstantExpr(IntConstantExpr intConstantExpr) {
+                    super.visitIntConstantExpr(intConstantExpr);
+                    opportunities.add(new LiteralToUniformReductionOpportunity(intConstantExpr, tu,
+                            shaderJob, getVistitationDepth()));
+                }
+
+                @Override
+                public void visitUIntConstantExpr(UIntConstantExpr uintConstantExpr) {
+                    super.visitUIntConstantExpr(uintConstantExpr);
+                    opportunities.add(new LiteralToUniformReductionOpportunity(uintConstantExpr, tu,
+                            shaderJob, getVistitationDepth()));
+                }
+
+            }.visit(tu);
+        }
+
+        return opportunities;
+    }
 
 }

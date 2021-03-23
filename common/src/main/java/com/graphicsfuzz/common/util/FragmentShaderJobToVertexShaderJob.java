@@ -61,64 +61,57 @@ import net.sourceforge.argparse4j.inf.Namespace;
 
 public final class FragmentShaderJobToVertexShaderJob {
 
-  private static Optional<Integer> maybeGetArrayCount(VariableDeclInfo vdi) {
-    if (vdi.hasArrayInfo()) {
-      return Optional.of(vdi.getArrayInfo().getConstantSize());
-    }
-    return Optional.empty();
-  }
+    /**
+     * Converts a shader job where the fragment shader does all of the work
+     * into a shader job where the vertex shader does all of the work, discarding
+     * the existing vertex shader and replacing the fragment shader with a
+     * pass-through shader.
+     *
+     * @param sj A fragment shader based shader job
+     * @return A vertex shader based shader job.
+     */
+    public static ShaderJob convertShaderJob(ShaderJob sj) throws Exception {
+        // Get the current fragment shader and change it to vertex shader
+        TranslationUnit vertexShader = sj.getFragmentShader().get();
+        vertexShader.setShaderKind(ShaderKind.VERTEX);
 
-  /**
-   * Converts a shader job where the fragment shader does all of the work
-   * into a shader job where the vertex shader does all of the work, discarding
-   * the existing vertex shader and replacing the fragment shader with a
-   * pass-through shader.
-   *
-   * @param sj A fragment shader based shader job
-   * @return A vertex shader based shader job.
-   */
-  public static ShaderJob convertShaderJob(ShaderJob sj) throws Exception {
-    // Get the current fragment shader and change it to vertex shader
-    TranslationUnit vertexShader = sj.getFragmentShader().get();
-    vertexShader.setShaderKind(ShaderKind.VERTEX);
+        // Analyse the shader for used features (can't use anonymous class due to member access)
+        class FragmentBuiltinUsageAnalysis extends StandardVisitor {
+            private boolean usesFragCoord = false;
+            private boolean usesFragDepth = false;
+            private boolean usesDiscard = false;
 
-    // Analyse the shader for used features (can't use anonymous class due to member access)
-    class FragmentBuiltinUsageAnalysis extends StandardVisitor {
-      private boolean usesFragCoord = false;
-      private boolean usesFragDepth = false;
-      private boolean usesDiscard = false;
+            public boolean getUsesDiscard() {
+                return usesDiscard;
+            }
 
-      public boolean getUsesDiscard() {
-        return usesDiscard;
-      }
+            public boolean getUsesFragCoord() {
+                return usesFragCoord;
+            }
 
-      public boolean getUsesFragCoord() {
-        return usesFragCoord;
-      }
+            public boolean getUsesFragDepth() {
+                return usesFragDepth;
+            }
 
-      public boolean getUsesFragDepth() {
-        return usesFragDepth;
-      }
+            @Override
+            public void visitDiscardStmt(DiscardStmt discardStmt) {
+                usesDiscard = true;
+            }
 
-      @Override
-      public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
-        super.visitVariableIdentifierExpr(variableIdentifierExpr);
-        if (variableIdentifierExpr.getName().equals(OpenGlConstants.GL_FRAG_COORD)) {
-          usesFragCoord = true;
+            @Override
+            public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
+                super.visitVariableIdentifierExpr(variableIdentifierExpr);
+                if (variableIdentifierExpr.getName().equals(OpenGlConstants.GL_FRAG_COORD)) {
+                    usesFragCoord = true;
+                }
+                if (variableIdentifierExpr.getName().equals(OpenGlConstants.GL_FRAG_DEPTH)) {
+                    usesFragDepth = true;
+                }
+            }
         }
-        if (variableIdentifierExpr.getName().equals(OpenGlConstants.GL_FRAG_DEPTH)) {
-          usesFragDepth = true;
-        }
-      }
 
-      @Override
-      public void visitDiscardStmt(DiscardStmt discardStmt) {
-        usesDiscard = true;
-      }
-    }
-
-    final FragmentBuiltinUsageAnalysis fragmentBuiltinUsage = new FragmentBuiltinUsageAnalysis();
-    fragmentBuiltinUsage.visit(vertexShader);
+        final FragmentBuiltinUsageAnalysis fragmentBuiltinUsage = new FragmentBuiltinUsageAnalysis();
+        fragmentBuiltinUsage.visit(vertexShader);
 
 
     /* Create a pass-through fragment shader, of the form:
@@ -133,283 +126,290 @@ public final class FragmentShaderJobToVertexShaderJob {
           _GLF_color = frag_color;
         }
     */
-    final String fragColor = "frag_color";
-    final String glfDiscard = "_GLF_discard";
+        final String fragColor = "frag_color";
+        final String glfDiscard = "_GLF_discard";
 
-    final TranslationUnit fragmentShader = new TranslationUnit(ShaderKind.FRAGMENT,
-        Optional.of(vertexShader.getShadingLanguageVersion()), Arrays.asList(
-        new PrecisionDeclaration("precision highp float;"),
-        new VariablesDeclaration(new QualifiedType(BasicType.VEC4,
-            Arrays.asList(new LayoutQualifierSequence(
-                    new LocationLayoutQualifier(0)),
-                TypeQualifier.SHADER_OUTPUT)),
-            new VariableDeclInfo(Constants.GLF_COLOR, null, null)),
-        new VariablesDeclaration(new QualifiedType(BasicType.VEC4,
-            Arrays.asList(new LayoutQualifierSequence(
-                    new LocationLayoutQualifier(0)),
-                TypeQualifier.SHADER_INPUT)),
-            new VariableDeclInfo(fragColor, null, null)),
-        new FunctionDefinition(
-            new FunctionPrototype("main", VoidType.VOID, Collections.emptyList()),
-            new BlockStmt(Arrays.asList(
-                new ExprStmt(new BinaryExpr(
-                    new VariableIdentifierExpr(Constants.GLF_COLOR),
-                    new VariableIdentifierExpr(fragColor),
-                    BinOp.ASSIGN))), false))));
+        final TranslationUnit fragmentShader = new TranslationUnit(ShaderKind.FRAGMENT,
+                Optional.of(vertexShader.getShadingLanguageVersion()), Arrays.asList(
+                new PrecisionDeclaration("precision highp float;"),
+                new VariablesDeclaration(new QualifiedType(BasicType.VEC4,
+                        Arrays.asList(new LayoutQualifierSequence(
+                                        new LocationLayoutQualifier(0)),
+                                TypeQualifier.SHADER_OUTPUT)),
+                        new VariableDeclInfo(Constants.GLF_COLOR, null, null)),
+                new VariablesDeclaration(new QualifiedType(BasicType.VEC4,
+                        Arrays.asList(new LayoutQualifierSequence(
+                                        new LocationLayoutQualifier(0)),
+                                TypeQualifier.SHADER_INPUT)),
+                        new VariableDeclInfo(fragColor, null, null)),
+                new FunctionDefinition(
+                        new FunctionPrototype("main", VoidType.VOID, Collections.emptyList()),
+                        new BlockStmt(Arrays.asList(
+                                new ExprStmt(new BinaryExpr(
+                                        new VariableIdentifierExpr(Constants.GLF_COLOR),
+                                        new VariableIdentifierExpr(fragColor),
+                                        BinOp.ASSIGN))), false))));
 
-    // Find the first fragment shader declaration that is not a precision declaration.
-    Declaration firstFragmentNonPrecisionDeclaration = null;
-    for (Declaration decl : fragmentShader.getTopLevelDeclarations()) {
-      if (decl instanceof PrecisionDeclaration) {
-        continue;
-      }
-      firstFragmentNonPrecisionDeclaration = decl;
-      break;
-    }
-
-    assert firstFragmentNonPrecisionDeclaration != null;
-
-    if (fragmentBuiltinUsage.getUsesDiscard()) {
-      System.err.println(
-          "Warning: discard instruction found while converting from fragment shader to vertex "
-              + "shader.\nDiscard is signaled to the new fragment shader, but the vertex shader "
-              + "execution is not stopped, which may yield undesirable side effects.");
-
-      // Add a global _GLF_Discard that will be used to transmit discard information to frag shader
-      fragmentShader.addDeclarationBefore(
-          new VariablesDeclaration(new QualifiedType(BasicType.BOOL,
-              Arrays.asList(new LayoutQualifierSequence(
-                      new LocationLayoutQualifier(1)),
-                  TypeQualifier.SHADER_INPUT)),
-              new VariableDeclInfo(glfDiscard, null, null)),
-          firstFragmentNonPrecisionDeclaration);
-
-      // If the incoming discard variable is true, issue discard
-      fragmentShader.getMainFunction().getBody().insertStmt(0,
-              new IfStmt(
-                  new VariableIdentifierExpr(glfDiscard),
-                  new DiscardStmt(),
-                  null));
-    }
-
-    // Find the first vertex shader declaration that is not a precision declaration.
-    Declaration firstNonPrecisionDeclaration = null;
-    for (Declaration decl : vertexShader.getTopLevelDeclarations()) {
-      if (decl instanceof PrecisionDeclaration) {
-        continue;
-      }
-      firstNonPrecisionDeclaration = decl;
-      break;
-    }
-
-    assert firstNonPrecisionDeclaration != null;
-
-    if (fragmentBuiltinUsage.getUsesFragDepth()) {
-      // Add a global _GLF_FragDepth that will replace gl_FragDepth
-      vertexShader.addDeclarationBefore(
-          new VariablesDeclaration(
-              BasicType.FLOAT, new VariableDeclInfo(Constants.GLF_FRAGDEPTH, null, null)),
-          firstNonPrecisionDeclaration);
-    }
-
-    if (fragmentBuiltinUsage.getUsesFragCoord()) {
-      // Add a global _GLF_FragCoord that will replace gl_FragCoord
-      vertexShader.addDeclarationBefore(
-          new VariablesDeclaration(
-              BasicType.VEC4, new VariableDeclInfo(Constants.GLF_FRAGCOORD, null, null)),
-          firstNonPrecisionDeclaration);
-
-      // At start of main, populate _GLF_FragCoord with coordinates calculated from vertex input
-      // Note: This assumes the resolution is 256x256. The 128 multiplies by 2.
-      vertexShader.getMainFunction().getBody().insertStmt(0,
-          new ExprStmt(
-              new BinaryExpr(
-                  new VariableIdentifierExpr(Constants.GLF_FRAGCOORD),
-                  new BinaryExpr(
-                      new ParenExpr(
-                          new BinaryExpr(
-                              new VariableIdentifierExpr(Constants.GLF_POS),
-                              new TypeConstructorExpr(BasicType.VEC4.toString(),
-                                  new FloatConstantExpr("1.0"),
-                                  new FloatConstantExpr("1.0"),
-                                  new FloatConstantExpr("0.0"),
-                                  new FloatConstantExpr("0.0")),
-                              BinOp.ADD)),
-                      new TypeConstructorExpr(BasicType.VEC4.toString(),
-                          new FloatConstantExpr("128.0"),
-                          new FloatConstantExpr("128.0"),
-                          new FloatConstantExpr("1.0"),
-                          new FloatConstantExpr("1.0")),
-                      BinOp.MUL),
-                  BinOp.ASSIGN)));
-    }
-
-    if (fragmentBuiltinUsage.getUsesDiscard()) {
-      // Add a global _GLF_Discard that will be used to transmit discard information to frag shader
-      vertexShader.addDeclarationBefore(
-          new VariablesDeclaration(new QualifiedType(BasicType.BOOL,
-              Arrays.asList(new LayoutQualifierSequence(
-                      new LocationLayoutQualifier(1)),
-                  TypeQualifier.SHADER_OUTPUT)),
-              new VariableDeclInfo(glfDiscard, null, null)),
-          firstNonPrecisionDeclaration);
-
-      // At start of main, set the discard variable to false.
-      vertexShader.getMainFunction().getBody().insertStmt(0,
-          new ExprStmt(
-              new BinaryExpr(
-                  new VariableIdentifierExpr(glfDiscard),
-                  new BoolConstantExpr(false),
-                  BinOp.ASSIGN)));
-    }
-
-    // Add vertex position input
-    vertexShader.addDeclarationBefore(
-        new VariablesDeclaration(new QualifiedType(BasicType.VEC4,
-            Arrays.asList(new LayoutQualifierSequence(
-                    new LocationLayoutQualifier(0)),
-                TypeQualifier.SHADER_INPUT)),
-            new VariableDeclInfo(Constants.GLF_POS, null, null)),
-        firstNonPrecisionDeclaration);
-
-    // Add gl_Position setting to the end of main()
-    vertexShader.getMainFunction().getBody().addStmt(
-        new ExprStmt(
-            new BinaryExpr(
-                new VariableIdentifierExpr(OpenGlConstants.GL_POSITION),
-                new VariableIdentifierExpr(Constants.GLF_POS),
-                BinOp.ASSIGN)));
-
-    final IParentMap parentMap = IParentMap.createParentMap(vertexShader);
-    // Perform float to vertex shader conversion by replacing fragment-only variables and
-    // functions with things that work in fragment shaders. Some functionality is not
-    // duplicated, either because it is impossible or because it would be very difficult;
-    // notably, gl_FragDepth and discard could be signalled to the fragment shader, but
-    // are simply discarded. Partial derivative function calls (dFdx etc) are simply removed.
-    new StandardVisitor() {
-      @Override
-      public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
-        super.visitVariableIdentifierExpr(variableIdentifierExpr);
-        // Replace all instances of gl_FragCoord with _GLF_FragCoord
-        if (variableIdentifierExpr.getName().equals(OpenGlConstants.GL_FRAG_COORD)) {
-          variableIdentifierExpr.setName(Constants.GLF_FRAGCOORD);
+        // Find the first fragment shader declaration that is not a precision declaration.
+        Declaration firstFragmentNonPrecisionDeclaration = null;
+        for (Declaration decl : fragmentShader.getTopLevelDeclarations()) {
+            if (decl instanceof PrecisionDeclaration) {
+                continue;
+            }
+            firstFragmentNonPrecisionDeclaration = decl;
+            break;
         }
-        // Replace all instances of gl_FragDepth with _GLF_FragDepth
-        if (variableIdentifierExpr.getName().equals(OpenGlConstants.GL_FRAG_DEPTH)) {
-          variableIdentifierExpr.setName(Constants.GLF_FRAGDEPTH);
+
+        assert firstFragmentNonPrecisionDeclaration != null;
+
+        if (fragmentBuiltinUsage.getUsesDiscard()) {
+            System.err.println(
+                    "Warning: discard instruction found while converting from fragment shader to vertex "
+                            + "shader.\nDiscard is signaled to the new fragment shader, but the vertex shader "
+                            + "execution is not stopped, which may yield undesirable side effects.");
+
+            // Add a global _GLF_Discard that will be used to transmit discard information to frag shader
+            fragmentShader.addDeclarationBefore(
+                    new VariablesDeclaration(new QualifiedType(BasicType.BOOL,
+                            Arrays.asList(new LayoutQualifierSequence(
+                                            new LocationLayoutQualifier(1)),
+                                    TypeQualifier.SHADER_INPUT)),
+                            new VariableDeclInfo(glfDiscard, null, null)),
+                    firstFragmentNonPrecisionDeclaration);
+
+            // If the incoming discard variable is true, issue discard
+            fragmentShader.getMainFunction().getBody().insertStmt(0,
+                    new IfStmt(
+                            new VariableIdentifierExpr(glfDiscard),
+                            new DiscardStmt(),
+                            null));
         }
-        // Replace all instances of _GLF_color with frag_color
-        if (variableIdentifierExpr.getName().equals(Constants.GLF_COLOR)) {
-          variableIdentifierExpr.setName(fragColor);
+
+        // Find the first vertex shader declaration that is not a precision declaration.
+        Declaration firstNonPrecisionDeclaration = null;
+        for (Declaration decl : vertexShader.getTopLevelDeclarations()) {
+            if (decl instanceof PrecisionDeclaration) {
+                continue;
+            }
+            firstNonPrecisionDeclaration = decl;
+            break;
         }
-      }
 
-      // Also rename declarations of _GLF_color
-      @Override
-      public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
-        final Type baseType = variablesDeclaration.getBaseType();
-        visit(baseType);
-        for (VariableDeclInfo vdi : variablesDeclaration.getDeclInfos()) {
-          if (vdi.getName().equals(Constants.GLF_COLOR)) {
-            vdi.setName(fragColor);
-          }
-          if (vdi.hasArrayInfo()) {
-            visit(vdi.getArrayInfo().getSizeExpr());
-          } else if (baseType instanceof ArrayType) {
-            visit(((ArrayType) baseType).getArrayInfo().getSizeExpr());
-          }
-          if (vdi.hasInitializer()) {
-            visit(vdi.getInitializer());
-          }
+        assert firstNonPrecisionDeclaration != null;
+
+        if (fragmentBuiltinUsage.getUsesFragDepth()) {
+            // Add a global _GLF_FragDepth that will replace gl_FragDepth
+            vertexShader.addDeclarationBefore(
+                    new VariablesDeclaration(
+                            BasicType.FLOAT, new VariableDeclInfo(Constants.GLF_FRAGDEPTH, null, null)),
+                    firstNonPrecisionDeclaration);
         }
-      }
 
-      // Replace discard with discard variable set to true
-      @Override
-      public void visitDiscardStmt(DiscardStmt discardStmt) {
-        parentMap.getParent(discardStmt).replaceChild(discardStmt,
-            new ExprStmt(
-                new BinaryExpr(
-                    new VariableIdentifierExpr(glfDiscard),
-                    new BoolConstantExpr(true),
-                    BinOp.ASSIGN)));
-      }
+        if (fragmentBuiltinUsage.getUsesFragCoord()) {
+            // Add a global _GLF_FragCoord that will replace gl_FragCoord
+            vertexShader.addDeclarationBefore(
+                    new VariablesDeclaration(
+                            BasicType.VEC4, new VariableDeclInfo(Constants.GLF_FRAGCOORD, null, null)),
+                    firstNonPrecisionDeclaration);
 
-      // Replace fragment-only functions with parenthesis expression
-      @Override
-      public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
-        super.visitFunctionCallExpr(functionCallExpr);
-        // For most of the functions, they take only one parameter and it's the same
-        // type as the output.
-        if (Arrays.asList("dFdx", "dFdy", "dFdxCoarse", "dFdyCoarse", "dFdxFine", "dFdyFine",
-            "fwidth", "fwidthCoarse", "fwidthFine", "interpolateAtCentroid")
-            .contains(functionCallExpr.getCallee())) {
-          assert functionCallExpr.getNumChildren() == 1;
-          final Expr childExpr = functionCallExpr.getChild(0);
-          parentMap.getParent(functionCallExpr).replaceChild(functionCallExpr,
-              new ParenExpr(childExpr));
+            // At start of main, populate _GLF_FragCoord with coordinates calculated from vertex input
+            // Note: This assumes the resolution is 256x256. The 128 multiplies by 2.
+            vertexShader.getMainFunction().getBody().insertStmt(0,
+                    new ExprStmt(
+                            new BinaryExpr(
+                                    new VariableIdentifierExpr(Constants.GLF_FRAGCOORD),
+                                    new BinaryExpr(
+                                            new ParenExpr(
+                                                    new BinaryExpr(
+                                                            new VariableIdentifierExpr(Constants.GLF_POS),
+                                                            new TypeConstructorExpr(BasicType.VEC4.toString(),
+                                                                    new FloatConstantExpr("1.0"),
+                                                                    new FloatConstantExpr("1.0"),
+                                                                    new FloatConstantExpr("0.0"),
+                                                                    new FloatConstantExpr("0.0")),
+                                                            BinOp.ADD)),
+                                            new TypeConstructorExpr(BasicType.VEC4.toString(),
+                                                    new FloatConstantExpr("128.0"),
+                                                    new FloatConstantExpr("128.0"),
+                                                    new FloatConstantExpr("1.0"),
+                                                    new FloatConstantExpr("1.0")),
+                                            BinOp.MUL),
+                                    BinOp.ASSIGN)));
         }
-        // the first parameter of interpolateAtOffset has same type as return type, so use it
-        if (Arrays.asList("interpolateAtOffset").contains(functionCallExpr.getCallee())) {
-          assert functionCallExpr.getNumChildren() == 2;
-          final Expr childExpr = functionCallExpr.getChild(0);
-          parentMap.getParent(functionCallExpr).replaceChild(functionCallExpr,
-              new ParenExpr(childExpr));
+
+        if (fragmentBuiltinUsage.getUsesDiscard()) {
+            // Add a global _GLF_Discard that will be used to transmit discard information to frag shader
+            vertexShader.addDeclarationBefore(
+                    new VariablesDeclaration(new QualifiedType(BasicType.BOOL,
+                            Arrays.asList(new LayoutQualifierSequence(
+                                            new LocationLayoutQualifier(1)),
+                                    TypeQualifier.SHADER_OUTPUT)),
+                            new VariableDeclInfo(glfDiscard, null, null)),
+                    firstNonPrecisionDeclaration);
+
+            // At start of main, set the discard variable to false.
+            vertexShader.getMainFunction().getBody().insertStmt(0,
+                    new ExprStmt(
+                            new BinaryExpr(
+                                    new VariableIdentifierExpr(glfDiscard),
+                                    new BoolConstantExpr(false),
+                                    BinOp.ASSIGN)));
         }
-      }
 
-    }.visit(vertexShader);
+        // Add vertex position input
+        vertexShader.addDeclarationBefore(
+                new VariablesDeclaration(new QualifiedType(BasicType.VEC4,
+                        Arrays.asList(new LayoutQualifierSequence(
+                                        new LocationLayoutQualifier(0)),
+                                TypeQualifier.SHADER_INPUT)),
+                        new VariableDeclInfo(Constants.GLF_POS, null, null)),
+                firstNonPrecisionDeclaration);
 
-    final PipelineInfo pipelineInfo = sj.getPipelineInfo();
+        // Add gl_Position setting to the end of main()
+        vertexShader.getMainFunction().getBody().addStmt(
+                new ExprStmt(
+                        new BinaryExpr(
+                                new VariableIdentifierExpr(OpenGlConstants.GL_POSITION),
+                                new VariableIdentifierExpr(Constants.GLF_POS),
+                                BinOp.ASSIGN)));
 
-    pipelineInfo.addGridInfo(256, 256);
+        final IParentMap parentMap = IParentMap.createParentMap(vertexShader);
+        // Perform float to vertex shader conversion by replacing fragment-only variables and
+        // functions with things that work in fragment shaders. Some functionality is not
+        // duplicated, either because it is impossible or because it would be very difficult;
+        // notably, gl_FragDepth and discard could be signalled to the fragment shader, but
+        // are simply discarded. Partial derivative function calls (dFdx etc) are simply removed.
+        new StandardVisitor() {
+            // Replace discard with discard variable set to true
+            @Override
+            public void visitDiscardStmt(DiscardStmt discardStmt) {
+                parentMap.getParent(discardStmt).replaceChild(discardStmt,
+                        new ExprStmt(
+                                new BinaryExpr(
+                                        new VariableIdentifierExpr(glfDiscard),
+                                        new BoolConstantExpr(true),
+                                        BinOp.ASSIGN)));
+            }
 
-    // Return transformed shader job
-    return new GlslShaderJob(Optional.empty(), pipelineInfo,
-        Arrays.asList(vertexShader, fragmentShader));
-  }
+            // Replace fragment-only functions with parenthesis expression
+            @Override
+            public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+                super.visitFunctionCallExpr(functionCallExpr);
+                // For most of the functions, they take only one parameter and it's the same
+                // type as the output.
+                if (Arrays.asList("dFdx", "dFdy", "dFdxCoarse", "dFdyCoarse", "dFdxFine", "dFdyFine",
+                        "fwidth", "fwidthCoarse", "fwidthFine", "interpolateAtCentroid")
+                        .contains(functionCallExpr.getCallee())) {
+                    assert functionCallExpr.getNumChildren() == 1;
+                    final Expr childExpr = functionCallExpr.getChild(0);
+                    parentMap.getParent(functionCallExpr).replaceChild(functionCallExpr,
+                            new ParenExpr(childExpr));
+                }
+                // the first parameter of interpolateAtOffset has same type as return type, so use it
+                if (Arrays.asList("interpolateAtOffset").contains(functionCallExpr.getCallee())) {
+                    assert functionCallExpr.getNumChildren() == 2;
+                    final Expr childExpr = functionCallExpr.getChild(0);
+                    parentMap.getParent(functionCallExpr).replaceChild(functionCallExpr,
+                            new ParenExpr(childExpr));
+                }
+            }
 
-  private static Namespace parse(String[] args) throws ArgumentParserException {
-    ArgumentParser parser = ArgumentParsers.newArgumentParser("FragmentShaderToShaderJob")
-        .defaultHelp(true)
-        .description("Turns a fragment shader into a shader job with randomized uniforms and "
-            + "(if needed) a suitable vertex shader.");
+            @Override
+            public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
+                super.visitVariableIdentifierExpr(variableIdentifierExpr);
+                // Replace all instances of gl_FragCoord with _GLF_FragCoord
+                if (variableIdentifierExpr.getName().equals(OpenGlConstants.GL_FRAG_COORD)) {
+                    variableIdentifierExpr.setName(Constants.GLF_FRAGCOORD);
+                }
+                // Replace all instances of gl_FragDepth with _GLF_FragDepth
+                if (variableIdentifierExpr.getName().equals(OpenGlConstants.GL_FRAG_DEPTH)) {
+                    variableIdentifierExpr.setName(Constants.GLF_FRAGDEPTH);
+                }
+                // Replace all instances of _GLF_color with frag_color
+                if (variableIdentifierExpr.getName().equals(Constants.GLF_COLOR)) {
+                    variableIdentifierExpr.setName(fragColor);
+                }
+            }
 
-    // Required arguments
-    parser.addArgument("shader")
-        .help("Path of .frag shader to be turned into a shader job.")
-        .type(File.class);
+            // Also rename declarations of _GLF_color
+            @Override
+            public void visitVariablesDeclaration(VariablesDeclaration variablesDeclaration) {
+                final Type baseType = variablesDeclaration.getBaseType();
+                visit(baseType);
+                for (VariableDeclInfo vdi : variablesDeclaration.getDeclInfos()) {
+                    if (vdi.getName().equals(Constants.GLF_COLOR)) {
+                        vdi.setName(fragColor);
+                    }
+                    if (vdi.hasArrayInfo()) {
+                        visit(vdi.getArrayInfo().getSizeExpr());
+                    } else if (baseType instanceof ArrayType) {
+                        visit(((ArrayType) baseType).getArrayInfo().getSizeExpr());
+                    }
+                    if (vdi.hasInitializer()) {
+                        visit(vdi.getInitializer());
+                    }
+                }
+            }
 
-    parser.addArgument("output")
-        .help("Target shader job .json file.")
-        .type(String.class);
+        }.visit(vertexShader);
 
-    parser.addArgument("--seed")
-        .help("Seed (unsigned 64 bit long integer) for the random number generator.")
-        .type(String.class);
+        final PipelineInfo pipelineInfo = sj.getPipelineInfo();
 
-    return parser.parseArgs(args);
-  }
+        pipelineInfo.addGridInfo(256, 256);
 
-  public static void main(String[] args) throws IOException, InterruptedException {
-
-    try {
-      Namespace ns = parse(args);
-      long startTime = System.currentTimeMillis();
-      final ShaderJobFileOperations fileOperations = new ShaderJobFileOperations();
-      final ShaderJob input = fileOperations.readShaderJobFile(new File(ns.getString("shader")));
-      long endTime = System.currentTimeMillis();
-      System.err.println("Time for parsing: " + (endTime - startTime));
-
-      startTime = System.currentTimeMillis();
-      final ShaderJob result = convertShaderJob(input);
-      endTime = System.currentTimeMillis();
-      System.err.println("Time for converting shader job: " + (endTime - startTime));
-
-      fileOperations.writeShaderJobFile(result, new File(ns.getString("output")));
-    } catch (Throwable exception) {
-      exception.printStackTrace();
-      System.exit(1);
+        // Return transformed shader job
+        return new GlslShaderJob(Optional.empty(), pipelineInfo,
+                Arrays.asList(vertexShader, fragmentShader));
     }
-  }
+
+    public static void main(String[] args) throws IOException, InterruptedException {
+
+        try {
+            Namespace ns = parse(args);
+            long startTime = System.currentTimeMillis();
+            final ShaderJobFileOperations fileOperations = new ShaderJobFileOperations();
+            final ShaderJob input = fileOperations.readShaderJobFile(new File(ns.getString("shader")));
+            long endTime = System.currentTimeMillis();
+            System.err.println("Time for parsing: " + (endTime - startTime));
+
+            startTime = System.currentTimeMillis();
+            final ShaderJob result = convertShaderJob(input);
+            endTime = System.currentTimeMillis();
+            System.err.println("Time for converting shader job: " + (endTime - startTime));
+
+            fileOperations.writeShaderJobFile(result, new File(ns.getString("output")));
+        } catch (Throwable exception) {
+            exception.printStackTrace();
+            System.exit(1);
+        }
+    }
+
+    private static Optional<Integer> maybeGetArrayCount(VariableDeclInfo vdi) {
+        if (vdi.hasArrayInfo()) {
+            return Optional.of(vdi.getArrayInfo().getConstantSize());
+        }
+        return Optional.empty();
+    }
+
+    private static Namespace parse(String[] args) throws ArgumentParserException {
+        ArgumentParser parser = ArgumentParsers.newArgumentParser("FragmentShaderToShaderJob")
+                .defaultHelp(true)
+                .description("Turns a fragment shader into a shader job with randomized uniforms and "
+                        + "(if needed) a suitable vertex shader.");
+
+        // Required arguments
+        parser.addArgument("shader")
+                .help("Path of .frag shader to be turned into a shader job.")
+                .type(File.class);
+
+        parser.addArgument("output")
+                .help("Target shader job .json file.")
+                .type(String.class);
+
+        parser.addArgument("--seed")
+                .help("Seed (unsigned 64 bit long integer) for the random number generator.")
+                .type(String.class);
+
+        return parser.parseArgs(args);
+    }
 }

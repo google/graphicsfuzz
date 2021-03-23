@@ -20,21 +20,21 @@ import java.io.InputStream;
 
 public class StreamGobblerBuffer extends StreamGobbler {
 
-  private final StringBuffer result;
+    private final StringBuffer result;
 
-  public StreamGobblerBuffer(InputStream inputStream) {
-    super(inputStream);
-    this.result = new StringBuffer();
-  }
+    public StreamGobblerBuffer(InputStream inputStream) {
+        super(inputStream);
+        this.result = new StringBuffer();
+    }
 
-  @Override
-  protected void handleLine(String line) {
-    result.append(line);
-    result.append(System.lineSeparator());
-  }
+    public StringBuffer getResult() {
+        return result;
+    }
 
-  public StringBuffer getResult() {
-    return result;
-  }
+    @Override
+    protected void handleLine(String line) {
+        result.append(line);
+        result.append(System.lineSeparator());
+    }
 
 }

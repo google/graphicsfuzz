@@ -24,45 +24,45 @@ import java.util.Collections;
 import java.util.List;
 
 public class SwitchToLoopReductionOpportunities extends
-    ReductionOpportunitiesBase<SwitchToLoopReductionOpportunity> {
+        ReductionOpportunitiesBase<SwitchToLoopReductionOpportunity> {
 
-  /**
-   * Find all switch-to-loop opportunities for the given translation unit.
-   *
-   * @param shaderJob The shader job to be searched.
-   * @param context Includes info such as whether we reduce everywhere
-   * @return The opportunities that can be reduced
-   */
-  static List<SwitchToLoopReductionOpportunity> findOpportunities(
-      ShaderJob shaderJob,
-      ReducerContext context) {
-    return shaderJob.getShaders()
-        .stream()
-        .map(item -> findOpportunitiesForShader(item, context))
-        .reduce(Collections.emptyList(), ListConcat::concatenate);
-  }
-
-  private static List<SwitchToLoopReductionOpportunity> findOpportunitiesForShader(
-      TranslationUnit tu,
-      ReducerContext context) {
-    final SwitchToLoopReductionOpportunities finder =
-        new SwitchToLoopReductionOpportunities(tu, context);
-    finder.visit(tu);
-    return finder.getOpportunities();
-  }
-
-  private SwitchToLoopReductionOpportunities(TranslationUnit tu, ReducerContext context) {
-    super(tu, context);
-  }
-
-  @Override
-  public void visitSwitchStmt(SwitchStmt switchStmt) {
-    super.visitSwitchStmt(switchStmt);
-    if (context.reduceEverywhere() || injectionTracker.enclosedByDeadCodeInjection()) {
-      addOpportunity(new SwitchToLoopReductionOpportunity(getVistitationDepth(),
-          parentMap.getParent(switchStmt),
-          switchStmt));
+    private SwitchToLoopReductionOpportunities(TranslationUnit tu, ReducerContext context) {
+        super(tu, context);
     }
-  }
+
+    /**
+     * Find all switch-to-loop opportunities for the given translation unit.
+     *
+     * @param shaderJob The shader job to be searched.
+     * @param context   Includes info such as whether we reduce everywhere
+     * @return The opportunities that can be reduced
+     */
+    static List<SwitchToLoopReductionOpportunity> findOpportunities(
+            ShaderJob shaderJob,
+            ReducerContext context) {
+        return shaderJob.getShaders()
+                .stream()
+                .map(item -> findOpportunitiesForShader(item, context))
+                .reduce(Collections.emptyList(), ListConcat::concatenate);
+    }
+
+    @Override
+    public void visitSwitchStmt(SwitchStmt switchStmt) {
+        super.visitSwitchStmt(switchStmt);
+        if (context.reduceEverywhere() || injectionTracker.enclosedByDeadCodeInjection()) {
+            addOpportunity(new SwitchToLoopReductionOpportunity(getVistitationDepth(),
+                    parentMap.getParent(switchStmt),
+                    switchStmt));
+        }
+    }
+
+    private static List<SwitchToLoopReductionOpportunity> findOpportunitiesForShader(
+            TranslationUnit tu,
+            ReducerContext context) {
+        final SwitchToLoopReductionOpportunities finder =
+                new SwitchToLoopReductionOpportunities(tu, context);
+        finder.visit(tu);
+        return finder.getOpportunities();
+    }
 
 }

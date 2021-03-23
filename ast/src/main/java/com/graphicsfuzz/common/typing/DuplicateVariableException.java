@@ -18,17 +18,17 @@ package com.graphicsfuzz.common.typing;
 
 public class DuplicateVariableException extends RuntimeException {
 
-  private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-  private String name;
+    private String name;
 
-  DuplicateVariableException(String name) {
-    this.name = name;
-  }
+    DuplicateVariableException(String name) {
+        this.name = name;
+    }
 
-  @Override
-  public String toString() {
-    return "Duplicate variable named '" + name + "'";
-  }
+    @Override
+    public String toString() {
+        return "Duplicate variable named '" + name + "'";
+    }
 
 }

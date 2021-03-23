@@ -20,13 +20,13 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public final class DefaultCaseLabel extends CaseLabel {
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitDefaultCaseLabel(this);
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitDefaultCaseLabel(this);
+    }
 
-  @Override
-  public DefaultCaseLabel clone() {
-    return new DefaultCaseLabel();
-  }
+    @Override
+    public DefaultCaseLabel clone() {
+        return new DefaultCaseLabel();
+    }
 }

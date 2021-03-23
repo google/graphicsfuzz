@@ -16,10 +16,6 @@
 
 package com.graphicsfuzz.common.ast;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
@@ -37,120 +33,124 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 public class TranslationUnitTest {
 
-  @Rule
-  public TemporaryFolder temporaryFolder = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  @Test
-  public void testShaderKinds() throws Exception {
-    final File frag = temporaryFolder.newFile("a.frag");
-    final File vert = temporaryFolder.newFile("a.vert");
-    final File comp = temporaryFolder.newFile("a.comp");
-    final String emptyShader = "#version 320 es\nvoid main() { }\n";
-    FileUtils.writeStringToFile(frag, emptyShader, StandardCharsets.UTF_8);
-    FileUtils.writeStringToFile(vert, emptyShader, StandardCharsets.UTF_8);
-    FileUtils.writeStringToFile(comp, emptyShader, StandardCharsets.UTF_8);
-    final TranslationUnit fragTu = ParseHelper.parse(frag);
-    final TranslationUnit vertTu = ParseHelper.parse(vert);
-    final TranslationUnit compTu = ParseHelper.parse(comp);
-    assertEquals(ShaderKind.FRAGMENT, fragTu.getShaderKind());
-    assertEquals(ShaderKind.VERTEX, vertTu.getShaderKind());
-    assertEquals(ShaderKind.COMPUTE, compTu.getShaderKind());
+    @Test
+    public void testClone() throws Exception {
+        final File vert = temporaryFolder.newFile("a.vert");
+        FileUtils.writeStringToFile(vert, "void main() { }", StandardCharsets.UTF_8);
+        final TranslationUnit vertTu = ParseHelper.parse(vert);
+        assertEquals(ShaderKind.VERTEX, vertTu.getShaderKind());
+        assertEquals(ShaderKind.VERTEX, vertTu.clone().getShaderKind());
+    }
 
-  }
+    @Test
+    public void testGetUniformDeclaration() throws Exception {
+        final String shader =
+                "uniform float a, b;"
+                        + "uniform int;"
+                        + "void main()"
+                        + "{"
+                        + "  float c = a;"
+                        + "  float d = b;"
+                        + "}";
 
-  @Test
-  public void testClone() throws Exception {
-    final File vert = temporaryFolder.newFile("a.vert");
-    FileUtils.writeStringToFile(vert, "void main() { }", StandardCharsets.UTF_8);
-    final TranslationUnit vertTu = ParseHelper.parse(vert);
-    assertEquals(ShaderKind.VERTEX, vertTu.getShaderKind());
-    assertEquals(ShaderKind.VERTEX, vertTu.clone().getShaderKind());
-  }
+        final TranslationUnit translationUnit = ParseHelper.parse(shader, ShaderKind.FRAGMENT);
+        final VariablesDeclaration variablesDeclaration =
+                translationUnit.getUniformDeclaration("a");
 
-  @Test
-  public void testHasUniformDeclaration() throws Exception {
-    final String shader =
-        "uniform float a[2], b;"
-            + "uniform int;"
-            + "void main()"
-            + "{"
-            + "  float c = a[0];"
-            + "  float d = b;"
-            + "}";
+        assertEquals(variablesDeclaration.getDeclInfos().get(0).getName(), "a");
+        assertEquals(variablesDeclaration.getDeclInfos().get(1).getName(), "b");
 
-    final TranslationUnit translationUnit = ParseHelper.parse(shader, ShaderKind.FRAGMENT);
-    assertTrue(translationUnit.hasUniformDeclaration("a"));
-    assertTrue(translationUnit.hasUniformDeclaration("b"));
-    assertFalse(translationUnit.hasUniformDeclaration("c"));
-  }
+        final VariablesDeclaration variablesDeclaration2 =
+                translationUnit.getUniformDeclaration("b");
 
-  @Test
-  public void testUpdateTopLevelDeclaration() throws Exception {
+        assertEquals(variablesDeclaration2.getDeclInfos().get(0).getName(), "a");
+        assertEquals(variablesDeclaration2.getDeclInfos().get(1).getName(), "b");
+    }
 
-    final String shader =
-        "uniform float a[2];"
-            + "void main()"
-            + "{"
-            + "  float b = a[0];"
-            + "}";
+    @Test
+    public void testHasUniformDeclaration() throws Exception {
+        final String shader =
+                "uniform float a[2], b;"
+                        + "uniform int;"
+                        + "void main()"
+                        + "{"
+                        + "  float c = a[0];"
+                        + "  float d = b;"
+                        + "}";
 
-    final TranslationUnit translationUnit = ParseHelper.parse(shader, ShaderKind.FRAGMENT);
-    final VariablesDeclaration variablesDecl = translationUnit.getUniformDeclaration("a");
+        final TranslationUnit translationUnit = ParseHelper.parse(shader, ShaderKind.FRAGMENT);
+        assertTrue(translationUnit.hasUniformDeclaration("a"));
+        assertTrue(translationUnit.hasUniformDeclaration("b"));
+        assertFalse(translationUnit.hasUniformDeclaration("c"));
+    }
 
-    assertEquals(variablesDecl.getDeclInfos().get(0).getName(), "a");
-    assertTrue(variablesDecl.getDeclInfos().get(0).hasArrayInfo());
-    assertEquals(variablesDecl.getDeclInfos().get(0).getArrayInfo().getConstantSize(),
-        Integer.valueOf(2));
-    assertEquals(((IntConstantExpr)variablesDecl.getDeclInfos().get(0).getArrayInfo()
-            .getSizeExpr()).getNumericValue(), 2);
+    @Test
+    public void testShaderKinds() throws Exception {
+        final File frag = temporaryFolder.newFile("a.frag");
+        final File vert = temporaryFolder.newFile("a.vert");
+        final File comp = temporaryFolder.newFile("a.comp");
+        final String emptyShader = "#version 320 es\nvoid main() { }\n";
+        FileUtils.writeStringToFile(frag, emptyShader, StandardCharsets.UTF_8);
+        FileUtils.writeStringToFile(vert, emptyShader, StandardCharsets.UTF_8);
+        FileUtils.writeStringToFile(comp, emptyShader, StandardCharsets.UTF_8);
+        final TranslationUnit fragTu = ParseHelper.parse(frag);
+        final TranslationUnit vertTu = ParseHelper.parse(vert);
+        final TranslationUnit compTu = ParseHelper.parse(comp);
+        assertEquals(ShaderKind.FRAGMENT, fragTu.getShaderKind());
+        assertEquals(ShaderKind.VERTEX, vertTu.getShaderKind());
+        assertEquals(ShaderKind.COMPUTE, compTu.getShaderKind());
 
-    // Increases the size of the array by one and checks that the new size was recorded
-    // correctly.
-    final ArrayInfo arrayInfo = new ArrayInfo(new IntConstantExpr("3"));
-    arrayInfo.setConstantSizeExpr(3);
-    final VariableDeclInfo variableDeclInfo = new VariableDeclInfo("a",
-          arrayInfo, null);
-    final VariablesDeclaration newVariablesDeclaration = new VariablesDeclaration(
-        new QualifiedType(BasicType.INT, Arrays.asList(TypeQualifier.UNIFORM)), variableDeclInfo
-    );
+    }
 
-    translationUnit.updateTopLevelDeclaration(newVariablesDeclaration, variablesDecl);
+    @Test
+    public void testUpdateTopLevelDeclaration() throws Exception {
 
-    final VariablesDeclaration variablesDecl2 =
-        translationUnit.getUniformDeclaration("a");
+        final String shader =
+                "uniform float a[2];"
+                        + "void main()"
+                        + "{"
+                        + "  float b = a[0];"
+                        + "}";
 
-    assertEquals(variablesDecl2.getDeclInfos().get(0).getName(), "a");
-    assertTrue(variablesDecl2.getDeclInfos().get(0).hasArrayInfo());
-    assertEquals(variablesDecl2.getDeclInfos().get(0).getArrayInfo().getConstantSize(),
-        Integer.valueOf(3));
-    assertEquals(((IntConstantExpr)variablesDecl2.getDeclInfos().get(0).getArrayInfo()
-        .getSizeExpr()).getNumericValue(), 3);
-  }
+        final TranslationUnit translationUnit = ParseHelper.parse(shader, ShaderKind.FRAGMENT);
+        final VariablesDeclaration variablesDecl = translationUnit.getUniformDeclaration("a");
 
-  @Test
-  public void testGetUniformDeclaration() throws Exception {
-    final String shader =
-        "uniform float a, b;"
-        + "uniform int;"
-        + "void main()"
-        + "{"
-        + "  float c = a;"
-        + "  float d = b;"
-        + "}";
+        assertEquals(variablesDecl.getDeclInfos().get(0).getName(), "a");
+        assertTrue(variablesDecl.getDeclInfos().get(0).hasArrayInfo());
+        assertEquals(variablesDecl.getDeclInfos().get(0).getArrayInfo().getConstantSize(),
+                Integer.valueOf(2));
+        assertEquals(((IntConstantExpr) variablesDecl.getDeclInfos().get(0).getArrayInfo()
+                .getSizeExpr()).getNumericValue(), 2);
 
-    final TranslationUnit translationUnit = ParseHelper.parse(shader, ShaderKind.FRAGMENT);
-    final VariablesDeclaration variablesDeclaration =
-        translationUnit.getUniformDeclaration("a");
+        // Increases the size of the array by one and checks that the new size was recorded
+        // correctly.
+        final ArrayInfo arrayInfo = new ArrayInfo(new IntConstantExpr("3"));
+        arrayInfo.setConstantSizeExpr(3);
+        final VariableDeclInfo variableDeclInfo = new VariableDeclInfo("a",
+                arrayInfo, null);
+        final VariablesDeclaration newVariablesDeclaration = new VariablesDeclaration(
+                new QualifiedType(BasicType.INT, Arrays.asList(TypeQualifier.UNIFORM)), variableDeclInfo
+        );
 
-    assertEquals(variablesDeclaration.getDeclInfos().get(0).getName(), "a");
-    assertEquals(variablesDeclaration.getDeclInfos().get(1).getName(), "b");
+        translationUnit.updateTopLevelDeclaration(newVariablesDeclaration, variablesDecl);
 
-    final VariablesDeclaration variablesDeclaration2 =
-        translationUnit.getUniformDeclaration("b");
+        final VariablesDeclaration variablesDecl2 =
+                translationUnit.getUniformDeclaration("a");
 
-    assertEquals(variablesDeclaration2.getDeclInfos().get(0).getName(), "a");
-    assertEquals(variablesDeclaration2.getDeclInfos().get(1).getName(), "b");
-  }
+        assertEquals(variablesDecl2.getDeclInfos().get(0).getName(), "a");
+        assertTrue(variablesDecl2.getDeclInfos().get(0).hasArrayInfo());
+        assertEquals(variablesDecl2.getDeclInfos().get(0).getArrayInfo().getConstantSize(),
+                Integer.valueOf(3));
+        assertEquals(((IntConstantExpr) variablesDecl2.getDeclInfos().get(0).getArrayInfo()
+                .getSizeExpr()).getNumericValue(), 3);
+    }
 }

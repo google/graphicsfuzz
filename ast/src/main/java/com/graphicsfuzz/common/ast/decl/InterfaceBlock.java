@@ -29,99 +29,99 @@ import java.util.stream.Collectors;
 
 public class InterfaceBlock extends Declaration {
 
-  private final Optional<LayoutQualifierSequence> layoutQualifier;
-  private final TypeQualifier interfaceQualifier;
-  private final String structName;
-  private final List<String> memberNames;
-  private final List<Type> memberTypes;
-  private final Optional<String> instanceName;
+    private final Optional<LayoutQualifierSequence> layoutQualifier;
+    private final TypeQualifier interfaceQualifier;
+    private final String structName;
+    private final List<String> memberNames;
+    private final List<Type> memberTypes;
+    private final Optional<String> instanceName;
 
-  public InterfaceBlock(
-      Optional<LayoutQualifierSequence> layoutQualifier,
-      TypeQualifier interfaceQualifier,
-      String structName,
-      List<String> memberNames,
-      List<Type> memberTypes,
-      Optional<String> instanceName) {
-    this.layoutQualifier = layoutQualifier;
-    this.interfaceQualifier = interfaceQualifier;
-    assert Arrays.asList(TypeQualifier.SHADER_INPUT,
-        TypeQualifier.SHADER_OUTPUT,
-        TypeQualifier.UNIFORM,
-        TypeQualifier.BUFFER)
-        .contains(interfaceQualifier);
-    this.structName = structName;
-    this.memberNames = new ArrayList<>();
-    this.memberNames.addAll(memberNames);
-    this.memberTypes = new ArrayList<>();
-    this.memberTypes.addAll(memberTypes);
-    this.instanceName = instanceName;
-  }
-
-  public InterfaceBlock(LayoutQualifierSequence layoutQualifierSequence,
-                        TypeQualifier interfaceQualifier, String name,
-                        String memberName,
-                        Type memberType,
-                        String instanceName) {
-    this(Optional.of(layoutQualifierSequence), interfaceQualifier,
-        name, Arrays.asList(memberName), Arrays.asList(memberType), Optional.of(instanceName));
-  }
-
-  public List<Type> getMemberTypes() {
-    return Collections.unmodifiableList(memberTypes);
-  }
-
-  public List<String> getMemberNames() {
-    return Collections.unmodifiableList(memberNames);
-  }
-
-  public boolean hasLayoutQualifierSequence() {
-    return layoutQualifier.isPresent();
-  }
-
-  public LayoutQualifierSequence getLayoutQualifierSequence() {
-    assert hasLayoutQualifierSequence();
-    return layoutQualifier.get();
-  }
-
-  public TypeQualifier getInterfaceQualifier() {
-    return interfaceQualifier;
-  }
-
-  public String getStructName() {
-    return structName;
-  }
-
-  public boolean hasIdentifierName() {
-    return instanceName.isPresent();
-  }
-
-  public String getInstanceName() {
-    return instanceName.get();
-  }
-
-  public Optional<Type> getMemberType(String name) {
-    for (int i = 0; i < memberNames.size(); i++) {
-      if (memberNames.get(i).equals(name)) {
-        return Optional.of(memberTypes.get(i));
-      }
+    public InterfaceBlock(
+            Optional<LayoutQualifierSequence> layoutQualifier,
+            TypeQualifier interfaceQualifier,
+            String structName,
+            List<String> memberNames,
+            List<Type> memberTypes,
+            Optional<String> instanceName) {
+        this.layoutQualifier = layoutQualifier;
+        this.interfaceQualifier = interfaceQualifier;
+        assert Arrays.asList(TypeQualifier.SHADER_INPUT,
+                TypeQualifier.SHADER_OUTPUT,
+                TypeQualifier.UNIFORM,
+                TypeQualifier.BUFFER)
+                .contains(interfaceQualifier);
+        this.structName = structName;
+        this.memberNames = new ArrayList<>();
+        this.memberNames.addAll(memberNames);
+        this.memberTypes = new ArrayList<>();
+        this.memberTypes.addAll(memberTypes);
+        this.instanceName = instanceName;
     }
-    return Optional.empty();
-  }
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitInterfaceBlock(this);
-  }
+    public InterfaceBlock(LayoutQualifierSequence layoutQualifierSequence,
+                          TypeQualifier interfaceQualifier, String name,
+                          String memberName,
+                          Type memberType,
+                          String instanceName) {
+        this(Optional.of(layoutQualifierSequence), interfaceQualifier,
+                name, Arrays.asList(memberName), Arrays.asList(memberType), Optional.of(instanceName));
+    }
 
-  @Override
-  public InterfaceBlock clone() {
-    return new InterfaceBlock(layoutQualifier,
-        interfaceQualifier,
-        structName,
-        memberNames,
-        memberTypes.stream().map(item -> item.clone()).collect(Collectors.toList()),
-        instanceName);
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitInterfaceBlock(this);
+    }
+
+    @Override
+    public InterfaceBlock clone() {
+        return new InterfaceBlock(layoutQualifier,
+                interfaceQualifier,
+                structName,
+                memberNames,
+                memberTypes.stream().map(item -> item.clone()).collect(Collectors.toList()),
+                instanceName);
+    }
+
+    public String getInstanceName() {
+        return instanceName.get();
+    }
+
+    public TypeQualifier getInterfaceQualifier() {
+        return interfaceQualifier;
+    }
+
+    public LayoutQualifierSequence getLayoutQualifierSequence() {
+        assert hasLayoutQualifierSequence();
+        return layoutQualifier.get();
+    }
+
+    public List<String> getMemberNames() {
+        return Collections.unmodifiableList(memberNames);
+    }
+
+    public Optional<Type> getMemberType(String name) {
+        for (int i = 0; i < memberNames.size(); i++) {
+            if (memberNames.get(i).equals(name)) {
+                return Optional.of(memberTypes.get(i));
+            }
+        }
+        return Optional.empty();
+    }
+
+    public List<Type> getMemberTypes() {
+        return Collections.unmodifiableList(memberTypes);
+    }
+
+    public String getStructName() {
+        return structName;
+    }
+
+    public boolean hasIdentifierName() {
+        return instanceName.isPresent();
+    }
+
+    public boolean hasLayoutQualifierSequence() {
+        return layoutQualifier.isPresent();
+    }
 
 }

@@ -23,35 +23,35 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class ExprCaseLabel extends CaseLabel {
 
-  private Expr expr;
+    private Expr expr;
 
-  public ExprCaseLabel(Expr expr) {
-    this.expr = expr;
-  }
-
-  public Expr getExpr() {
-    return expr;
-  }
-
-  @Override
-  public void replaceChild(IAstNode child, IAstNode newChild) {
-    if (child != expr) {
-      throw new ChildDoesNotExistException(child, this);
+    public ExprCaseLabel(Expr expr) {
+        this.expr = expr;
     }
-    if (!(newChild instanceof Expr)) {
-      throw new IllegalArgumentException();
+
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitExprCaseLabel(this);
     }
-    expr = (Expr) newChild;
-  }
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitExprCaseLabel(this);
-  }
+    @Override
+    public ExprCaseLabel clone() {
+        return new ExprCaseLabel(expr.clone());
+    }
 
-  @Override
-  public ExprCaseLabel clone() {
-    return new ExprCaseLabel(expr.clone());
-  }
+    public Expr getExpr() {
+        return expr;
+    }
+
+    @Override
+    public void replaceChild(IAstNode child, IAstNode newChild) {
+        if (child != expr) {
+            throw new ChildDoesNotExistException(child, this);
+        }
+        if (!(newChild instanceof Expr)) {
+            throw new IllegalArgumentException();
+        }
+        expr = (Expr) newChild;
+    }
 
 }

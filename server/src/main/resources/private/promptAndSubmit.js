@@ -15,13 +15,13 @@
  */
 
 function promptAndSubmit(msg, input, form) {
-  var value = prompt(msg, input.value);
-  if (value == null) {
-    return;
-  } else if (value === "") {
-    return;
-  } else {
-    input.value = value
-    form.submit()
-  }
+    var value = prompt(msg, input.value);
+    if (value == null) {
+        return;
+    } else if (value === "") {
+        return;
+    } else {
+        input.value = value
+        form.submit()
+    }
 }

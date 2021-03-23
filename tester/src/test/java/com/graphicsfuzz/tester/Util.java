@@ -16,9 +16,6 @@
 
 package com.graphicsfuzz.tester;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.ImageUtil;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
@@ -33,80 +30,83 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import org.junit.rules.TemporaryFolder;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 public final class Util {
 
-  private Util() {
-    // Utility class
-  }
+    private Util() {
+        // Utility class
+    }
 
-  static File validateAndGetImage(
-      File shaderJobFile,
-      TemporaryFolder temporaryFolder,
-      ShaderJobFileOperations fileOps)
-      throws IOException, InterruptedException {
-    assertTrue(fileOps.areShadersValid(shaderJobFile, false));
-    assertTrue(fileOps.areShadersValidShaderTranslator(shaderJobFile, false));
-    return getImage(shaderJobFile, temporaryFolder, fileOps);
-  }
+    static void assertImagesSimilar(File first, File second) throws FileNotFoundException {
+        // TODO: This has been made very generous, based on Swiftshader producing visually identical
+        // images with fairly high associated histogram distances.  If we find that bugs are slipping
+        // through we should revise this.
+        assertTrue(ImageUtil.compareHistograms(first, second) < 500.0);
+    }
 
-  static File validateAndGetImage(
-      ShaderJob shaderJob,
-      String shaderJobFilename,
-      TemporaryFolder temporaryFolder,
-      ShaderJobFileOperations fileOps)
-      throws IOException, InterruptedException {
-    final File shaderJobFile = new File(
-        temporaryFolder.getRoot(),
-        shaderJobFilename);
-    fileOps.writeShaderJobFile(shaderJob, shaderJobFile);
-    return validateAndGetImage(shaderJobFile, temporaryFolder, fileOps);
-  }
+    static File getDonorsFolder() {
+        return Paths.get(ToolPaths.getShadersDirectory(),
+                "testing", "swiftshader", "donors").toFile();
+    }
 
-  static File getImage(
-      File shaderJobFile,
-      TemporaryFolder temporaryFolder,
-      ShaderJobFileOperations fileOps) throws IOException, InterruptedException {
-    File imageFile = temporaryFolder.newFile();
-    ExecResult res =
-        ToolHelper.runSwiftshaderOnShader(RedirectType.TO_LOG,
-            fileOps.getUnderlyingShaderFile(shaderJobFile, ShaderKind.FRAGMENT),
-            imageFile,
-            false,
-            32,
-            32);
+    static File getImage(
+            File shaderJobFile,
+            TemporaryFolder temporaryFolder,
+            ShaderJobFileOperations fileOps) throws IOException, InterruptedException {
+        File imageFile = temporaryFolder.newFile();
+        ExecResult res =
+                ToolHelper.runSwiftshaderOnShader(RedirectType.TO_LOG,
+                        fileOps.getUnderlyingShaderFile(shaderJobFile, ShaderKind.FRAGMENT),
+                        imageFile,
+                        false,
+                        32,
+                        32);
 
-    assertEquals(0, res.res);
-    return imageFile;
-  }
+        assertEquals(0, res.res);
+        return imageFile;
+    }
 
-  static void assertImagesSimilar(File first, File second) throws FileNotFoundException {
-    // TODO: This has been made very generous, based on Swiftshader producing visually identical
-    // images with fairly high associated histogram distances.  If we find that bugs are slipping
-    // through we should revise this.
-    assertTrue(ImageUtil.compareHistograms(first, second) < 500.0);
-  }
+    static File[] getReferenceShaderJobFiles100es(ShaderJobFileOperations fileOps)
+            throws IOException {
 
-  static File[] getReferenceShaderJobFiles100es(ShaderJobFileOperations fileOps)
-      throws IOException {
+        return fileOps.listShaderJobFiles(
+                Paths
+                        .get(ToolPaths.getShadersDirectory(), "testing", "swiftshader", "100")
+                        .toFile());
+    }
 
-    return fileOps.listShaderJobFiles(
-        Paths
-            .get(ToolPaths.getShadersDirectory(), "testing", "swiftshader", "100")
-            .toFile());
-  }
+    static File[] getReferenceShaderJobFiles300es(ShaderJobFileOperations fileOps)
+            throws IOException {
 
-  static File[] getReferenceShaderJobFiles300es(ShaderJobFileOperations fileOps)
-      throws IOException {
+        return fileOps.listShaderJobFiles(
+                Paths
+                        .get(ToolPaths.getShadersDirectory(), "testing", "swiftshader", "300es")
+                        .toFile());
+    }
 
-    return fileOps.listShaderJobFiles(
-        Paths
-            .get(ToolPaths.getShadersDirectory(), "testing", "swiftshader", "300es")
-            .toFile());
-  }
+    static File validateAndGetImage(
+            ShaderJob shaderJob,
+            String shaderJobFilename,
+            TemporaryFolder temporaryFolder,
+            ShaderJobFileOperations fileOps)
+            throws IOException, InterruptedException {
+        final File shaderJobFile = new File(
+                temporaryFolder.getRoot(),
+                shaderJobFilename);
+        fileOps.writeShaderJobFile(shaderJob, shaderJobFile);
+        return validateAndGetImage(shaderJobFile, temporaryFolder, fileOps);
+    }
 
-  static File getDonorsFolder() {
-    return Paths.get(ToolPaths.getShadersDirectory(),
-        "testing", "swiftshader", "donors").toFile();
-  }
+    static File validateAndGetImage(
+            File shaderJobFile,
+            TemporaryFolder temporaryFolder,
+            ShaderJobFileOperations fileOps)
+            throws IOException, InterruptedException {
+        assertTrue(fileOps.areShadersValid(shaderJobFile, false));
+        assertTrue(fileOps.areShadersValidShaderTranslator(shaderJobFile, false));
+        return getImage(shaderJobFile, temporaryFolder, fileOps);
+    }
 
 }

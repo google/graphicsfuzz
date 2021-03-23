@@ -26,24 +26,24 @@ import java.util.List;
 
 public class FlattenForLoopReductionOpportunity extends FlattenLoopReductionOpportunity {
 
-  public FlattenForLoopReductionOpportunity(IAstNode parent, ForStmt forStmt,
-                                            VisitationDepth depth) {
-    super(parent, forStmt, depth);
-  }
+    public FlattenForLoopReductionOpportunity(IAstNode parent, ForStmt forStmt,
+                                              VisitationDepth depth) {
+        super(parent, forStmt, depth);
+    }
 
-  @Override
-  void applyReductionImpl() {
-    final List<Stmt> newStmts = new ArrayList<>();
-    final ForStmt forStmt = (ForStmt) getLoopStmt();
-    newStmts.add(forStmt.getInit());
-    if (forStmt.hasCondition()) {
-      newStmts.add(new ExprStmt(forStmt.getCondition()));
+    @Override
+    void applyReductionImpl() {
+        final List<Stmt> newStmts = new ArrayList<>();
+        final ForStmt forStmt = (ForStmt) getLoopStmt();
+        newStmts.add(forStmt.getInit());
+        if (forStmt.hasCondition()) {
+            newStmts.add(new ExprStmt(forStmt.getCondition()));
+        }
+        addLoopBody(newStmts);
+        if (forStmt.hasIncrement()) {
+            newStmts.add(new ExprStmt(forStmt.getIncrement()));
+        }
+        doReplacement(newStmts);
     }
-    addLoopBody(newStmts);
-    if (forStmt.hasIncrement()) {
-      newStmts.add(new ExprStmt(forStmt.getIncrement()));
-    }
-    doReplacement(newStmts);
-  }
 
 }

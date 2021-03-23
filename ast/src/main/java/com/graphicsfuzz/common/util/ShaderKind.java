@@ -18,31 +18,31 @@ package com.graphicsfuzz.common.util;
 
 public enum ShaderKind {
 
-  FRAGMENT, VERTEX, COMPUTE;
+    FRAGMENT, VERTEX, COMPUTE;
 
-  public static ShaderKind fromExtension(String extension) {
-    switch (extension) {
-      case "frag":
-        return FRAGMENT;
-      case "vert":
-        return VERTEX;
-      case "comp":
-        return COMPUTE;
-      default:
-        throw new IllegalArgumentException("Unknown shader extension '" + extension + "'");
+    public static ShaderKind fromExtension(String extension) {
+        switch (extension) {
+            case "frag":
+                return FRAGMENT;
+            case "vert":
+                return VERTEX;
+            case "comp":
+                return COMPUTE;
+            default:
+                throw new IllegalArgumentException("Unknown shader extension '" + extension + "'");
+        }
     }
-  }
 
-  public String getFileExtension() {
-    switch (this) {
-      case FRAGMENT:
-        return "frag";
-      case VERTEX:
-        return "vert";
-      case COMPUTE:
-        return "comp";
-      default:
-        throw new RuntimeException("Unreachable.");
+    public String getFileExtension() {
+        switch (this) {
+            case FRAGMENT:
+                return "frag";
+            case VERTEX:
+                return "vert";
+            case COMPUTE:
+                return "comp";
+            default:
+                throw new RuntimeException("Unreachable.");
+        }
     }
-  }
 }

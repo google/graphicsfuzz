@@ -22,28 +22,28 @@ import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 
 public class StatsVisitor extends StandardVisitor {
 
-  private int statements = 0;
-  private int nodes = 0;
+    private int statements = 0;
+    private int nodes = 0;
 
-  public StatsVisitor(IAstNode node) {
-    visit(node);
-  }
-
-  @Override
-  public void visit(IAstNode node) {
-    super.visit(node);
-    nodes++;
-    if (node instanceof Stmt) {
-      statements++;
+    public StatsVisitor(IAstNode node) {
+        visit(node);
     }
-  }
 
-  public int getNumStatements() {
-    return statements;
-  }
+    public int getNumNodes() {
+        return nodes;
+    }
 
-  public int getNumNodes() {
-    return nodes;
-  }
+    public int getNumStatements() {
+        return statements;
+    }
+
+    @Override
+    public void visit(IAstNode node) {
+        super.visit(node);
+        nodes++;
+        if (node instanceof Stmt) {
+            statements++;
+        }
+    }
 
 }

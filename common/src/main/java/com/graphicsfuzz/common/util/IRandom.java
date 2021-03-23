@@ -22,28 +22,28 @@ package com.graphicsfuzz.common.util;
  */
 public interface IRandom {
 
-  int nextInt(int bound);
+    /**
+     * @return A description of the random number generator, ideally including the seed.
+     */
+    String getDescription();
 
-  Float nextFloat();
+    boolean nextBoolean();
 
-  default int nextPositiveInt(int bound) {
-    return nextInt(bound - 1) + 1;
-  }
+    Float nextFloat();
 
-  boolean nextBoolean();
+    int nextInt(int bound);
 
-  /**
-   * Spawn a new generator, seeded using the current generator.  This is useful if we wish to
-   * separate the effects of generation between different stages of an overall generation
-   * process.
-   * @return A generator
-   */
-  IRandom spawnChild();
+    default int nextPositiveInt(int bound) {
+        return nextInt(bound - 1) + 1;
+    }
 
-
-  /**
-   * @return A description of the random number generator, ideally including the seed.
-   */
-  String getDescription();
+    /**
+     * Spawn a new generator, seeded using the current generator.  This is useful if we wish to
+     * separate the effects of generation between different stages of an overall generation
+     * process.
+     *
+     * @return A generator
+     */
+    IRandom spawnChild();
 
 }

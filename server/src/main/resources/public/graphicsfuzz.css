@@ -15,57 +15,57 @@
  */
 
 body {
-  overflow-x: scroll!important;
+    overflow-x: scroll !important;
 }
 
 .invisible {
-  display: none;
+    display: none;
 }
 
 .bound-cell-width {
-  max-width: 100px;
+    max-width: 100px;
 }
 
 .force-cell-height {
-  height: 100px;
+    height: 100px;
 }
 
 td.gfz-error {
-  background-color: #ffaaaa;
+    background-color: #ffaaaa;
 }
 
 td.wrongresult {
-  background-color: #ffff44;
+    background-color: #ffff44;
 }
 
 td.warnresult {
-  background-color: #ccccbb;
+    background-color: #ccccbb;
 }
 
 td.metricsdisimg {
-  background-color: #dd99ff;
+    background-color: #dd99ff;
 }
 
 td.nondet {
-  background-color: #eecc88;
+    background-color: #eecc88;
 }
 
 div.resultmain {
-  margin-left: 2em;
-  margin-right: 2em;
+    margin-left: 2em;
+    margin-right: 2em;
 }
 
 /* old stuff */
 .white {
-  border-color: white;
+    border-color: white;
 }
 
 .red {
-  border-color: red;
+    border-color: red;
 }
 
 .purple {
-  border-color: mediumpurple;
+    border-color: mediumpurple;
 }
 
 .green {

@@ -16,8 +16,6 @@
 
 package com.graphicsfuzz.tester;
 
-import static org.junit.Assert.assertTrue;
-
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.util.IRandom;
 import com.graphicsfuzz.common.util.Obfuscator;
@@ -29,30 +27,32 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import static org.junit.Assert.assertTrue;
+
 public class ObfuscatorUnitTest {
 
-  // TODO: Use ShaderJobFileOperations everywhere.
-  private final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+    // TODO: Use ShaderJobFileOperations everywhere.
+    private final ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
-  @Rule
-  public TemporaryFolder temporaryFolder = new TemporaryFolder();
+    @Rule
+    public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  @Test
-  public void testObfuscate() throws Exception {
-    final IRandom generator = new RandomWrapper(0);
-    for (File originalShaderJobFile : Util.getReferenceShaderJobFiles100es(fileOps)) {
-      final File originalImage =
-          Util.validateAndGetImage(originalShaderJobFile, temporaryFolder, fileOps);
-      final ShaderJob shaderJob = fileOps.readShaderJobFile(originalShaderJobFile);
-      final ShaderJob obfuscated = Obfuscator.obfuscate(shaderJob, generator);
-      final File obfuscatedImage =
-          Util.validateAndGetImage(
-              obfuscated,
-              originalShaderJobFile.getName() + ".obfuscated.json",
-              temporaryFolder,
-              fileOps);
-      assertTrue(FileUtils.contentEquals(originalImage, obfuscatedImage));
+    @Test
+    public void testObfuscate() throws Exception {
+        final IRandom generator = new RandomWrapper(0);
+        for (File originalShaderJobFile : Util.getReferenceShaderJobFiles100es(fileOps)) {
+            final File originalImage =
+                    Util.validateAndGetImage(originalShaderJobFile, temporaryFolder, fileOps);
+            final ShaderJob shaderJob = fileOps.readShaderJobFile(originalShaderJobFile);
+            final ShaderJob obfuscated = Obfuscator.obfuscate(shaderJob, generator);
+            final File obfuscatedImage =
+                    Util.validateAndGetImage(
+                            obfuscated,
+                            originalShaderJobFile.getName() + ".obfuscated.json",
+                            temporaryFolder,
+                            fileOps);
+            assertTrue(FileUtils.contentEquals(originalImage, obfuscatedImage));
+        }
     }
-  }
 
 }

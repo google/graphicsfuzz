@@ -20,7 +20,7 @@ package com.graphicsfuzz.common.util;
 // textures for which a specific image will be created, typically by running a graphics pipeline
 // that writes to an image, in the Amber file that gfauto generates.
 public enum BuiltInTexture {
-  // TODO(https://github.com/google/graphicsfuzz/issues/1074): At present only one texture is
-  //  supported, but it would be good to have some more.
-  DEFAULT
+    // TODO(https://github.com/google/graphicsfuzz/issues/1074): At present only one texture is
+    //  supported, but it would be good to have some more.
+    DEFAULT
 }

@@ -22,17 +22,17 @@ import java.util.Optional;
 
 public class PipelineUniformValueSupplier implements UniformValueSupplier {
 
-  private final PipelineInfo pipelineInfo;
+    private final PipelineInfo pipelineInfo;
 
-  public PipelineUniformValueSupplier(PipelineInfo pipelineInfo) {
-    this.pipelineInfo = pipelineInfo;
-  }
-
-  @Override
-  public Optional<List<String>> getValues(String name) {
-    if (pipelineInfo.hasUniform(name)) {
-      return Optional.of(this.pipelineInfo.getArgs(name));
+    public PipelineUniformValueSupplier(PipelineInfo pipelineInfo) {
+        this.pipelineInfo = pipelineInfo;
     }
-    return Optional.empty();
-  }
+
+    @Override
+    public Optional<List<String>> getValues(String name) {
+        if (pipelineInfo.hasUniform(name)) {
+            return Optional.of(this.pipelineInfo.getArgs(name));
+        }
+        return Optional.empty();
+    }
 }

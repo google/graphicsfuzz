@@ -24,43 +24,43 @@ import java.io.IOException;
 
 public class LocalShaderDispatcher implements IShaderDispatcher {
 
-  private final boolean usingSwiftShader;
-  private final ShaderJobFileOperations fileOps;
-  private final File tempDir;
+    private final boolean usingSwiftShader;
+    private final ShaderJobFileOperations fileOps;
+    private final File tempDir;
 
-  public LocalShaderDispatcher(
-      boolean usingSwiftShader,
-      ShaderJobFileOperations fileOps,
-      File tempDir) {
-    this.usingSwiftShader = usingSwiftShader;
-    this.fileOps = fileOps;
-    this.tempDir = tempDir;
-  }
-
-  @Override
-  public ImageJobResult getImage(ImageJob imageJob)
-      throws ShaderDispatchException, InterruptedException {
-
-    // For running shaders locally, we write the necessary files to a temp directory,
-    // run the get_image tool, and then collect the results in an ImageJobResult.
-
-    // Due to strange Thrift behaviour, we set this default value explicitly
-    // otherwise "isSetSkipRender()" is false.
-    if (!imageJob.isSetSkipRender()) {
-      imageJob.setSkipRender(false);
+    public LocalShaderDispatcher(
+            boolean usingSwiftShader,
+            ShaderJobFileOperations fileOps,
+            File tempDir) {
+        this.usingSwiftShader = usingSwiftShader;
+        this.fileOps = fileOps;
+        this.tempDir = tempDir;
     }
 
-    File localTempShaderJobFile =
-        new File(
-            tempDir,
-            (imageJob.getName() != null ? imageJob.getName() + ".json" : "temp.json")
-        );
+    @Override
+    public ImageJobResult getImage(ImageJob imageJob)
+            throws ShaderDispatchException, InterruptedException {
 
-    try {
-      return fileOps.runGetImageOnImageJob(imageJob, localTempShaderJobFile, usingSwiftShader);
-    } catch (IOException exception) {
-      throw new ShaderDispatchException(exception);
+        // For running shaders locally, we write the necessary files to a temp directory,
+        // run the get_image tool, and then collect the results in an ImageJobResult.
+
+        // Due to strange Thrift behaviour, we set this default value explicitly
+        // otherwise "isSetSkipRender()" is false.
+        if (!imageJob.isSetSkipRender()) {
+            imageJob.setSkipRender(false);
+        }
+
+        File localTempShaderJobFile =
+                new File(
+                        tempDir,
+                        (imageJob.getName() != null ? imageJob.getName() + ".json" : "temp.json")
+                );
+
+        try {
+            return fileOps.runGetImageOnImageJob(imageJob, localTempShaderJobFile, usingSwiftShader);
+        } catch (IOException exception) {
+            throw new ShaderDispatchException(exception);
+        }
     }
-  }
 
 }

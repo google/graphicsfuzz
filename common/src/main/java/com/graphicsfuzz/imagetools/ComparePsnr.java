@@ -26,24 +26,24 @@ import net.sourceforge.argparse4j.inf.Namespace;
 
 public class ComparePsnr {
 
-  public static void main(String[] args) throws ArgumentParserException, FileNotFoundException {
+    public static void main(String[] args) throws ArgumentParserException, FileNotFoundException {
 
-    final ArgumentParser parser = ArgumentParsers.newArgumentParser("ComparePsnr")
-        .defaultHelp(true)
-        .description("Print PSNR for two images.");
+        final ArgumentParser parser = ArgumentParsers.newArgumentParser("ComparePsnr")
+                .defaultHelp(true)
+                .description("Print PSNR for two images.");
 
-    // Required arguments
-    parser.addArgument("image1")
-        .help("Path of first image.")
-        .type(File.class);
-    parser.addArgument("image2")
-        .help("Path of second image.")
-        .type(File.class);
+        // Required arguments
+        parser.addArgument("image1")
+                .help("Path of first image.")
+                .type(File.class);
+        parser.addArgument("image2")
+                .help("Path of second image.")
+                .type(File.class);
 
-    final Namespace ns = parser.parseArgs(args);
+        final Namespace ns = parser.parseArgs(args);
 
-    System.out.println(ImageUtil.comparePsnr(ns.get("image1"), ns.get("image2")));
+        System.out.println(ImageUtil.comparePsnr(ns.get("image1"), ns.get("image2")));
 
-  }
+    }
 
 }

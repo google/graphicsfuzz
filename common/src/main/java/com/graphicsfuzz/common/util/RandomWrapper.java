@@ -25,37 +25,37 @@ import org.apache.commons.rng.simple.RandomSource;
  */
 public class RandomWrapper implements IRandom {
 
-  private final long seed;
-  private final UniformRandomProvider provider;
+    private final long seed;
+    private final UniformRandomProvider provider;
 
-  public RandomWrapper(long seed) {
-    this.seed = seed;
-    this.provider = RandomSource.create(RandomSource.ISAAC, seed);
-  }
+    public RandomWrapper(long seed) {
+        this.seed = seed;
+        this.provider = RandomSource.create(RandomSource.ISAAC, seed);
+    }
 
-  @Override
-  public int nextInt(int bound) {
-    return provider.nextInt(bound);
-  }
+    @Override
+    public String getDescription() {
+        return "RandomWrapper with seed: " + Long.toUnsignedString(seed);
+    }
 
-  @Override
-  public Float nextFloat() {
-    return provider.nextFloat();
-  }
+    @Override
+    public boolean nextBoolean() {
+        return provider.nextBoolean();
+    }
 
-  @Override
-  public boolean nextBoolean() {
-    return provider.nextBoolean();
-  }
+    @Override
+    public Float nextFloat() {
+        return provider.nextFloat();
+    }
 
-  @Override
-  public IRandom spawnChild() {
-    return new RandomWrapper(provider.nextLong());
-  }
+    @Override
+    public int nextInt(int bound) {
+        return provider.nextInt(bound);
+    }
 
-  @Override
-  public String getDescription() {
-    return "RandomWrapper with seed: " + Long.toUnsignedString(seed);
-  }
+    @Override
+    public IRandom spawnChild() {
+        return new RandomWrapper(provider.nextLong());
+    }
 
 }

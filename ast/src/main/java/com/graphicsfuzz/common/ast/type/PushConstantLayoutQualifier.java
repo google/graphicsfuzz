@@ -18,9 +18,9 @@ package com.graphicsfuzz.common.ast.type;
 
 public class PushConstantLayoutQualifier implements LayoutQualifier {
 
-  @Override
-  public String toString() {
-    return "push_constant";
-  }
+    @Override
+    public String toString() {
+        return "push_constant";
+    }
 
 }

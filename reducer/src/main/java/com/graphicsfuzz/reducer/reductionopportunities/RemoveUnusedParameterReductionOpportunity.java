@@ -26,51 +26,51 @@ import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 
 public class RemoveUnusedParameterReductionOpportunity extends AbstractReductionOpportunity {
 
-  private final TranslationUnit translationUnit;
-  private final FunctionDefinition functionDefinition;
-  private final ParameterDecl parameterDecl;
+    private final TranslationUnit translationUnit;
+    private final FunctionDefinition functionDefinition;
+    private final ParameterDecl parameterDecl;
 
-  RemoveUnusedParameterReductionOpportunity(TranslationUnit translationUnit,
-                                            FunctionDefinition functionDefinition,
-                                            ParameterDecl parameterDecl,
-                                            VisitationDepth depth) {
-    super(depth);
-    this.translationUnit = translationUnit;
-    this.functionDefinition = functionDefinition;
-    this.parameterDecl = parameterDecl;
-  }
+    RemoveUnusedParameterReductionOpportunity(TranslationUnit translationUnit,
+                                              FunctionDefinition functionDefinition,
+                                              ParameterDecl parameterDecl,
+                                              VisitationDepth depth) {
+        super(depth);
+        this.translationUnit = translationUnit;
+        this.functionDefinition = functionDefinition;
+        this.parameterDecl = parameterDecl;
+    }
 
-  @Override
-  void applyReductionImpl() {
-    final int paramIndex = functionDefinition.getPrototype().getParameters().indexOf(parameterDecl);
-    new StandardVisitor() {
+    @Override
+    void applyReductionImpl() {
+        final int paramIndex = functionDefinition.getPrototype().getParameters().indexOf(parameterDecl);
+        new StandardVisitor() {
 
-      @Override
-      public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
-        super.visitFunctionCallExpr(functionCallExpr);
-        if (functionCallExpr.getCallee().equals(functionDefinition.getPrototype().getName())) {
-          // As we only apply this reduction opportunity if the function name is not overloaded,
-          // this has to be a call to the relevant function.
-          functionCallExpr.removeArg(paramIndex);
-        }
-      }
+            @Override
+            public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+                super.visitFunctionCallExpr(functionCallExpr);
+                if (functionCallExpr.getCallee().equals(functionDefinition.getPrototype().getName())) {
+                    // As we only apply this reduction opportunity if the function name is not overloaded,
+                    // this has to be a call to the relevant function.
+                    functionCallExpr.removeArg(paramIndex);
+                }
+            }
 
-      @Override
-      public void visitFunctionPrototype(FunctionPrototype functionPrototype) {
-        super.visitFunctionPrototype(functionPrototype);
-        if (functionPrototype.getName().equals(functionDefinition.getPrototype().getName())) {
-          // As we only apply this reduction opportunity if the function name is not overloaded,
-          // this has to be a prototype for the relevant function (there could be multiple identical
-          // prototypes).
-          functionPrototype.removeParameter(paramIndex);
-        }
-      }
+            @Override
+            public void visitFunctionPrototype(FunctionPrototype functionPrototype) {
+                super.visitFunctionPrototype(functionPrototype);
+                if (functionPrototype.getName().equals(functionDefinition.getPrototype().getName())) {
+                    // As we only apply this reduction opportunity if the function name is not overloaded,
+                    // this has to be a prototype for the relevant function (there could be multiple identical
+                    // prototypes).
+                    functionPrototype.removeParameter(paramIndex);
+                }
+            }
 
-    }.visit(translationUnit);
-  }
+        }.visit(translationUnit);
+    }
 
-  @Override
-  public boolean preconditionHolds() {
-    return functionDefinition.getPrototype().getParameters().contains(parameterDecl);
-  }
+    @Override
+    public boolean preconditionHolds() {
+        return functionDefinition.getPrototype().getParameters().contains(parameterDecl);
+    }
 }

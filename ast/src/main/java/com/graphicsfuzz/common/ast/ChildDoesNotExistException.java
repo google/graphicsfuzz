@@ -18,17 +18,17 @@ package com.graphicsfuzz.common.ast;
 
 public class ChildDoesNotExistException extends RuntimeException {
 
-  private final IAstNode nonChild;
-  private final IAstNode wouldBeParent;
+    private final IAstNode nonChild;
+    private final IAstNode wouldBeParent;
 
-  public ChildDoesNotExistException(IAstNode nonChild, IAstNode wouldBeParent) {
-    this.nonChild = nonChild;
-    this.wouldBeParent = wouldBeParent;
-  }
+    public ChildDoesNotExistException(IAstNode nonChild, IAstNode wouldBeParent) {
+        this.nonChild = nonChild;
+        this.wouldBeParent = wouldBeParent;
+    }
 
-  @Override
-  public String getMessage() {
-    return nonChild + " is not a child of " + wouldBeParent;
-  }
+    @Override
+    public String getMessage() {
+        return nonChild + " is not a child of " + wouldBeParent;
+    }
 
 }

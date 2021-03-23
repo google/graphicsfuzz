@@ -22,8 +22,8 @@ import com.graphicsfuzz.reducer.glslreducers.EliminateGraphicsFuzzDefines;
 
 public class Simplify {
 
-  public static TranslationUnit simplify(TranslationUnit tu) {
-    return AddBraces.transform(EliminateGraphicsFuzzDefines.transform(tu));
-  }
+    public static TranslationUnit simplify(TranslationUnit tu) {
+        return AddBraces.transform(EliminateGraphicsFuzzDefines.transform(tu));
+    }
 
 }

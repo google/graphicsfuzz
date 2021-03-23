@@ -37,80 +37,80 @@ import org.slf4j.LoggerFactory;
 
 public final class FuzzerServer {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(FuzzerServer.class);
-  private final String workingDir;
-  private final String shaderSetsDir = "shaderfamilies";
-  private final String processingDir = "processing";
+    private static final Logger LOGGER = LoggerFactory.getLogger(FuzzerServer.class);
+    private final String workingDir;
+    private final String shaderSetsDir = "shaderfamilies";
+    private final String processingDir = "processing";
 
-  private final ExecutorService executorService = Executors.newCachedThreadPool();
+    private final ExecutorService executorService = Executors.newCachedThreadPool();
 
-  private final int port;
+    private final int port;
 
-  private final ShaderJobFileOperations fileOps;
+    private final ShaderJobFileOperations fileOps;
 
-  public FuzzerServer(int port, ShaderJobFileOperations fileOps) {
-    this("", port, fileOps);
-  }
-
-  public FuzzerServer(String workingDir, int port, ShaderJobFileOperations fileOps) {
-    this.workingDir = workingDir;
-    this.port = port;
-    this.fileOps = fileOps;
-  }
-
-  public void start() throws Exception {
-
-    FuzzerServiceImpl fuzzerService = new FuzzerServiceImpl(
-        Paths.get(workingDir, processingDir).toString(),
-        executorService);
-
-    FuzzerService.Processor processor =
-        new FuzzerService.Processor<FuzzerService.Iface>(fuzzerService);
-
-    FuzzerServiceManagerImpl fuzzerServiceManager = new FuzzerServiceManagerImpl(fuzzerService,
-          new GraphicsFuzzServerCommandDispatcher());
-    FuzzerServiceManager.Processor managerProcessor =
-        new FuzzerServiceManager.Processor<FuzzerServiceManager.Iface>(fuzzerServiceManager);
-
-    ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
-    context.setContextPath("/");
-
-    {
-      ServletHolder sh = new ServletHolder();
-      sh.setServlet(new TServlet(processor, new TBinaryProtocol.Factory()));
-      context.addServlet(sh, "/request");
-    }
-    {
-      ServletHolder serveltHolderJson = new ServletHolder();
-      serveltHolderJson.setServlet(new TServlet(processor, new TJSONProtocol.Factory()));
-      context.addServlet(serveltHolderJson, "/requestJSON");
+    public FuzzerServer(int port, ShaderJobFileOperations fileOps) {
+        this("", port, fileOps);
     }
 
-    {
-      ServletHolder shManager = new ServletHolder();
-      shManager.setServlet(new TServlet(managerProcessor, new TBinaryProtocol.Factory()));
-      context.addServlet(shManager, "/manageAPI");
+    public FuzzerServer(String workingDir, int port, ShaderJobFileOperations fileOps) {
+        this.workingDir = workingDir;
+        this.port = port;
+        this.fileOps = fileOps;
     }
 
-    context.addServlet(new ServletHolder(new WebUi(fuzzerServiceManager, fileOps)), "/webui/*");
+    public void start() throws Exception {
 
-    final String staticDir = ToolPaths.getStaticDir();
-    context.addServlet(
-        new ServletHolder(
-            new FileDownloadServlet(
-                (pathInfo, workerName) -> Paths.get(staticDir, pathInfo).toFile(), staticDir)),
-        "/static/*");
+        FuzzerServiceImpl fuzzerService = new FuzzerServiceImpl(
+                Paths.get(workingDir, processingDir).toString(),
+                executorService);
 
-    HandlerList handlerList = new HandlerList();
-    handlerList.addHandler(context);
+        FuzzerService.Processor processor =
+                new FuzzerService.Processor<FuzzerService.Iface>(fuzzerService);
 
-    GzipHandler gzipHandler = new GzipHandler();
-    gzipHandler.setHandler(handlerList);
+        FuzzerServiceManagerImpl fuzzerServiceManager = new FuzzerServiceManagerImpl(fuzzerService,
+                new GraphicsFuzzServerCommandDispatcher());
+        FuzzerServiceManager.Processor managerProcessor =
+                new FuzzerServiceManager.Processor<FuzzerServiceManager.Iface>(fuzzerServiceManager);
 
-    Server server = new Server(port);
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        context.setContextPath("/");
 
-    server.setHandler(gzipHandler);
-    server.start();
-    server.join();
-  }
+        {
+            ServletHolder sh = new ServletHolder();
+            sh.setServlet(new TServlet(processor, new TBinaryProtocol.Factory()));
+            context.addServlet(sh, "/request");
+        }
+        {
+            ServletHolder serveltHolderJson = new ServletHolder();
+            serveltHolderJson.setServlet(new TServlet(processor, new TJSONProtocol.Factory()));
+            context.addServlet(serveltHolderJson, "/requestJSON");
+        }
+
+        {
+            ServletHolder shManager = new ServletHolder();
+            shManager.setServlet(new TServlet(managerProcessor, new TBinaryProtocol.Factory()));
+            context.addServlet(shManager, "/manageAPI");
+        }
+
+        context.addServlet(new ServletHolder(new WebUi(fuzzerServiceManager, fileOps)), "/webui/*");
+
+        final String staticDir = ToolPaths.getStaticDir();
+        context.addServlet(
+                new ServletHolder(
+                        new FileDownloadServlet(
+                                (pathInfo, workerName) -> Paths.get(staticDir, pathInfo).toFile(), staticDir)),
+                "/static/*");
+
+        HandlerList handlerList = new HandlerList();
+        handlerList.addHandler(context);
+
+        GzipHandler gzipHandler = new GzipHandler();
+        gzipHandler.setHandler(handlerList);
+
+        Server server = new Server(port);
+
+        server.setHandler(gzipHandler);
+        server.start();
+        server.join();
+    }
 }

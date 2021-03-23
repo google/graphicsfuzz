@@ -24,62 +24,63 @@ import java.util.Iterator;
  */
 public class CannedRandom implements IRandom {
 
-  private final Iterator<Object> items;
+    private final Iterator<Object> items;
 
-  /**
-   * Constructs a canned random instance that will iterate over the given lists of integers
-   * and booleans.
-   *
-   * @param intsAndBools Ordered sequence of integers and booleans
-   */
-  public CannedRandom(Object... intsAndBools) {
-    if (Arrays.stream(intsAndBools).anyMatch(item -> !(item instanceof Integer
-        || item instanceof Boolean))) {
-      throw new IllegalArgumentException("Only Integer and Boolean items allowed.");
+    /**
+     * Constructs a canned random instance that will iterate over the given lists of integers
+     * and booleans.
+     *
+     * @param intsAndBools Ordered sequence of integers and booleans
+     */
+    public CannedRandom(Object... intsAndBools) {
+        if (Arrays.stream(intsAndBools).anyMatch(item -> !(item instanceof Integer
+                || item instanceof Boolean))) {
+            throw new IllegalArgumentException("Only Integer and Boolean items allowed.");
+        }
+        this.items = Arrays.asList(intsAndBools).iterator();
     }
-    this.items = Arrays.asList(intsAndBools).iterator();
-  }
-  private static int _GLF_abs(float a) {
-    return (int) ((a <= 0.0F) ? 0.0F - a : a);
-  }
 
-  @Override
-  public int nextInt(int bound) {
-    Object next = items.next();
-    if (!(next instanceof Integer)) {
-      throw new UnsupportedOperationException("nextInt failed because next item was a "
-          + next.getClass() + "(" + next + ")");
+    @Override
+    public String getDescription() {
+        return "CannedRandom";
     }
-    return _GLF_abs((Integer)next) % bound;
-  }
 
-  @Override
-  public Float nextFloat() {
-    throw new RuntimeException("Not yet supported.");
-  }
-
-  @Override
-  public boolean nextBoolean() {
-    Object next = items.next();
-    if (!(next instanceof Boolean)) {
-      throw new UnsupportedOperationException("nextBool failed because next item was a "
-          + next.getClass() + "(" + next + ")");
+    public boolean isExhausted() {
+        return !items.hasNext();
     }
-    return (Boolean) next;
-  }
 
-  @Override
-  public IRandom spawnChild() {
-    return this;
-  }
+    @Override
+    public boolean nextBoolean() {
+        Object next = items.next();
+        if (!(next instanceof Boolean)) {
+            throw new UnsupportedOperationException("nextBool failed because next item was a "
+                    + next.getClass() + "(" + next + ")");
+        }
+        return (Boolean) next;
+    }
 
-  @Override
-  public String getDescription() {
-    return "CannedRandom";
-  }
+    @Override
+    public Float nextFloat() {
+        throw new RuntimeException("Not yet supported.");
+    }
 
-  public boolean isExhausted() {
-    return !items.hasNext();
-  }
+    @Override
+    public int nextInt(int bound) {
+        Object next = items.next();
+        if (!(next instanceof Integer)) {
+            throw new UnsupportedOperationException("nextInt failed because next item was a "
+                    + next.getClass() + "(" + next + ")");
+        }
+        return _GLF_abs((Integer) next) % bound;
+    }
+
+    @Override
+    public IRandom spawnChild() {
+        return this;
+    }
+
+    private static int _GLF_abs(float a) {
+        return (int) ((a <= 0.0F) ? 0.0F - a : a);
+    }
 
 }

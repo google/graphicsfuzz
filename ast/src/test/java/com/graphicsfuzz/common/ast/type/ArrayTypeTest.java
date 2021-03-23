@@ -16,49 +16,49 @@
 
 package com.graphicsfuzz.common.ast.type;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-
 import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+
 public class ArrayTypeTest {
 
-  @Test
-  public void testEquals() {
-    final ArrayType intArrayNoSize = new ArrayType(BasicType.INT, new ArrayInfo());
-    final ArrayType anotherIntArrayNoSize = new ArrayType(BasicType.INT, new ArrayInfo());
+    @Test
+    public void testEquals() {
+        final ArrayType intArrayNoSize = new ArrayType(BasicType.INT, new ArrayInfo());
+        final ArrayType anotherIntArrayNoSize = new ArrayType(BasicType.INT, new ArrayInfo());
 
-    final ArrayType floatArrayNoSize = new ArrayType(BasicType.FLOAT, new ArrayInfo());
-    final ArrayType anotherFloatArrayNoSize = new ArrayType(BasicType.FLOAT, new ArrayInfo());
+        final ArrayType floatArrayNoSize = new ArrayType(BasicType.FLOAT, new ArrayInfo());
+        final ArrayType anotherFloatArrayNoSize = new ArrayType(BasicType.FLOAT, new ArrayInfo());
 
-    final ArrayType intArraySize2 = new ArrayType(BasicType.INT,
-        new ArrayInfo(new BinaryExpr(new IntConstantExpr("1"), new IntConstantExpr("1"),
-            BinOp.ADD)));
-    intArraySize2.getArrayInfo().setConstantSizeExpr(2);
+        final ArrayType intArraySize2 = new ArrayType(BasicType.INT,
+                new ArrayInfo(new BinaryExpr(new IntConstantExpr("1"), new IntConstantExpr("1"),
+                        BinOp.ADD)));
+        intArraySize2.getArrayInfo().setConstantSizeExpr(2);
 
-    final ArrayType intArraySize3 = new ArrayType(BasicType.INT,
-        new ArrayInfo(new BinaryExpr(new IntConstantExpr("2"), new IntConstantExpr("1"),
-            BinOp.ADD)));
-    intArraySize3.getArrayInfo().setConstantSizeExpr(3);
+        final ArrayType intArraySize3 = new ArrayType(BasicType.INT,
+                new ArrayInfo(new BinaryExpr(new IntConstantExpr("2"), new IntConstantExpr("1"),
+                        BinOp.ADD)));
+        intArraySize3.getArrayInfo().setConstantSizeExpr(3);
 
-    final ArrayType anotherIntArraySize2 = new ArrayType(BasicType.INT,
-        new ArrayInfo(new IntConstantExpr("2")));
-    anotherIntArraySize2.getArrayInfo().setConstantSizeExpr(2);
+        final ArrayType anotherIntArraySize2 = new ArrayType(BasicType.INT,
+                new ArrayInfo(new IntConstantExpr("2")));
+        anotherIntArraySize2.getArrayInfo().setConstantSizeExpr(2);
 
-    assertEquals(intArrayNoSize, anotherIntArrayNoSize);
-    assertEquals(intArrayNoSize.hashCode(), anotherIntArrayNoSize.hashCode());
-    assertNotEquals(intArrayNoSize, intArraySize2);
-    assertEquals(floatArrayNoSize, anotherFloatArrayNoSize);
-    assertEquals(floatArrayNoSize.hashCode(), anotherFloatArrayNoSize.hashCode());
-    assertNotEquals(intArrayNoSize, floatArrayNoSize);
-    assertEquals(intArraySize2, anotherIntArraySize2);
-    assertEquals(intArraySize2.hashCode(), anotherIntArraySize2.hashCode());
-    assertNotEquals(intArraySize2, intArraySize3);
+        assertEquals(intArrayNoSize, anotherIntArrayNoSize);
+        assertEquals(intArrayNoSize.hashCode(), anotherIntArrayNoSize.hashCode());
+        assertNotEquals(intArrayNoSize, intArraySize2);
+        assertEquals(floatArrayNoSize, anotherFloatArrayNoSize);
+        assertEquals(floatArrayNoSize.hashCode(), anotherFloatArrayNoSize.hashCode());
+        assertNotEquals(intArrayNoSize, floatArrayNoSize);
+        assertEquals(intArraySize2, anotherIntArraySize2);
+        assertEquals(intArraySize2.hashCode(), anotherIntArraySize2.hashCode());
+        assertNotEquals(intArraySize2, intArraySize3);
 
-  }
+    }
 
 }

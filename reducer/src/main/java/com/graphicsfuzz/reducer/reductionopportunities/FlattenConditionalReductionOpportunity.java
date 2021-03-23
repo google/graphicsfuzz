@@ -27,35 +27,35 @@ import java.util.List;
 
 public class FlattenConditionalReductionOpportunity extends AbstractReductionOpportunity {
 
-  private final IAstNode parent;
-  private final IfStmt conditional;
-  private final boolean replaceWithThenBranch;
+    private final IAstNode parent;
+    private final IfStmt conditional;
+    private final boolean replaceWithThenBranch;
 
-  public FlattenConditionalReductionOpportunity(IAstNode parent, IfStmt conditional,
-                                                boolean replaceWithThenBranch,
-                                                VisitationDepth depth) {
-    super(depth);
-    this.parent = parent;
-    this.conditional = conditional;
-    this.replaceWithThenBranch = replaceWithThenBranch;
-  }
-
-  @Override
-  void applyReductionImpl() {
-    final List<Stmt> newStmts = new ArrayList<>();
-    newStmts.add(new ExprStmt(conditional.getCondition()));
-    Stmt branchToAdd = replaceWithThenBranch ? conditional.getThenStmt() :
-        conditional.getElseStmt();
-    if (branchToAdd instanceof BlockStmt) {
-      newStmts.addAll(((BlockStmt) branchToAdd).getStmts());
-    } else {
-      newStmts.add(branchToAdd);
+    public FlattenConditionalReductionOpportunity(IAstNode parent, IfStmt conditional,
+                                                  boolean replaceWithThenBranch,
+                                                  VisitationDepth depth) {
+        super(depth);
+        this.parent = parent;
+        this.conditional = conditional;
+        this.replaceWithThenBranch = replaceWithThenBranch;
     }
-    parent.replaceChild(conditional, new BlockStmt(newStmts, true));
-  }
 
-  @Override
-  public boolean preconditionHolds() {
-    return parent.hasChild(conditional) && (replaceWithThenBranch || conditional.hasElseStmt());
-  }
+    @Override
+    void applyReductionImpl() {
+        final List<Stmt> newStmts = new ArrayList<>();
+        newStmts.add(new ExprStmt(conditional.getCondition()));
+        Stmt branchToAdd = replaceWithThenBranch ? conditional.getThenStmt() :
+                conditional.getElseStmt();
+        if (branchToAdd instanceof BlockStmt) {
+            newStmts.addAll(((BlockStmt) branchToAdd).getStmts());
+        } else {
+            newStmts.add(branchToAdd);
+        }
+        parent.replaceChild(conditional, new BlockStmt(newStmts, true));
+    }
+
+    @Override
+    public boolean preconditionHolds() {
+        return parent.hasChild(conditional) && (replaceWithThenBranch || conditional.hasElseStmt());
+    }
 }

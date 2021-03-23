@@ -16,13 +16,13 @@
 
 package com.graphicsfuzz.common.ast;
 
-import static org.junit.Assert.assertEquals;
-
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.ParseHelper;
 import com.graphicsfuzz.common.util.ParseTimeoutException;
 import java.io.IOException;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * This class is deliberately a duplicate of another class, CompareAsts.
@@ -32,23 +32,23 @@ import java.io.IOException;
  */
 public class CompareAstsDuplicate {
 
-  public static void assertEqualAsts(String first, String second)
-      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
-    assertEquals(
-          PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(first)),
-          PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(second))
-    );
-  }
+    public static void assertEqualAsts(String first, String second)
+            throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
+        assertEquals(
+                PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(first)),
+                PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(second))
+        );
+    }
 
-  public static void assertEqualAsts(String string, TranslationUnit tu)
-      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
-    assertEqualAsts(string, PrettyPrinterVisitor.prettyPrintAsString(tu));
-  }
+    public static void assertEqualAsts(String string, TranslationUnit tu)
+            throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
+        assertEqualAsts(string, PrettyPrinterVisitor.prettyPrintAsString(tu));
+    }
 
-  public static void assertEqualAsts(TranslationUnit first, TranslationUnit second)
-      throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
-    assertEqualAsts(PrettyPrinterVisitor.prettyPrintAsString(first),
-          PrettyPrinterVisitor.prettyPrintAsString(second));
-  }
+    public static void assertEqualAsts(TranslationUnit first, TranslationUnit second)
+            throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
+        assertEqualAsts(PrettyPrinterVisitor.prettyPrintAsString(first),
+                PrettyPrinterVisitor.prettyPrintAsString(second));
+    }
 
 }

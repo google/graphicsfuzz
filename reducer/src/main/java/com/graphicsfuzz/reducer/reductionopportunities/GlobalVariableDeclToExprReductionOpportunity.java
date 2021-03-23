@@ -26,36 +26,36 @@ import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 
 public class GlobalVariableDeclToExprReductionOpportunity extends AbstractReductionOpportunity {
 
-  private final FunctionDefinition mainFunction;
-  // The initialized global variable declaration info.
-  private final VariableDeclInfo variableDeclInfo;
+    private final FunctionDefinition mainFunction;
+    // The initialized global variable declaration info.
+    private final VariableDeclInfo variableDeclInfo;
 
-  GlobalVariableDeclToExprReductionOpportunity(VisitationDepth depth,
-                                               VariableDeclInfo variableDeclInfo,
-                                               FunctionDefinition mainFunction) {
-    super(depth);
-    this.variableDeclInfo = variableDeclInfo;
-    this.mainFunction = mainFunction;
-  }
+    GlobalVariableDeclToExprReductionOpportunity(VisitationDepth depth,
+                                                 VariableDeclInfo variableDeclInfo,
+                                                 FunctionDefinition mainFunction) {
+        super(depth);
+        this.variableDeclInfo = variableDeclInfo;
+        this.mainFunction = mainFunction;
+    }
 
-  @Override
-  void applyReductionImpl() {
-    // Given the variable declaration info of global variable, we unset its initializer and
-    // derive a new assignment statement which will be inserted as the first statement in
-    // main function.
-    assert variableDeclInfo.hasInitializer();
-    final BinaryExpr binaryExpr = new BinaryExpr(
-        new VariableIdentifierExpr(variableDeclInfo.getName()),
-        (variableDeclInfo.getInitializer()).getExpr(),
-        BinOp.ASSIGN
-    );
-    mainFunction.getBody().insertStmt(0, new ExprStmt(binaryExpr));
-    variableDeclInfo.setInitializer(null);
-  }
+    @Override
+    void applyReductionImpl() {
+        // Given the variable declaration info of global variable, we unset its initializer and
+        // derive a new assignment statement which will be inserted as the first statement in
+        // main function.
+        assert variableDeclInfo.hasInitializer();
+        final BinaryExpr binaryExpr = new BinaryExpr(
+                new VariableIdentifierExpr(variableDeclInfo.getName()),
+                (variableDeclInfo.getInitializer()).getExpr(),
+                BinOp.ASSIGN
+        );
+        mainFunction.getBody().insertStmt(0, new ExprStmt(binaryExpr));
+        variableDeclInfo.setInitializer(null);
+    }
 
-  @Override
-  public boolean preconditionHolds() {
-    return mainFunction.getPrototype().getName().equals("main")
-        && variableDeclInfo.hasInitializer();
-  }
+    @Override
+    public boolean preconditionHolds() {
+        return mainFunction.getPrototype().getName().equals("main")
+                && variableDeclInfo.hasInitializer();
+    }
 }

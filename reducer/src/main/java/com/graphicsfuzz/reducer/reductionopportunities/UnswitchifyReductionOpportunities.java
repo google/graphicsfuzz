@@ -25,45 +25,45 @@ import java.util.Arrays;
 import java.util.List;
 
 public class UnswitchifyReductionOpportunities
-      extends ReductionOpportunitiesBase<UnswitchifyReductionOpportunity> {
+        extends ReductionOpportunitiesBase<UnswitchifyReductionOpportunity> {
 
-  private UnswitchifyReductionOpportunities(
-        TranslationUnit tu,
-        ReducerContext context) {
-    super(tu, context);
-  }
-
-  /**
-   * Find all switch removal opportunities for the given translation unit.
-   *
-   * @param shaderJob The shader job to be searched.
-   * @param context Includes info such as whether we reduce everywhere or only reduce injections
-   * @return The opportunities that can be reduced
-   */
-  static List<UnswitchifyReductionOpportunity> findOpportunities(
-        ShaderJob shaderJob,
-        ReducerContext context) {
-    return shaderJob.getShaders()
-        .stream()
-        .map(item -> findOpportunitiesForShader(item, context))
-        .reduce(Arrays.asList(), ListConcat::concatenate);
-  }
-
-  private static List<UnswitchifyReductionOpportunity> findOpportunitiesForShader(
-      TranslationUnit tu,
-      ReducerContext context) {
-    UnswitchifyReductionOpportunities finder =
-          new UnswitchifyReductionOpportunities(tu, context);
-    finder.visit(tu);
-    return finder.getOpportunities();
-  }
-
-  @Override
-  public void visitSwitchStmt(SwitchStmt switchStmt) {
-    super.visitSwitchStmt(switchStmt);
-    if (MacroNames.isSwitch(switchStmt.getExpr())) {
-      addOpportunity(new UnswitchifyReductionOpportunity(switchStmt,
-            parentMap.getParent(switchStmt), getVistitationDepth()));
+    private UnswitchifyReductionOpportunities(
+            TranslationUnit tu,
+            ReducerContext context) {
+        super(tu, context);
     }
-  }
+
+    /**
+     * Find all switch removal opportunities for the given translation unit.
+     *
+     * @param shaderJob The shader job to be searched.
+     * @param context   Includes info such as whether we reduce everywhere or only reduce injections
+     * @return The opportunities that can be reduced
+     */
+    static List<UnswitchifyReductionOpportunity> findOpportunities(
+            ShaderJob shaderJob,
+            ReducerContext context) {
+        return shaderJob.getShaders()
+                .stream()
+                .map(item -> findOpportunitiesForShader(item, context))
+                .reduce(Arrays.asList(), ListConcat::concatenate);
+    }
+
+    @Override
+    public void visitSwitchStmt(SwitchStmt switchStmt) {
+        super.visitSwitchStmt(switchStmt);
+        if (MacroNames.isSwitch(switchStmt.getExpr())) {
+            addOpportunity(new UnswitchifyReductionOpportunity(switchStmt,
+                    parentMap.getParent(switchStmt), getVistitationDepth()));
+        }
+    }
+
+    private static List<UnswitchifyReductionOpportunity> findOpportunitiesForShader(
+            TranslationUnit tu,
+            ReducerContext context) {
+        UnswitchifyReductionOpportunities finder =
+                new UnswitchifyReductionOpportunities(tu, context);
+        finder.visit(tu);
+        return finder.getOpportunities();
+    }
 }

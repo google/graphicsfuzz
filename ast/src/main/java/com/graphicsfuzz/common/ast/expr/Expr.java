@@ -22,37 +22,37 @@ import java.util.List;
 
 public abstract class Expr implements IAstNode {
 
-  @Override
-  public abstract Expr clone();
-
-  public abstract Expr getChild(int index);
-
-  public abstract void setChild(int index, Expr expr);
-
-  public abstract int getNumChildren();
-
-  @Override
-  public void replaceChild(IAstNode child, IAstNode newChild) {
-    if (!(child instanceof Expr && newChild instanceof Expr)) {
-      throw new IllegalArgumentException();
+    public static void checkNoTopLevelCommaExpression(List<Expr> args) {
+        for (Expr arg : args) {
+            if (arg instanceof BinaryExpr && ((BinaryExpr) arg).getOp() == BinOp.COMMA) {
+                throw new IllegalArgumentException("Invalid use of comma expression.");
+            }
+        }
     }
-    for (int i = 0; i < getNumChildren(); i++) {
-      if (getChild(i) == child) {
-        setChild(i, (Expr) newChild);
-        return;
-      }
-    }
-    throw new ChildDoesNotExistException(child, this);
-  }
 
-  public abstract boolean hasChild(IAstNode child);
+    @Override
+    public abstract Expr clone();
 
-  public static void checkNoTopLevelCommaExpression(List<Expr> args) {
-    for (Expr arg : args) {
-      if (arg instanceof BinaryExpr && ((BinaryExpr) arg).getOp() == BinOp.COMMA) {
-        throw new IllegalArgumentException("Invalid use of comma expression.");
-      }
+    public abstract Expr getChild(int index);
+
+    public abstract int getNumChildren();
+
+    public abstract boolean hasChild(IAstNode child);
+
+    @Override
+    public void replaceChild(IAstNode child, IAstNode newChild) {
+        if (!(child instanceof Expr && newChild instanceof Expr)) {
+            throw new IllegalArgumentException();
+        }
+        for (int i = 0; i < getNumChildren(); i++) {
+            if (getChild(i) == child) {
+                setChild(i, (Expr) newChild);
+                return;
+            }
+        }
+        throw new ChildDoesNotExistException(child, this);
     }
-  }
+
+    public abstract void setChild(int index, Expr expr);
 
 }

@@ -22,31 +22,31 @@ import com.graphicsfuzz.common.typing.Scope;
 
 public class VoidType extends BuiltinType {
 
-  private VoidType() {
-    // VoidType is a singleton
-  }
+    public static final VoidType VOID = new VoidType();
 
-  public static final VoidType VOID = new VoidType();
+    private VoidType() {
+        // VoidType is a singleton
+    }
 
-  @Override
-  public String toString() {
-    return "void";
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitVoidType(this);
+    }
 
-  @Override
-  public boolean hasCanonicalConstant(Scope unused) {
-    return false;
-  }
+    @Override
+    public Expr getCanonicalConstant(Scope scope) {
+        // Sanity-check that there is indeed no canonical constant.
+        assert !hasCanonicalConstant(scope);
+        throw new RuntimeException("No canonical constant for " + this);
+    }
 
-  @Override
-  public Expr getCanonicalConstant(Scope scope) {
-    // Sanity-check that there is indeed no canonical constant.
-    assert !hasCanonicalConstant(scope);
-    throw new RuntimeException("No canonical constant for " + this);
-  }
+    @Override
+    public boolean hasCanonicalConstant(Scope unused) {
+        return false;
+    }
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitVoidType(this);
-  }
+    @Override
+    public String toString() {
+        return "void";
+    }
 }

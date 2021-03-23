@@ -17,19 +17,19 @@ limitations under the License.
 -->
 
 <Configuration>
-    <Appenders>
-        <Console name="Console" target="SYSTEM_OUT">
-            <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %logger{1} - %msg%n" />
-        </Console>
-        <!--<File name="File" fileName="tool.log">-->
-            <!--<PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level t:%-23X{token} %logger{1} - %msg%n" />-->
-        <!--</File>-->
-    </Appenders>
-    <Loggers>
-        <Logger name="org.apache.log4j.xml" level="info"/>
-        <Root level="info">
-            <AppenderRef ref="Console"/>
-            <!--<AppenderRef ref="File"/>-->
-        </Root>
-    </Loggers>
+  <Appenders>
+    <Console name="Console" target="SYSTEM_OUT">
+      <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %logger{1} - %msg%n"/>
+    </Console>
+    <!--<File name="File" fileName="tool.log">-->
+    <!--<PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level t:%-23X{token} %logger{1} - %msg%n" />-->
+    <!--</File>-->
+  </Appenders>
+  <Loggers>
+    <Logger name="org.apache.log4j.xml" level="info"/>
+    <Root level="info">
+      <AppenderRef ref="Console"/>
+      <!--<AppenderRef ref="File"/>-->
+    </Root>
+  </Loggers>
 </Configuration>

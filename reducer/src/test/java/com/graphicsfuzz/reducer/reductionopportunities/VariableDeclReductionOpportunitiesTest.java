@@ -16,8 +16,6 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
-import static org.junit.Assert.assertEquals;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.util.CompareAsts;
@@ -27,99 +25,101 @@ import com.graphicsfuzz.common.util.RandomWrapper;
 import java.util.List;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+
 public class VariableDeclReductionOpportunitiesTest {
 
-  @Test
-  public void testRemoveUnusedLiveCodeDecl() throws Exception {
-    final String program = "void main() {\n"
-        + "  int GLF_live0c = 3;\n"
-        + "}\n";
-    final String reducedProgram = "void main() {\n"
-        + "  int ;\n"
-        + "}\n";
-    final TranslationUnit tu = ParseHelper.parse(program);
-    List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
-        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-            new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
-            new RandomWrapper(0), new IdGenerator()));
-    assertEquals(1, ops.size());
-    ops.get(0).applyReduction();
-    CompareAsts.assertEqualAsts(reducedProgram, tu);
-  }
+    @Test
+    public void testAnonymousStruct() throws Exception {
+        final String program = "struct { int x; } b, c; void main() { b.x = 2; }\n";
+        final String reducedProgram = "struct { int x; } b; void main() { b.x = 2; }\n";
+        final TranslationUnit tu = ParseHelper.parse(program);
+        List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
+                .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+                        new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+                                new RandomWrapper(0), new IdGenerator()));
+        assertEquals(1, ops.size());
+        ops.get(0).applyReduction();
+        CompareAsts.assertEqualAsts(reducedProgram, tu);
+    }
 
-  @Test
-  public void testAnonymousStruct() throws Exception {
-    final String program = "struct { int x; } b, c; void main() { b.x = 2; }\n";
-    final String reducedProgram = "struct { int x; } b; void main() { b.x = 2; }\n";
-    final TranslationUnit tu = ParseHelper.parse(program);
-    List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
-        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-            new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
-            new RandomWrapper(0), new IdGenerator()));
-    assertEquals(1, ops.size());
-    ops.get(0).applyReduction();
-    CompareAsts.assertEqualAsts(reducedProgram, tu);
-  }
+    @Test
+    public void testDoNotRemoveConstantUsedToInitializeArray() throws Exception {
+        final String program = ""
+                + "#version 310 es\n"
+                + "const int N = 5;\n"
+                + "const int M = 6;\n"
+                + "int A[N];\n"
+                + "void main() {\n"
+                + "  int B[M];\n"
+                + "  const int P = 7;\n"
+                + "  int C[P];\n"
+                + "  A[0] = 1;\n"
+                + "  B[0] = 2;\n"
+                + "  C[0] = 3;\n"
+                + "}\n";
+        final TranslationUnit tu = ParseHelper.parse(program);
+        List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
+                .findOpportunities(
+                        MakeShaderJobFromFragmentShader.make(tu),
+                        new ReducerContext(
+                                false,
+                                ShadingLanguageVersion.ESSL_310,
+                                new RandomWrapper(0),
+                                new IdGenerator())
+                );
+        assertEquals(0, ops.size());
+    }
 
-  @Test
-  public void testNamedStruct() throws Exception {
-    final String program = "struct A { int x; } b; void main() { A c; c.x = 2; }\n";
-    final String reducedProgram = "struct A { int x; }; void main() { A c; c.x = 2; }\n";
-    final TranslationUnit tu = ParseHelper.parse(program);
-    List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
-        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-            new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
-            new RandomWrapper(0), new IdGenerator()));
-    assertEquals(1, ops.size());
-    ops.get(0).applyReduction();
-    CompareAsts.assertEqualAsts(reducedProgram, tu);
-  }
+    @Test
+    public void testNamedStruct() throws Exception {
+        final String program = "struct A { int x; } b; void main() { A c; c.x = 2; }\n";
+        final String reducedProgram = "struct A { int x; }; void main() { A c; c.x = 2; }\n";
+        final TranslationUnit tu = ParseHelper.parse(program);
+        List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
+                .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+                        new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+                                new RandomWrapper(0), new IdGenerator()));
+        assertEquals(1, ops.size());
+        ops.get(0).applyReduction();
+        CompareAsts.assertEqualAsts(reducedProgram, tu);
+    }
 
-  @Test
-  public void testNothingToRemove() throws Exception {
-    final String program = "void main() {\n"
-        + "  float k = 1.0;\n"
-        + "  gl_FragColor = vec4(k, 0.0, 0.0, 0.0);\n"
-        + "}\n";
-    final TranslationUnit tu = ParseHelper.parse(program);
-    List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
-        .findOpportunities(
-            MakeShaderJobFromFragmentShader.make(tu),
-            new ReducerContext(
-                false,
-                ShadingLanguageVersion.ESSL_100,
-                new RandomWrapper(0),
-                new IdGenerator())
-        );
-    assertEquals(0, ops.size());
-  }
+    @Test
+    public void testNothingToRemove() throws Exception {
+        final String program = "void main() {\n"
+                + "  float k = 1.0;\n"
+                + "  gl_FragColor = vec4(k, 0.0, 0.0, 0.0);\n"
+                + "}\n";
+        final TranslationUnit tu = ParseHelper.parse(program);
+        List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
+                .findOpportunities(
+                        MakeShaderJobFromFragmentShader.make(tu),
+                        new ReducerContext(
+                                false,
+                                ShadingLanguageVersion.ESSL_100,
+                                new RandomWrapper(0),
+                                new IdGenerator())
+                );
+        assertEquals(0, ops.size());
+    }
 
-  @Test
-  public void testDoNotRemoveConstantUsedToInitializeArray() throws Exception {
-    final String program = ""
-        + "#version 310 es\n"
-        + "const int N = 5;\n"
-        + "const int M = 6;\n"
-        + "int A[N];\n"
-        + "void main() {\n"
-        + "  int B[M];\n"
-        + "  const int P = 7;\n"
-        + "  int C[P];\n"
-        + "  A[0] = 1;\n"
-        + "  B[0] = 2;\n"
-        + "  C[0] = 3;\n"
-        + "}\n";
-    final TranslationUnit tu = ParseHelper.parse(program);
-    List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
-        .findOpportunities(
-            MakeShaderJobFromFragmentShader.make(tu),
-            new ReducerContext(
-                false,
-                ShadingLanguageVersion.ESSL_310,
-                new RandomWrapper(0),
-                new IdGenerator())
-        );
-    assertEquals(0, ops.size());
-  }
+    @Test
+    public void testRemoveUnusedLiveCodeDecl() throws Exception {
+        final String program = "void main() {\n"
+                + "  int GLF_live0c = 3;\n"
+                + "}\n";
+        final String reducedProgram = "void main() {\n"
+                + "  int ;\n"
+                + "}\n";
+        final TranslationUnit tu = ParseHelper.parse(program);
+        List<VariableDeclReductionOpportunity> ops = VariableDeclReductionOpportunities
+                .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+                        new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+                                new RandomWrapper(0), new IdGenerator()));
+        assertEquals(1, ops.size());
+        ops.get(0).applyReduction();
+        CompareAsts.assertEqualAsts(reducedProgram, tu);
+    }
 
 }

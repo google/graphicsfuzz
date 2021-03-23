@@ -18,15 +18,15 @@ package com.graphicsfuzz.reducer;
 
 public class FileJudgeException extends Exception {
 
-  public FileJudgeException(Throwable cause) {
-    super(cause);
-  }
+    public FileJudgeException(Throwable cause) {
+        super(cause);
+    }
 
-  public FileJudgeException(String message) {
-    super(message);
-  }
+    public FileJudgeException(String message) {
+        super(message);
+    }
 
-  public FileJudgeException(String message, Throwable cause) {
-    super(message, cause);
-  }
+    public FileJudgeException(String message, Throwable cause) {
+        super(message, cause);
+    }
 }

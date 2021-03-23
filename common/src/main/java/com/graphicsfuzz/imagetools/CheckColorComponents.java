@@ -28,35 +28,35 @@ import net.sourceforge.argparse4j.inf.Namespace;
 
 public class CheckColorComponents {
 
-  public static void main(String[] args) throws ArgumentParserException, IOException {
+    public static void main(String[] args) throws ArgumentParserException, IOException {
 
-    final ArgumentParser parser = ArgumentParsers.newArgumentParser("CheckColorComponents")
-        .defaultHelp(true)
-        .description("Exits with code 0 if and only if the given image uses only the given color "
-            + "components as the RGBA values of its pixels.");
+        final ArgumentParser parser = ArgumentParsers.newArgumentParser("CheckColorComponents")
+                .defaultHelp(true)
+                .description("Exits with code 0 if and only if the given image uses only the given color "
+                        + "components as the RGBA values of its pixels.");
 
-    // Required arguments
-    parser.addArgument("image")
-        .help("Path to PNG image")
-        .type(File.class);
-    parser.addArgument("components")
-        .type(Integer.class)
-        .nargs("+")
-        .help("Allowed components, each in range 0..255.");
+        // Required arguments
+        parser.addArgument("image")
+                .help("Path to PNG image")
+                .type(File.class);
+        parser.addArgument("components")
+                .type(Integer.class)
+                .nargs("+")
+                .help("Allowed components, each in range 0..255.");
 
-    final Namespace ns = parser.parseArgs(args);
+        final Namespace ns = parser.parseArgs(args);
 
-    final File image = ns.get("image");
-    final List<Integer> components = ns.get("components");
+        final File image = ns.get("image");
+        final List<Integer> components = ns.get("components");
 
-    if (components.stream().anyMatch(item -> item < 0 || item > 255)) {
-      System.err.println("Error: given component list " + components + " includes elements not "
-          + "in range 0..255.");
+        if (components.stream().anyMatch(item -> item < 0 || item > 255)) {
+            System.err.println("Error: given component list " + components + " includes elements not "
+                    + "in range 0..255.");
+        }
+
+        if (!ImageColorComponents.containsOnlyGivenComponentValues(ImageIO.read(image), components)) {
+            System.exit(1);
+        }
     }
-
-    if (!ImageColorComponents.containsOnlyGivenComponentValues(ImageIO.read(image), components)) {
-      System.exit(1);
-    }
-  }
 
 }

@@ -16,18 +16,18 @@
 
 package com.graphicsfuzz.common.ast.stmt;
 
+import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotSame;
 
-import org.junit.Test;
-
 public class DiscardStmtTest {
 
-  @Test
-  public void testDiscardStmt() {
-    assertEquals("discard;\n", new DiscardStmt().getText());
-    final DiscardStmt discardStmt = new DiscardStmt();
-    assertNotSame(discardStmt, discardStmt.clone());
-  }
+    @Test
+    public void testDiscardStmt() {
+        assertEquals("discard;\n", new DiscardStmt().getText());
+        final DiscardStmt discardStmt = new DiscardStmt();
+        assertNotSame(discardStmt, discardStmt.clone());
+    }
 
 }

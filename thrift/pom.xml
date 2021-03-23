@@ -14,9 +14,9 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <artifactId>thrift</artifactId>
   <name>thrift</name>
@@ -59,17 +59,22 @@ limitations under the License.
             </goals>
             <configuration>
               <target>
-                <taskdef resource="net/sf/antcontrib/antcontrib.properties" classpath="${ant-contrib:ant-contrib:jar}"/>
+                <taskdef resource="net/sf/antcontrib/antcontrib.properties"
+                         classpath="${ant-contrib:ant-contrib:jar}"/>
                 <propertyregex property="os.shortname"
                                input="${os.name}"
                                regexp="(^[^ ]*).*"
                                replace="\1"
                                global="false"/>
                 <property name="thrift-compiler-dir" value="${project.build.directory}/thrift"/>
-                <property name="thrift-compiler-exec" value="${project.build.directory}/thrift/${os.shortname}/thrift"/>
-                <property name="gen-file-test" value="${project.build.directory}/gen-java/com/graphicsfuzz/server/thrift/Token.java"/>
-                <property name="thrift-input-file" value="${project.basedir}/src/main/thrift/FuzzerService.thrift"/>
-                <property name="thrift-compiler-zip" value="${com.github.mc-imperial:thrift-compiler-binary:zip}"/>
+                <property name="thrift-compiler-exec"
+                          value="${project.build.directory}/thrift/${os.shortname}/thrift"/>
+                <property name="gen-file-test"
+                          value="${project.build.directory}/gen-java/com/graphicsfuzz/server/thrift/Token.java"/>
+                <property name="thrift-input-file"
+                          value="${project.basedir}/src/main/thrift/FuzzerService.thrift"/>
+                <property name="thrift-compiler-zip"
+                          value="${com.github.mc-imperial:thrift-compiler-binary:zip}"/>
 
                 <outofdate>
                   <sourcefiles path="${thrift-compiler-zip}"/>
@@ -90,16 +95,28 @@ limitations under the License.
                     <exec dir="${project.build.directory}" executable="${thrift-compiler-exec}">
                       <arg line="-gen java -gen py -gen js -gen cocoa ${thrift-input-file}"/>
                     </exec>
-                    <zip destfile="${project.build.directory}/${project.artifactId}-${project.version}-java.zip" basedir="${project.build.directory}/gen-java"/>
-                    <zip destfile="${project.build.directory}/${project.artifactId}-${project.version}-python.zip" basedir="${project.build.directory}/gen-py/graphicsfuzzserver"/>
-                    <zip destfile="${project.build.directory}/${project.artifactId}-${project.version}-js.zip" basedir="${project.build.directory}/gen-js"/>
+                    <zip
+                        destfile="${project.build.directory}/${project.artifactId}-${project.version}-java.zip"
+                        basedir="${project.build.directory}/gen-java"/>
+                    <zip
+                        destfile="${project.build.directory}/${project.artifactId}-${project.version}-python.zip"
+                        basedir="${project.build.directory}/gen-py/graphicsfuzzserver"/>
+                    <zip
+                        destfile="${project.build.directory}/${project.artifactId}-${project.version}-js.zip"
+                        basedir="${project.build.directory}/gen-js"/>
                     <touch file="${project.build.directory}/gen-touched.txt"/>
                   </sequential>
                 </outofdate>
 
-                <attachartifact file="${project.build.directory}/${project.artifactId}-${project.version}-java.zip" classifier="java" type="zip"/>
-                <attachartifact file="${project.build.directory}/${project.artifactId}-${project.version}-python.zip" classifier="python" type="zip"/>
-                <attachartifact file="${project.build.directory}/${project.artifactId}-${project.version}-js.zip" classifier="js" type="zip"/>
+                <attachartifact
+                    file="${project.build.directory}/${project.artifactId}-${project.version}-java.zip"
+                    classifier="java" type="zip"/>
+                <attachartifact
+                    file="${project.build.directory}/${project.artifactId}-${project.version}-python.zip"
+                    classifier="python" type="zip"/>
+                <attachartifact
+                    file="${project.build.directory}/${project.artifactId}-${project.version}-js.zip"
+                    classifier="js" type="zip"/>
 
               </target>
             </configuration>

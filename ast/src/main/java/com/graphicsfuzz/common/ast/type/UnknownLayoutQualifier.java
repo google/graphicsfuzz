@@ -22,15 +22,15 @@ package com.graphicsfuzz.common.ast.type;
  */
 public class UnknownLayoutQualifier implements LayoutQualifier {
 
-  private final String contents;
+    private final String contents;
 
-  public UnknownLayoutQualifier(String contents) {
-    this.contents = contents;
-  }
+    public UnknownLayoutQualifier(String contents) {
+        this.contents = contents;
+    }
 
-  @Override
-  public String toString() {
-    return contents;
-  }
+    @Override
+    public String toString() {
+        return contents;
+    }
 
 }

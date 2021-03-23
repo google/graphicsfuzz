@@ -20,7 +20,7 @@ import com.graphicsfuzz.common.ast.IAstNode;
 
 public abstract class Declaration implements IAstNode {
 
-  @Override
-  public abstract Declaration clone();
+    @Override
+    public abstract Declaration clone();
 
 }

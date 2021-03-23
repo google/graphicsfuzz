@@ -26,39 +26,39 @@ import com.graphicsfuzz.common.ast.visitors.CheckPredicateVisitor;
 
 public final class ContainsTopLevelBreak {
 
-  private ContainsTopLevelBreak() {
-    // Utility class
-  }
+    private ContainsTopLevelBreak() {
+        // Utility class
+    }
 
-  public static boolean check(Stmt stmt) {
-    return new CheckPredicateVisitor() {
+    public static boolean check(Stmt stmt) {
+        return new CheckPredicateVisitor() {
 
-      @Override
-      public void visitForStmt(ForStmt forStmt) {
-        // Block visitation
-      }
+            @Override
+            public void visitBreakStmt(BreakStmt breakStmt) {
+                predicateHolds();
+            }
 
-      @Override
-      public void visitDoStmt(DoStmt doStmt) {
-        // Block visitation
-      }
+            @Override
+            public void visitDoStmt(DoStmt doStmt) {
+                // Block visitation
+            }
 
-      @Override
-      public void visitWhileStmt(WhileStmt whileStmt) {
-        // Block visitation
-      }
+            @Override
+            public void visitForStmt(ForStmt forStmt) {
+                // Block visitation
+            }
 
-      @Override
-      public void visitSwitchStmt(SwitchStmt switchStmt) {
-        // Block visitation
-      }
+            @Override
+            public void visitSwitchStmt(SwitchStmt switchStmt) {
+                // Block visitation
+            }
 
-      @Override
-      public void visitBreakStmt(BreakStmt breakStmt) {
-        predicateHolds();
-      }
+            @Override
+            public void visitWhileStmt(WhileStmt whileStmt) {
+                // Block visitation
+            }
 
-    }.test(stmt);
-  }
+        }.test(stmt);
+    }
 
 }

@@ -23,24 +23,24 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 public class Main {
-  public static void main(String[] args) throws Exception {
-    ArgumentParser parser = ArgumentParsers.newArgumentParser("Fuzzer server")
-        .defaultHelp(true);
+    public static void main(String[] args) throws Exception {
+        ArgumentParser parser = ArgumentParsers.newArgumentParser("Fuzzer server")
+                .defaultHelp(true);
 
-    parser.addArgument("--port")
-        .help("Port on which to listen.")
-        .setDefault(8080)
-        .type(Integer.class);
+        parser.addArgument("--port")
+                .help("Port on which to listen.")
+                .setDefault(8080)
+                .type(Integer.class);
 
-    try {
-      Namespace ns = parser.parseArgs(args);
+        try {
+            Namespace ns = parser.parseArgs(args);
 
-      ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
+            ShaderJobFileOperations fileOps = new ShaderJobFileOperations();
 
-      new FuzzerServer(ns.get("port"), fileOps).start();
+            new FuzzerServer(ns.get("port"), fileOps).start();
 
-    } catch (ArgumentParserException ex) {
-      ex.getParser().handleError(ex);
+        } catch (ArgumentParserException ex) {
+            ex.getParser().handleError(ex);
+        }
     }
-  }
 }

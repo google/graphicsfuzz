@@ -21,29 +21,29 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public final class ExtensionStatement extends Declaration {
 
-  final String extensionName;
-  final String extensionStatus;
+    final String extensionName;
+    final String extensionStatus;
 
-  public ExtensionStatement(String extensionName, String extensionStatus) {
-    this.extensionName = extensionName;
-    this.extensionStatus = extensionStatus;
-  }
+    public ExtensionStatement(String extensionName, String extensionStatus) {
+        this.extensionName = extensionName;
+        this.extensionStatus = extensionStatus;
+    }
 
-  public String getExtensionName() {
-    return extensionName;
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitExtensionStatement(this);
+    }
 
-  public String getExtensionStatus() {
-    return extensionStatus;
-  }
+    @Override
+    public ExtensionStatement clone() {
+        return new ExtensionStatement(extensionName, extensionStatus);
+    }
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitExtensionStatement(this);
-  }
+    public String getExtensionName() {
+        return extensionName;
+    }
 
-  @Override
-  public ExtensionStatement clone() {
-    return new ExtensionStatement(extensionName, extensionStatus);
-  }
+    public String getExtensionStatus() {
+        return extensionStatus;
+    }
 }

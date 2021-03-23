@@ -23,36 +23,36 @@ import java.util.Arrays;
 
 public class DefaultLayout extends Declaration {
 
-  private LayoutQualifierSequence layoutQualifierSequence;
-  private TypeQualifier typeQualifier;
+    private LayoutQualifierSequence layoutQualifierSequence;
+    private TypeQualifier typeQualifier;
 
-  public DefaultLayout(LayoutQualifierSequence layoutQualifierSequence,
-                       TypeQualifier typeQualifier) {
-    assert Arrays.asList(
-        TypeQualifier.UNIFORM,
-        TypeQualifier.BUFFER,
-        TypeQualifier.SHADER_INPUT,
-        TypeQualifier.SHADER_OUTPUT).contains(typeQualifier);
-    this.layoutQualifierSequence = layoutQualifierSequence;
-    this.typeQualifier = typeQualifier;
-  }
+    public DefaultLayout(LayoutQualifierSequence layoutQualifierSequence,
+                         TypeQualifier typeQualifier) {
+        assert Arrays.asList(
+                TypeQualifier.UNIFORM,
+                TypeQualifier.BUFFER,
+                TypeQualifier.SHADER_INPUT,
+                TypeQualifier.SHADER_OUTPUT).contains(typeQualifier);
+        this.layoutQualifierSequence = layoutQualifierSequence;
+        this.typeQualifier = typeQualifier;
+    }
 
-  public LayoutQualifierSequence getLayoutQualifierSequence() {
-    return layoutQualifierSequence;
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitDefaultLayout(this);
+    }
 
-  public TypeQualifier getTypeQualifier() {
-    return typeQualifier;
-  }
+    @Override
+    public DefaultLayout clone() {
+        return new DefaultLayout(layoutQualifierSequence, typeQualifier);
+    }
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitDefaultLayout(this);
-  }
+    public LayoutQualifierSequence getLayoutQualifierSequence() {
+        return layoutQualifierSequence;
+    }
 
-  @Override
-  public DefaultLayout clone() {
-    return new DefaultLayout(layoutQualifierSequence, typeQualifier);
-  }
+    public TypeQualifier getTypeQualifier() {
+        return typeQualifier;
+    }
 
 }

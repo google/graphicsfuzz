@@ -32,88 +32,90 @@ import com.graphicsfuzz.util.Constants;
 
 public class MakeArrayAccessesInBounds extends ScopeTrackingVisitor {
 
-  private final Typer typer;
+    private final Typer typer;
 
-  private MakeArrayAccessesInBounds(Typer typer) {
-    this.typer = typer;
-  }
-
-  /**
-   * Clamp array / vector / matrix accesses to ensure they will be in-bounds.
-   * @param tu The translation unit in which accesses are to be made in-bounds.
-   */
-  public static void makeInBounds(TranslationUnit tu) {
-    new MakeArrayAccessesInBounds(new Typer(tu)).visit(tu);
-  }
-
-  /**
-   * Clamp accesses in all shaders in a shader job.
-   * @param shaderJob The shader job to be made in-bounds.
-   */
-  public static void makeInBounds(ShaderJob shaderJob) {
-    shaderJob.getShaders().forEach(MakeArrayAccessesInBounds::makeInBounds);
-  }
-
-  @Override
-  public void visitArrayIndexExpr(ArrayIndexExpr arrayIndexExpr) {
-    super.visitArrayIndexExpr(arrayIndexExpr);
-    Type type = typer.lookupType(arrayIndexExpr.getArray());
-    if (type == null) {
-      return;
+    private MakeArrayAccessesInBounds(Typer typer) {
+        this.typer = typer;
     }
-    type = type.getWithoutQualifiers();
-    assert isArrayVectorOrMatrix(type);
-    if (!staticallyInBounds(arrayIndexExpr.getIndex(), type)) {
-      Type indexType = typer.lookupType(arrayIndexExpr.getIndex());
-      if (indexType == null) {
-        return;
-      }
-      indexType = indexType.getWithoutQualifiers();
-      assert indexType == BasicType.INT || indexType == BasicType.UINT;
 
-      final Expr arraySize = indexType == BasicType.INT
-          ? new IntConstantExpr(getSize(type).toString())
-          : new UIntConstantExpr(getSize(type).toString() + "u");
-
-      final Expr clampedIndexExpr =
-          new FunctionCallExpr(indexType == BasicType.INT ? Constants.GLF_MAKE_IN_BOUNDS_INT :
-              Constants.GLF_MAKE_IN_BOUNDS_UINT,
-              arrayIndexExpr.getIndex(),
-              arraySize);
-      arrayIndexExpr.setIndex(clampedIndexExpr);
-
+    /**
+     * Clamp array / vector / matrix accesses to ensure they will be in-bounds.
+     *
+     * @param tu The translation unit in which accesses are to be made in-bounds.
+     */
+    public static void makeInBounds(TranslationUnit tu) {
+        new MakeArrayAccessesInBounds(new Typer(tu)).visit(tu);
     }
-  }
 
-  private static Integer getSize(Type type) {
-    assert isArrayVectorOrMatrix(type);
-    if (type instanceof ArrayType) {
-      return ((ArrayType) type).getArrayInfo().getConstantSize();
+    /**
+     * Clamp accesses in all shaders in a shader job.
+     *
+     * @param shaderJob The shader job to be made in-bounds.
+     */
+    public static void makeInBounds(ShaderJob shaderJob) {
+        shaderJob.getShaders().forEach(MakeArrayAccessesInBounds::makeInBounds);
     }
-    if (BasicType.allVectorTypes().contains(type)) {
-      return ((BasicType) type).getNumElements();
-    }
-    return ((BasicType) type).getNumColumns();
-  }
 
-  private static boolean isArrayVectorOrMatrix(Type type) {
-    return type instanceof ArrayType
-          || BasicType.allMatrixTypes().contains(type)
-          || BasicType.allVectorTypes().contains(type);
-  }
+    @Override
+    public void visitArrayIndexExpr(ArrayIndexExpr arrayIndexExpr) {
+        super.visitArrayIndexExpr(arrayIndexExpr);
+        Type type = typer.lookupType(arrayIndexExpr.getArray());
+        if (type == null) {
+            return;
+        }
+        type = type.getWithoutQualifiers();
+        assert isArrayVectorOrMatrix(type);
+        if (!staticallyInBounds(arrayIndexExpr.getIndex(), type)) {
+            Type indexType = typer.lookupType(arrayIndexExpr.getIndex());
+            if (indexType == null) {
+                return;
+            }
+            indexType = indexType.getWithoutQualifiers();
+            assert indexType == BasicType.INT || indexType == BasicType.UINT;
 
-  private static boolean staticallyInBounds(Expr index, Type type) {
-    if (!(index instanceof IntConstantExpr || index instanceof UIntConstantExpr)) {
-      return false;
+            final Expr arraySize = indexType == BasicType.INT
+                    ? new IntConstantExpr(getSize(type).toString())
+                    : new UIntConstantExpr(getSize(type).toString() + "u");
+
+            final Expr clampedIndexExpr =
+                    new FunctionCallExpr(indexType == BasicType.INT ? Constants.GLF_MAKE_IN_BOUNDS_INT :
+                            Constants.GLF_MAKE_IN_BOUNDS_UINT,
+                            arrayIndexExpr.getIndex(),
+                            arraySize);
+            arrayIndexExpr.setIndex(clampedIndexExpr);
+
+        }
     }
-    Integer indexValue;
-    if (index instanceof IntConstantExpr) {
-      indexValue = ((IntConstantExpr) index).getNumericValue();
-      return indexValue >= 0 && indexValue < getSize(type);
-    } else { // index instanceof UIntConstantExpr
-      indexValue = ((UIntConstantExpr) index).getNumericValue();
-      return indexValue < getSize(type);
+
+    private static Integer getSize(Type type) {
+        assert isArrayVectorOrMatrix(type);
+        if (type instanceof ArrayType) {
+            return ((ArrayType) type).getArrayInfo().getConstantSize();
+        }
+        if (BasicType.allVectorTypes().contains(type)) {
+            return ((BasicType) type).getNumElements();
+        }
+        return ((BasicType) type).getNumColumns();
     }
-  }
+
+    private static boolean isArrayVectorOrMatrix(Type type) {
+        return type instanceof ArrayType
+                || BasicType.allMatrixTypes().contains(type)
+                || BasicType.allVectorTypes().contains(type);
+    }
+
+    private static boolean staticallyInBounds(Expr index, Type type) {
+        if (!(index instanceof IntConstantExpr || index instanceof UIntConstantExpr)) {
+            return false;
+        }
+        Integer indexValue;
+        if (index instanceof IntConstantExpr) {
+            indexValue = ((IntConstantExpr) index).getNumericValue();
+            return indexValue >= 0 && indexValue < getSize(type);
+        } else { // index instanceof UIntConstantExpr
+            indexValue = ((UIntConstantExpr) index).getNumericValue();
+            return indexValue < getSize(type);
+        }
+    }
 
 }

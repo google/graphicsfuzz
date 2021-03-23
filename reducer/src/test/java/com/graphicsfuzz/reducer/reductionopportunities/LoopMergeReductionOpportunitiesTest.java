@@ -16,8 +16,6 @@
 
 package com.graphicsfuzz.reducer.reductionopportunities;
 
-import static org.junit.Assert.assertEquals;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
@@ -28,68 +26,70 @@ import com.graphicsfuzz.util.Constants;
 import java.util.List;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+
 public class LoopMergeReductionOpportunitiesTest {
 
-  @Test
-  public void findOpportunities() throws Exception {
+    @Test
+    public void findOpportunities() throws Exception {
 
-    final int id = 72;
+        final int id = 72;
 
-    final String loopVariable = Constants.SPLIT_LOOP_COUNTER_PREFIX + id + "c";
+        final String loopVariable = Constants.SPLIT_LOOP_COUNTER_PREFIX + id + "c";
 
-    final String loopBody =
-          "    x = x + " + loopVariable + ";\n"
-        + "    x = " + loopVariable + " + 2;\n";
+        final String loopBody =
+                "    x = x + " + loopVariable + ";\n"
+                        + "    x = " + loopVariable + " + 2;\n";
 
-    final String firstLoop =
-        "  for(int " + loopVariable + " = 3; "
-            + loopVariable + " < 10; "
-            + "++" + loopVariable + ") {\n"
-            + loopBody
-            + "  }";
+        final String firstLoop =
+                "  for(int " + loopVariable + " = 3; "
+                        + loopVariable + " < 10; "
+                        + "++" + loopVariable + ") {\n"
+                        + loopBody
+                        + "  }";
 
-    final String secondLoop =
-        "  for(int " + loopVariable + " = 10; "
-            + loopVariable + " < 100; "
-            + "++" + loopVariable + ") {\n"
-            + loopBody
-            + "  }\n";
+        final String secondLoop =
+                "  for(int " + loopVariable + " = 10; "
+                        + loopVariable + " < 100; "
+                        + "++" + loopVariable + ") {\n"
+                        + loopBody
+                        + "  }\n";
 
-    final String program =
-        "void main() {\n"
-            + "  int x = 4;\n"
-            + firstLoop
-            + secondLoop
-            + "}\n";
+        final String program =
+                "void main() {\n"
+                        + "  int x = 4;\n"
+                        + firstLoop
+                        + secondLoop
+                        + "}\n";
 
-    final TranslationUnit tu = ParseHelper.parse(program);
+        final TranslationUnit tu = ParseHelper.parse(program);
 
-    List<LoopMergeReductionOpportunity> opportunities =
-        LoopMergeReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-            new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
-                new RandomWrapper(0), new IdGenerator()));
+        List<LoopMergeReductionOpportunity> opportunities =
+                LoopMergeReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+                        new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+                                new RandomWrapper(0), new IdGenerator()));
 
-    assertEquals(1, opportunities.size());
+        assertEquals(1, opportunities.size());
 
-    opportunities.get(0).applyReduction();
+        opportunities.get(0).applyReduction();
 
-    final String expectedProgram =
-        "void main()\n"
-            + "{\n"
-            + "    int x = 4;\n"
-            + "    for(\n"
-            + "        int c = 3;\n"
-            + "        c < 100;\n"
-            + "        ++ c\n"
-            + "    )\n"
-            + "        {\n"
-            + "            x = x + c;\n"
-            + "            x = c + 2;\n"
-            + "        }\n"
-            + "}\n";
+        final String expectedProgram =
+                "void main()\n"
+                        + "{\n"
+                        + "    int x = 4;\n"
+                        + "    for(\n"
+                        + "        int c = 3;\n"
+                        + "        c < 100;\n"
+                        + "        ++ c\n"
+                        + "    )\n"
+                        + "        {\n"
+                        + "            x = x + c;\n"
+                        + "            x = c + 2;\n"
+                        + "        }\n"
+                        + "}\n";
 
-    assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProgram)),
-          PrettyPrinterVisitor.prettyPrintAsString(tu));
-  }
+        assertEquals(PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(expectedProgram)),
+                PrettyPrinterVisitor.prettyPrintAsString(tu));
+    }
 
 }

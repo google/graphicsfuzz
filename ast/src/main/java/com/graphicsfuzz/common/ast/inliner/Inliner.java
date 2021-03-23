@@ -47,194 +47,194 @@ import java.util.stream.Collectors;
 
 public class Inliner {
 
-  private final FunctionCallExpr call;
-  private final TranslationUnit tu;
-  private final ShadingLanguageVersion shadingLanguageVersion;
-  private final Typer typer;
-  private final IParentMap parentMap;
+    private final FunctionCallExpr call;
+    private final TranslationUnit tu;
+    private final ShadingLanguageVersion shadingLanguageVersion;
+    private final Typer typer;
+    private final IParentMap parentMap;
 
-  public static void inline(FunctionCallExpr functionCallExpr, TranslationUnit tu,
-        ShadingLanguageVersion shadingLanguageVersion, IdGenerator idGenerator)
-      throws CannotInlineCallException {
-    new Inliner(functionCallExpr, tu, shadingLanguageVersion).doInline(idGenerator);
-  }
-
-  public static boolean canInline(FunctionCallExpr functionCallExpr,
-                                  TranslationUnit tu,
-                                  ShadingLanguageVersion shadingLanguageVersion,
-                                  int nodeLimit) {
-    return new Inliner(functionCallExpr, tu, shadingLanguageVersion).canInline(nodeLimit);
-  }
-
-  private Inliner(FunctionCallExpr call, TranslationUnit tu,
-      ShadingLanguageVersion shadingLanguageVersion) {
-    this.call = call;
-    this.tu = tu;
-    this.shadingLanguageVersion = shadingLanguageVersion;
-    this.typer = new Typer(tu);
-    this.parentMap = IParentMap.createParentMap(tu);
-  }
-
-  private boolean canInline(int nodeLimit) {
-    try {
-      final FunctionDefinition inlinable =
-          getCloneWithReturnsRemoved(findMatchingFunctionForCall());
-      return nodeLimit == 0 || new StatsVisitor(inlinable).getNumNodes() <= nodeLimit;
-    } catch (CannotInlineCallException exception) {
-      return false;
+    private Inliner(FunctionCallExpr call, TranslationUnit tu,
+                    ShadingLanguageVersion shadingLanguageVersion) {
+        this.call = call;
+        this.tu = tu;
+        this.shadingLanguageVersion = shadingLanguageVersion;
+        this.typer = new Typer(tu);
+        this.parentMap = IParentMap.createParentMap(tu);
     }
-  }
 
-  private void doInline(IdGenerator idGenerator) throws CannotInlineCallException {
-    final FunctionDefinition clonedFunctionDefinition =
-          getCloneWithReturnsRemoved(findMatchingFunctionForCall());
+    public static boolean canInline(FunctionCallExpr functionCallExpr,
+                                    TranslationUnit tu,
+                                    ShadingLanguageVersion shadingLanguageVersion,
+                                    int nodeLimit) {
+        return new Inliner(functionCallExpr, tu, shadingLanguageVersion).canInline(nodeLimit);
+    }
 
-    final Optional<String> returnVariableName
-          = clonedFunctionDefinition.getPrototype().getReturnType().getWithoutQualifiers()
-            == VoidType.VOID ? Optional.empty() : Optional.of(call.getCallee()
-          + "_inline_return_value_"
-          + idGenerator.freshId());
+    public static void inline(FunctionCallExpr functionCallExpr, TranslationUnit tu,
+                              ShadingLanguageVersion shadingLanguageVersion, IdGenerator idGenerator)
+            throws CannotInlineCallException {
+        new Inliner(functionCallExpr, tu, shadingLanguageVersion).doInline(idGenerator);
+    }
 
-    final List<Stmt> inlinedStmts = getInlinedStmts(clonedFunctionDefinition, returnVariableName);
-
-    new StandardVisitor() {
-      private BlockStmt currentBlockStmt = null;
-      private int currentIndex;
-
-      @Override
-      public void visitBlockStmt(BlockStmt block) {
-        final BlockStmt prevBlock = currentBlockStmt;
-        final int prevIndex = currentIndex;
-        currentBlockStmt = block;
-        for (currentIndex = 0; currentIndex < block.getNumStmts(); currentIndex++) {
-          visit(block.getStmt(currentIndex));
+    private boolean canInline(int nodeLimit) {
+        try {
+            final FunctionDefinition inlinable =
+                    getCloneWithReturnsRemoved(findMatchingFunctionForCall());
+            return nodeLimit == 0 || new StatsVisitor(inlinable).getNumNodes() <= nodeLimit;
+        } catch (CannotInlineCallException exception) {
+            return false;
         }
-        currentBlockStmt = prevBlock;
-        currentIndex = prevIndex;
-      }
+    }
 
-      @Override
-      public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
-        super.visitFunctionCallExpr(functionCallExpr);
-        if (functionCallExpr != call) {
-          return;
+    private void doInline(IdGenerator idGenerator) throws CannotInlineCallException {
+        final FunctionDefinition clonedFunctionDefinition =
+                getCloneWithReturnsRemoved(findMatchingFunctionForCall());
+
+        final Optional<String> returnVariableName
+                = clonedFunctionDefinition.getPrototype().getReturnType().getWithoutQualifiers()
+                == VoidType.VOID ? Optional.empty() : Optional.of(call.getCallee()
+                + "_inline_return_value_"
+                + idGenerator.freshId());
+
+        final List<Stmt> inlinedStmts = getInlinedStmts(clonedFunctionDefinition, returnVariableName);
+
+        new StandardVisitor() {
+            private BlockStmt currentBlockStmt = null;
+            private int currentIndex;
+
+            @Override
+            public void visitBlockStmt(BlockStmt block) {
+                final BlockStmt prevBlock = currentBlockStmt;
+                final int prevIndex = currentIndex;
+                currentBlockStmt = block;
+                for (currentIndex = 0; currentIndex < block.getNumStmts(); currentIndex++) {
+                    visit(block.getStmt(currentIndex));
+                }
+                currentBlockStmt = prevBlock;
+                currentIndex = prevIndex;
+            }
+
+            @Override
+            public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+                super.visitFunctionCallExpr(functionCallExpr);
+                if (functionCallExpr != call) {
+                    return;
+                }
+                if (currentBlockStmt == null) {
+                    // Cannot inline e.g. at global scope
+                    return;
+                }
+                currentBlockStmt.insertStmt(currentIndex,
+                        new BlockStmt(inlinedStmts, true));
+                if (returnVariableName.isPresent()) {
+                    currentBlockStmt.insertStmt(currentIndex, new DeclarationStmt(
+                            new VariablesDeclaration(
+                                    clonedFunctionDefinition.getPrototype().getReturnType()
+                                            .getWithoutQualifiers(),
+                                    new VariableDeclInfo(returnVariableName.get(), null, null))));
+                    parentMap.getParent(functionCallExpr).replaceChild(functionCallExpr,
+                            new VariableIdentifierExpr(returnVariableName.get()));
+                } else {
+                    assert clonedFunctionDefinition.getPrototype().getReturnType().getWithoutQualifiers()
+                            == VoidType.VOID;
+                    assert parentMap.getParent(functionCallExpr) instanceof ExprStmt;
+                    currentBlockStmt.removeStmt((Stmt) parentMap.getParent(functionCallExpr));
+                }
+            }
+        }.visit(tu);
+    }
+
+    private FunctionDefinition findMatchingFunctionForCall() throws CannotInlineCallException {
+        final List<FunctionDefinition> matches =
+                tu.getTopLevelDeclarations().stream()
+                        .filter(item -> item instanceof FunctionDefinition)
+                        .map(item -> (FunctionDefinition) item)
+                        .filter(this::functionMatches)
+                        .collect(Collectors.toList());
+        if (matches.size() == 0) {
+            throw new CannotInlineCallException("No matching call");
         }
-        if (currentBlockStmt == null) {
-          // Cannot inline e.g. at global scope
-          return;
+        if (matches.size() != 1) {
+            throw new CannotInlineCallException("More than one matching call");
         }
-        currentBlockStmt.insertStmt(currentIndex,
-              new BlockStmt(inlinedStmts, true));
-        if (returnVariableName.isPresent()) {
-          currentBlockStmt.insertStmt(currentIndex, new DeclarationStmt(
-                new VariablesDeclaration(
-                      clonedFunctionDefinition.getPrototype().getReturnType()
-                            .getWithoutQualifiers(),
-                      new VariableDeclInfo(returnVariableName.get(), null, null))));
-          parentMap.getParent(functionCallExpr).replaceChild(functionCallExpr,
-                new VariableIdentifierExpr(returnVariableName.get()));
-        } else {
-          assert clonedFunctionDefinition.getPrototype().getReturnType().getWithoutQualifiers()
-                == VoidType.VOID;
-          assert parentMap.getParent(functionCallExpr) instanceof ExprStmt;
-          currentBlockStmt.removeStmt((Stmt) parentMap.getParent(functionCallExpr));
+        final FunctionDefinition result = matches.get(0);
+        if (hasOutQualifier(result)) {
+            throw new CannotInlineCallException("Cannot yet deal with 'out' parameters");
         }
-      }
-    }.visit(tu);
-  }
-
-  private FunctionDefinition getCloneWithReturnsRemoved(FunctionDefinition fd)
-        throws CannotInlineCallException {
-    try {
-      final FunctionDefinition clonedFunctionDefinition = fd.clone();
-      ReturnRemover.removeReturns(clonedFunctionDefinition, shadingLanguageVersion);
-      return clonedFunctionDefinition;
-    } catch (CannotRemoveReturnsException exception) {
-      throw new CannotInlineCallException("Could not remove returns from callee");
-    }
-  }
-
-  private FunctionDefinition findMatchingFunctionForCall() throws CannotInlineCallException {
-    final List<FunctionDefinition> matches =
-        tu.getTopLevelDeclarations().stream()
-              .filter(item -> item instanceof FunctionDefinition)
-              .map(item -> (FunctionDefinition) item)
-              .filter(this::functionMatches)
-              .collect(Collectors.toList());
-    if (matches.size() == 0) {
-      throw new CannotInlineCallException("No matching call");
-    }
-    if (matches.size() != 1) {
-      throw new CannotInlineCallException("More than one matching call");
-    }
-    final FunctionDefinition result = matches.get(0);
-    if (hasOutQualifier(result)) {
-      throw new CannotInlineCallException("Cannot yet deal with 'out' parameters");
-    }
-    if (hasArrayParameter(result)) {
-      throw new CannotInlineCallException("Cannot yet deal with array parameters");
-    }
-    return result;
-  }
-
-  private List<Stmt> getInlinedStmts(FunctionDefinition functionDefinition,
-        Optional<String> returnVariableName) {
-    final List<Stmt> inlinedStmts = new ArrayList<>();
-    for (int i = 0; i < functionDefinition.getPrototype().getNumParameters(); i++) {
-      ParameterDecl pd = functionDefinition.getPrototype().getParameter(i);
-      inlinedStmts.add(new DeclarationStmt(
-            new VariablesDeclaration(
-                  pd.getType().getWithoutQualifiers(),
-                  new VariableDeclInfo(pd.getName(), null,
-                        new Initializer(call.getArg(i).clone())))));
-    }
-    for (Stmt stmt : functionDefinition.getBody().getStmts()) {
-      if (stmt instanceof ReturnStmt) {
-        if (((ReturnStmt) stmt).hasExpr()) {
-          inlinedStmts.add(new ExprStmt(
-                new BinaryExpr(
-                      new VariableIdentifierExpr(returnVariableName.get()),
-                      (((ReturnStmt) stmt).getExpr()),
-                      BinOp.ASSIGN)));
+        if (hasArrayParameter(result)) {
+            throw new CannotInlineCallException("Cannot yet deal with array parameters");
         }
-      } else {
-        inlinedStmts.add(stmt);
-      }
+        return result;
     }
-    return inlinedStmts;
-  }
 
-  private boolean hasArrayParameter(FunctionDefinition functionDefinition) {
-    return functionDefinition.getPrototype().getParameters().stream()
-          .anyMatch(ParameterDecl::hasArrayInfo);
-  }
+    private boolean functionMatches(FunctionDefinition declaration) {
+        final FunctionPrototype prototype = declaration.getPrototype();
+        if (!prototype.getName().equals(call.getCallee())) {
+            return false;
+        }
+        if (prototype.getNumParameters() != call.getNumArgs()) {
+            return false;
+        }
+        for (int i = 0; i < prototype.getNumParameters(); i++) {
+            if (typer.lookupType(call.getArg(i)) == null) {
+                continue;
+            }
+            if (!typer.lookupType(call.getArg(i)).getWithoutQualifiers()
+                    .equals(prototype.getParameter(i).getType().getWithoutQualifiers())) {
+                return false;
+            }
+        }
+        return true;
+    }
 
-  private boolean hasOutQualifier(FunctionDefinition functionDefinition) {
-    return functionDefinition.getPrototype().getParameters().stream()
-          .map(ParameterDecl::getType)
-          .anyMatch(item -> item.hasQualifier(TypeQualifier.OUT_PARAM)
-                || item.hasQualifier(TypeQualifier.INOUT_PARAM));
-  }
+    private FunctionDefinition getCloneWithReturnsRemoved(FunctionDefinition fd)
+            throws CannotInlineCallException {
+        try {
+            final FunctionDefinition clonedFunctionDefinition = fd.clone();
+            ReturnRemover.removeReturns(clonedFunctionDefinition, shadingLanguageVersion);
+            return clonedFunctionDefinition;
+        } catch (CannotRemoveReturnsException exception) {
+            throw new CannotInlineCallException("Could not remove returns from callee");
+        }
+    }
 
-  private boolean functionMatches(FunctionDefinition declaration) {
-    final FunctionPrototype prototype = declaration.getPrototype();
-    if (!prototype.getName().equals(call.getCallee())) {
-      return false;
+    private List<Stmt> getInlinedStmts(FunctionDefinition functionDefinition,
+                                       Optional<String> returnVariableName) {
+        final List<Stmt> inlinedStmts = new ArrayList<>();
+        for (int i = 0; i < functionDefinition.getPrototype().getNumParameters(); i++) {
+            ParameterDecl pd = functionDefinition.getPrototype().getParameter(i);
+            inlinedStmts.add(new DeclarationStmt(
+                    new VariablesDeclaration(
+                            pd.getType().getWithoutQualifiers(),
+                            new VariableDeclInfo(pd.getName(), null,
+                                    new Initializer(call.getArg(i).clone())))));
+        }
+        for (Stmt stmt : functionDefinition.getBody().getStmts()) {
+            if (stmt instanceof ReturnStmt) {
+                if (((ReturnStmt) stmt).hasExpr()) {
+                    inlinedStmts.add(new ExprStmt(
+                            new BinaryExpr(
+                                    new VariableIdentifierExpr(returnVariableName.get()),
+                                    (((ReturnStmt) stmt).getExpr()),
+                                    BinOp.ASSIGN)));
+                }
+            } else {
+                inlinedStmts.add(stmt);
+            }
+        }
+        return inlinedStmts;
     }
-    if (prototype.getNumParameters() != call.getNumArgs()) {
-      return false;
+
+    private boolean hasArrayParameter(FunctionDefinition functionDefinition) {
+        return functionDefinition.getPrototype().getParameters().stream()
+                .anyMatch(ParameterDecl::hasArrayInfo);
     }
-    for (int i = 0; i < prototype.getNumParameters(); i++) {
-      if (typer.lookupType(call.getArg(i)) == null) {
-        continue;
-      }
-      if (!typer.lookupType(call.getArg(i)).getWithoutQualifiers()
-            .equals(prototype.getParameter(i).getType().getWithoutQualifiers())) {
-        return false;
-      }
+
+    private boolean hasOutQualifier(FunctionDefinition functionDefinition) {
+        return functionDefinition.getPrototype().getParameters().stream()
+                .map(ParameterDecl::getType)
+                .anyMatch(item -> item.hasQualifier(TypeQualifier.OUT_PARAM)
+                        || item.hasQualifier(TypeQualifier.INOUT_PARAM));
     }
-    return true;
-  }
 
 
 }

@@ -21,10 +21,10 @@ import com.graphicsfuzz.util.Constants;
 
 class Util {
 
-  static boolean isStructifiedDeclaration(DeclarationStmt declarationStmt) {
-    return declarationStmt.getVariablesDeclaration().getNumDecls() == 1
-        && declarationStmt.getVariablesDeclaration().getDeclInfo(0).getName()
-        .startsWith(Constants.STRUCTIFICATION_STRUCT_PREFIX);
-  }
+    static boolean isStructifiedDeclaration(DeclarationStmt declarationStmt) {
+        return declarationStmt.getVariablesDeclaration().getNumDecls() == 1
+                && declarationStmt.getVariablesDeclaration().getDeclInfo(0).getName()
+                .startsWith(Constants.STRUCTIFICATION_STRUCT_PREFIX);
+    }
 
 }

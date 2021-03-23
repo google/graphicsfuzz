@@ -18,15 +18,15 @@ package com.graphicsfuzz.common.glslversion;
 
 final class Glsl410 extends CompositeShadingLanguageVersion {
 
-  static final ShadingLanguageVersion INSTANCE = new Glsl410(Glsl400.INSTANCE);
+    static final ShadingLanguageVersion INSTANCE = new Glsl410(Glsl400.INSTANCE);
 
-  private Glsl410(ShadingLanguageVersion prototype) {
-    super(prototype);
-    // Singleton
-  }
+    private Glsl410(ShadingLanguageVersion prototype) {
+        super(prototype);
+        // Singleton
+    }
 
-  @Override
-  public String getVersionString() {
-    return "410";
-  }
+    @Override
+    public String getVersionString() {
+        return "410";
+    }
 }

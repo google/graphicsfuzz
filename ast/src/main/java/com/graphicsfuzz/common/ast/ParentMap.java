@@ -24,34 +24,34 @@ import java.util.function.Consumer;
 
 class ParentMap extends StandardVisitor implements IParentMap {
 
-  private Map<IAstNode, IAstNode> childToParent;
+    private Map<IAstNode, IAstNode> childToParent;
 
-  ParentMap(IAstNode root) {
-    childToParent = new HashMap<>();
-    visit(root);
-  }
+    ParentMap(IAstNode root) {
+        childToParent = new HashMap<>();
+        visit(root);
+    }
 
-  @Override
-  public boolean hasParent(IAstNode node) {
-    return childToParent.containsKey(node);
-  }
+    @Override
+    public IAstNode getParent(IAstNode node) {
+        return childToParent.get(node);
+    }
 
-  @Override
-  public IAstNode getParent(IAstNode node) {
-    return childToParent.get(node);
-  }
+    @Override
+    public boolean hasParent(IAstNode node) {
+        return childToParent.containsKey(node);
+    }
 
-  @Override
-  protected <T extends IAstNode> void visitChildFromParent(Consumer<T> visitorMethod, T child,
-      IAstNode parent) {
-    super.visitChildFromParent(visitorMethod, child, parent);
-    // TODO(279): right now there are deliberately cases where a child can have a non-unique parent.
-    // We may want to reconsider this.
-    assert child instanceof Type
-        || !childToParent.containsKey(child) : "There should be no "
-        + "aliasing in the AST with the exception of types; found multiple parents for '" + child
-        + "' which has class " + child.getClass() + ".";
-    childToParent.put(child, parent);
-  }
+    @Override
+    protected <T extends IAstNode> void visitChildFromParent(Consumer<T> visitorMethod, T child,
+                                                             IAstNode parent) {
+        super.visitChildFromParent(visitorMethod, child, parent);
+        // TODO(279): right now there are deliberately cases where a child can have a non-unique parent.
+        // We may want to reconsider this.
+        assert child instanceof Type
+                || !childToParent.containsKey(child) : "There should be no "
+                + "aliasing in the AST with the exception of types; found multiple parents for '" + child
+                + "' which has class " + child.getClass() + ".";
+        childToParent.put(child, parent);
+    }
 
 }

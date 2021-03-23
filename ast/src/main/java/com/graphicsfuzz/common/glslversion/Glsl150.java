@@ -18,25 +18,25 @@ package com.graphicsfuzz.common.glslversion;
 
 final class Glsl150 extends CompositeShadingLanguageVersion {
 
-  static final ShadingLanguageVersion INSTANCE = new Glsl150(Glsl140.INSTANCE);
+    static final ShadingLanguageVersion INSTANCE = new Glsl150(Glsl140.INSTANCE);
 
-  private Glsl150(ShadingLanguageVersion prototype) {
-    super(prototype);
-    // Singleton
-  }
+    private Glsl150(ShadingLanguageVersion prototype) {
+        super(prototype);
+        // Singleton
+    }
 
-  @Override
-  public String getVersionString() {
-    return "150";
-  }
+    @Override
+    public String getVersionString() {
+        return "150";
+    }
 
-  @Override
-  public boolean supportedDeterminant() {
-    return true;
-  }
+    @Override
+    public boolean supportedDeterminant() {
+        return true;
+    }
 
-  @Override
-  public boolean supportedInverse() {
-    return true;
-  }
+    @Override
+    public boolean supportedInverse() {
+        return true;
+    }
 }

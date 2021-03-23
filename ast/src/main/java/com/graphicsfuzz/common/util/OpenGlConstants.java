@@ -19,24 +19,22 @@ package com.graphicsfuzz.common.util;
 public final class OpenGlConstants {
 
 
-  private OpenGlConstants() {
-    // Utility class
-  }
-
-  public static final String GL_FRAG_COLOR = "gl_FragColor";
-  public static final String GL_FRAG_COORD = "gl_FragCoord";
-  public static final String GL_FRAG_DEPTH = "gl_FragDepth";
-  public static final String GL_FRONT_FACING = "gl_FrontFacing";
-  public static final String GL_POSITION = "gl_Position";
-  public static final String GL_POINT_SIZE = "gl_PointSize";
-  public static final String GL_POINT_COORD = "gl_PointCoord";
-
-  // Compute shaders
-  public static final String GL_NUM_WORK_GROUPS = "gl_NumWorkGroups";
-  public static final String GL_WORK_GROUP_SIZE = "gl_WorkGroupSize";
-  public static final String GL_WORK_GROUP_ID = "gl_WorkGroupID";
-  public static final String GL_LOCAL_INVOCATION_ID = "gl_LocalInvocationID";
-  public static final String GL_GLOBAL_INVOCATION_ID = "gl_GlobalInvocationID";
-  public static final String GL_LOCAL_INVOCATION_INDEX = "gl_LocalInvocationIndex";
+    public static final String GL_FRAG_COLOR = "gl_FragColor";
+    public static final String GL_FRAG_COORD = "gl_FragCoord";
+    public static final String GL_FRAG_DEPTH = "gl_FragDepth";
+    public static final String GL_FRONT_FACING = "gl_FrontFacing";
+    public static final String GL_POSITION = "gl_Position";
+    public static final String GL_POINT_SIZE = "gl_PointSize";
+    public static final String GL_POINT_COORD = "gl_PointCoord";
+    // Compute shaders
+    public static final String GL_NUM_WORK_GROUPS = "gl_NumWorkGroups";
+    public static final String GL_WORK_GROUP_SIZE = "gl_WorkGroupSize";
+    public static final String GL_WORK_GROUP_ID = "gl_WorkGroupID";
+    public static final String GL_LOCAL_INVOCATION_ID = "gl_LocalInvocationID";
+    public static final String GL_GLOBAL_INVOCATION_ID = "gl_GlobalInvocationID";
+    public static final String GL_LOCAL_INVOCATION_INDEX = "gl_LocalInvocationIndex";
+    private OpenGlConstants() {
+        // Utility class
+    }
 
 }

@@ -28,12 +28,12 @@ import java.util.Optional;
  */
 public class MakeShaderJobFromFragmentShader {
 
-  private MakeShaderJobFromFragmentShader() {
-    // Utility class
-  }
+    private MakeShaderJobFromFragmentShader() {
+        // Utility class
+    }
 
-  public static ShaderJob make(TranslationUnit tu) {
-    return new GlslShaderJob(Optional.empty(), new PipelineInfo(), tu);
-  }
+    public static ShaderJob make(TranslationUnit tu) {
+        return new GlslShaderJob(Optional.empty(), new PipelineInfo(), tu);
+    }
 
 }

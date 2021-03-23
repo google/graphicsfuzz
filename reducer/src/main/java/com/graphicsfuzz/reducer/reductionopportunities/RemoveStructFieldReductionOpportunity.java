@@ -29,45 +29,45 @@ import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
  */
 public class RemoveStructFieldReductionOpportunity extends AbstractReductionOpportunity {
 
-  private final StructDefinitionType targetStruct;
-  private final String fieldToRemove;
-  private final IAstNode subtreeInWhichStructIsUsed;
+    private final StructDefinitionType targetStruct;
+    private final String fieldToRemove;
+    private final IAstNode subtreeInWhichStructIsUsed;
 
-  public RemoveStructFieldReductionOpportunity(StructDefinitionType targetStruct,
-                                               String fieldToRemove,
-                                               IAstNode subtreeInWhichStructIsUsed,
-                                               VisitationDepth depth) {
-    super(depth);
-    this.targetStruct = targetStruct;
-    this.fieldToRemove = fieldToRemove;
-    this.subtreeInWhichStructIsUsed = subtreeInWhichStructIsUsed;
-  }
+    public RemoveStructFieldReductionOpportunity(StructDefinitionType targetStruct,
+                                                 String fieldToRemove,
+                                                 IAstNode subtreeInWhichStructIsUsed,
+                                                 VisitationDepth depth) {
+        super(depth);
+        this.targetStruct = targetStruct;
+        this.fieldToRemove = fieldToRemove;
+        this.subtreeInWhichStructIsUsed = subtreeInWhichStructIsUsed;
+    }
 
-  @Override
-  public void applyReductionImpl() {
-    final int index = targetStruct.getFieldIndex(fieldToRemove);
-    targetStruct.removeField(fieldToRemove);
-    new StandardVisitor() {
-      @Override
-      public void visitTypeConstructorExpr(TypeConstructorExpr typeConstructorExpr) {
-        super.visitTypeConstructorExpr(typeConstructorExpr);
-        if (!typeConstructorExpr.getTypename().equals(
-            targetStruct.getStructNameType().getName())) {
-          return;
-        }
-        // This is the target struct, so remove the appropriate constructor component
-        typeConstructorExpr.removeArg(index);
-      }
-    }.visit(subtreeInWhichStructIsUsed);
+    @Override
+    public void applyReductionImpl() {
+        final int index = targetStruct.getFieldIndex(fieldToRemove);
+        targetStruct.removeField(fieldToRemove);
+        new StandardVisitor() {
+            @Override
+            public void visitTypeConstructorExpr(TypeConstructorExpr typeConstructorExpr) {
+                super.visitTypeConstructorExpr(typeConstructorExpr);
+                if (!typeConstructorExpr.getTypename().equals(
+                        targetStruct.getStructNameType().getName())) {
+                    return;
+                }
+                // This is the target struct, so remove the appropriate constructor component
+                typeConstructorExpr.removeArg(index);
+            }
+        }.visit(subtreeInWhichStructIsUsed);
 
-  }
+    }
 
-  public String getFieldToRemove() {
-    return fieldToRemove;
-  }
+    public String getFieldToRemove() {
+        return fieldToRemove;
+    }
 
-  @Override
-  public boolean preconditionHolds() {
-    return targetStruct.getNumFields() > 1 && targetStruct.hasField(fieldToRemove);
-  }
+    @Override
+    public boolean preconditionHolds() {
+        return targetStruct.getNumFields() > 1 && targetStruct.hasField(fieldToRemove);
+    }
 }

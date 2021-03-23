@@ -25,43 +25,42 @@ import com.graphicsfuzz.common.util.StatsVisitor;
 
 class FunctionReductionOpportunity extends AbstractReductionOpportunity {
 
-  private TranslationUnit tu;
-  private Declaration functionDefinitionOrPrototype;
+    // This tracks the number of nodes that will be removed by applying the opportunity at its
+    // time of creation (this number may be different when the opportunity is actually applied,
+    // due to the effects of other opportunities).
+    private final int numRemovableNodes;
+    private TranslationUnit tu;
+    private Declaration functionDefinitionOrPrototype;
 
-  // This tracks the number of nodes that will be removed by applying the opportunity at its
-  // time of creation (this number may be different when the opportunity is actually applied,
-  // due to the effects of other opportunities).
-  private final int numRemovableNodes;
-
-  public FunctionReductionOpportunity(TranslationUnit tu,
-                                      Declaration functionDefinitionOrPrototype,
-                                      VisitationDepth depth) {
-    super(depth);
-    assert functionDefinitionOrPrototype instanceof FunctionDefinition
-        || functionDefinitionOrPrototype instanceof FunctionPrototype;
-    this.tu = tu;
-    this.functionDefinitionOrPrototype = functionDefinitionOrPrototype;
-    this.numRemovableNodes = new StatsVisitor(functionDefinitionOrPrototype).getNumNodes();
-  }
-
-  @Override
-  public void applyReductionImpl() {
-    for (int i = 0; i < tu.getTopLevelDeclarations().size(); i++) {
-      if (tu.getTopLevelDeclarations().get(i) == functionDefinitionOrPrototype) {
-        tu.removeTopLevelDeclaration(i);
-        return;
-      }
+    public FunctionReductionOpportunity(TranslationUnit tu,
+                                        Declaration functionDefinitionOrPrototype,
+                                        VisitationDepth depth) {
+        super(depth);
+        assert functionDefinitionOrPrototype instanceof FunctionDefinition
+                || functionDefinitionOrPrototype instanceof FunctionPrototype;
+        this.tu = tu;
+        this.functionDefinitionOrPrototype = functionDefinitionOrPrototype;
+        this.numRemovableNodes = new StatsVisitor(functionDefinitionOrPrototype).getNumNodes();
     }
-    throw new RuntimeException("Should be unreachable");
-  }
 
-  @Override
-  public boolean preconditionHolds() {
-    return tu.getTopLevelDeclarations().contains(functionDefinitionOrPrototype);
-  }
+    @Override
+    public void applyReductionImpl() {
+        for (int i = 0; i < tu.getTopLevelDeclarations().size(); i++) {
+            if (tu.getTopLevelDeclarations().get(i) == functionDefinitionOrPrototype) {
+                tu.removeTopLevelDeclaration(i);
+                return;
+            }
+        }
+        throw new RuntimeException("Should be unreachable");
+    }
 
-  public int getNumRemovableNodes() {
-    return numRemovableNodes;
-  }
+    public int getNumRemovableNodes() {
+        return numRemovableNodes;
+    }
+
+    @Override
+    public boolean preconditionHolds() {
+        return tu.getTopLevelDeclarations().contains(functionDefinitionOrPrototype);
+    }
 
 }

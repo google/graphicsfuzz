@@ -24,9 +24,9 @@
 
 //Reloads page if window.name === "autoload"
 function autoload() {
-  var windowName = window.name;
-  window.name = "";
-  if (windowName === "autoload") {
-    window.location.reload();
-  }
+    var windowName = window.name;
+    window.name = "";
+    if (windowName === "autoload") {
+        window.location.reload();
+    }
 }

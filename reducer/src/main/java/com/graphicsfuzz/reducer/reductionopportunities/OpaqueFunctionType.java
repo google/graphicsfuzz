@@ -18,6 +18,6 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 enum OpaqueFunctionType {
 
-  IDENTITY, ZERO, ONE, FALSE, TRUE
+    IDENTITY, ZERO, ONE, FALSE, TRUE
 
 }

@@ -20,25 +20,25 @@ import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 
 public abstract class AbstractReductionOpportunity implements IReductionOpportunity {
 
-  private final VisitationDepth depth;
+    private final VisitationDepth depth;
 
-  AbstractReductionOpportunity(VisitationDepth depth) {
-    this.depth = depth;
-  }
-
-  @Override
-  public final VisitationDepth depth() {
-    return depth;
-  }
-
-  @Override
-  public final void applyReduction() {
-    if (!preconditionHolds()) {
-      return;
+    AbstractReductionOpportunity(VisitationDepth depth) {
+        this.depth = depth;
     }
-    applyReductionImpl();
-  }
 
-  abstract void applyReductionImpl();
+    @Override
+    public final void applyReduction() {
+        if (!preconditionHolds()) {
+            return;
+        }
+        applyReductionImpl();
+    }
+
+    abstract void applyReductionImpl();
+
+    @Override
+    public final VisitationDepth depth() {
+        return depth;
+    }
 
 }

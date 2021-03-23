@@ -20,11 +20,11 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import org.apache.commons.rng.simple.internal.SeedFactory;
 
 public final class ArgsUtil {
-  public static long getSeedArgument(Namespace ns) {
-    String seed = ns.getString("seed");
-    if (seed == null) {
-      return SeedFactory.createLong();
+    public static long getSeedArgument(Namespace ns) {
+        String seed = ns.getString("seed");
+        if (seed == null) {
+            return SeedFactory.createLong();
+        }
+        return Long.parseUnsignedLong(seed);
     }
-    return Long.parseUnsignedLong(seed);
-  }
 }

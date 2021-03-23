@@ -32,109 +32,109 @@ import java.util.Arrays;
 import java.util.List;
 
 public class FlattenControlFlowReductionOpportunities
-      extends ReductionOpportunitiesBase<AbstractReductionOpportunity> {
+        extends ReductionOpportunitiesBase<AbstractReductionOpportunity> {
 
-  // Used to assess whether code that references loop limiters can be flattened.
-  private final LoopLimiterImpactChecker loopLimiterImpactChecker;
+    // Used to assess whether code that references loop limiters can be flattened.
+    private final LoopLimiterImpactChecker loopLimiterImpactChecker;
 
-  private FlattenControlFlowReductionOpportunities(
-        TranslationUnit tu,
-        ReducerContext context) {
-    super(tu, context);
-    this.loopLimiterImpactChecker = new LoopLimiterImpactChecker(tu);
-  }
-
-  static List<AbstractReductionOpportunity> findOpportunities(
-        ShaderJob shaderJob,
-        ReducerContext context) {
-    return shaderJob.getShaders()
-        .stream()
-        .map(item -> findOpportunitiesForShader(item, context))
-        .reduce(Arrays.asList(), ListConcat::concatenate);
-  }
-
-  private static List<AbstractReductionOpportunity> findOpportunitiesForShader(
-      TranslationUnit tu,
-      ReducerContext context) {
-    FlattenControlFlowReductionOpportunities finder =
-          new FlattenControlFlowReductionOpportunities(tu, context);
-    finder.visit(tu);
-    return finder.getOpportunities();
-  }
-
-  @Override
-  public void visitDoStmt(DoStmt doStmt) {
-    super.visitDoStmt(doStmt);
-    if (allowedToReduce(doStmt)) {
-      addOpportunity(new FlattenDoWhileLoopReductionOpportunity(
-          parentMap.getParent(doStmt),
-          doStmt,
-          getVistitationDepth()));
-    }
-  }
-
-  @Override
-  public void visitForStmt(ForStmt forStmt) {
-    super.visitForStmt(forStmt);
-    if (allowedToReduce(forStmt)) {
-      addOpportunity(new FlattenForLoopReductionOpportunity(
-          parentMap.getParent(forStmt),
-          forStmt,
-          getVistitationDepth()));
-    }
-  }
-
-  @Override
-  public void visitWhileStmt(WhileStmt whileStmt) {
-    super.visitWhileStmt(whileStmt);
-    if (allowedToReduce(whileStmt)) {
-      addOpportunity(new FlattenWhileLoopReductionOpportunity(
-          parentMap.getParent(whileStmt),
-          whileStmt,
-          getVistitationDepth()));
-    }
-  }
-
-  @Override
-  public void visitIfStmt(IfStmt ifStmt) {
-    super.visitIfStmt(ifStmt);
-    if (allowedToReduce(ifStmt)) {
-      addOpportunity(new FlattenConditionalReductionOpportunity(
-          parentMap.getParent(ifStmt),
-          ifStmt,
-          true,
-          getVistitationDepth()));
-      if (ifStmt.hasElseStmt()) {
-        addOpportunity(new FlattenConditionalReductionOpportunity(
-            parentMap.getParent(ifStmt),
-            ifStmt,
-            false,
-            getVistitationDepth()));
-      }
-    }
-  }
-
-  private boolean allowedToReduce(Stmt compoundStmt) {
-    if (compoundStmt instanceof LoopStmt) {
-      final LoopStmt loopStmt = (LoopStmt) compoundStmt;
-      if (ContainsTopLevelBreak.check(loopStmt.getBody())
-          || ContainsTopLevelContinue.check(loopStmt.getBody())) {
-        return false;
-      }
+    private FlattenControlFlowReductionOpportunities(
+            TranslationUnit tu,
+            ReducerContext context) {
+        super(tu, context);
+        this.loopLimiterImpactChecker = new LoopLimiterImpactChecker(tu);
     }
 
-    return context.reduceEverywhere()
-          || currentProgramPointIsDeadCode()
-          || (StmtReductionOpportunities.isLiveCodeInjection(compoundStmt)
-               && !isLoopLimiterCheck(compoundStmt))
-          || SideEffectChecker.isSideEffectFree(compoundStmt, context.getShadingLanguageVersion(),
-        shaderKind);
-  }
+    static List<AbstractReductionOpportunity> findOpportunities(
+            ShaderJob shaderJob,
+            ReducerContext context) {
+        return shaderJob.getShaders()
+                .stream()
+                .map(item -> findOpportunitiesForShader(item, context))
+                .reduce(Arrays.asList(), ListConcat::concatenate);
+    }
 
-  private boolean isLoopLimiterCheck(Stmt compoundStmt) {
-    return compoundStmt instanceof IfStmt
-          && loopLimiterImpactChecker.referencesNonRedundantLoopLimiter(compoundStmt,
-                                                                        getCurrentScope());
-  }
+    @Override
+    public void visitDoStmt(DoStmt doStmt) {
+        super.visitDoStmt(doStmt);
+        if (allowedToReduce(doStmt)) {
+            addOpportunity(new FlattenDoWhileLoopReductionOpportunity(
+                    parentMap.getParent(doStmt),
+                    doStmt,
+                    getVistitationDepth()));
+        }
+    }
+
+    @Override
+    public void visitForStmt(ForStmt forStmt) {
+        super.visitForStmt(forStmt);
+        if (allowedToReduce(forStmt)) {
+            addOpportunity(new FlattenForLoopReductionOpportunity(
+                    parentMap.getParent(forStmt),
+                    forStmt,
+                    getVistitationDepth()));
+        }
+    }
+
+    @Override
+    public void visitIfStmt(IfStmt ifStmt) {
+        super.visitIfStmt(ifStmt);
+        if (allowedToReduce(ifStmt)) {
+            addOpportunity(new FlattenConditionalReductionOpportunity(
+                    parentMap.getParent(ifStmt),
+                    ifStmt,
+                    true,
+                    getVistitationDepth()));
+            if (ifStmt.hasElseStmt()) {
+                addOpportunity(new FlattenConditionalReductionOpportunity(
+                        parentMap.getParent(ifStmt),
+                        ifStmt,
+                        false,
+                        getVistitationDepth()));
+            }
+        }
+    }
+
+    @Override
+    public void visitWhileStmt(WhileStmt whileStmt) {
+        super.visitWhileStmt(whileStmt);
+        if (allowedToReduce(whileStmt)) {
+            addOpportunity(new FlattenWhileLoopReductionOpportunity(
+                    parentMap.getParent(whileStmt),
+                    whileStmt,
+                    getVistitationDepth()));
+        }
+    }
+
+    private static List<AbstractReductionOpportunity> findOpportunitiesForShader(
+            TranslationUnit tu,
+            ReducerContext context) {
+        FlattenControlFlowReductionOpportunities finder =
+                new FlattenControlFlowReductionOpportunities(tu, context);
+        finder.visit(tu);
+        return finder.getOpportunities();
+    }
+
+    private boolean allowedToReduce(Stmt compoundStmt) {
+        if (compoundStmt instanceof LoopStmt) {
+            final LoopStmt loopStmt = (LoopStmt) compoundStmt;
+            if (ContainsTopLevelBreak.check(loopStmt.getBody())
+                    || ContainsTopLevelContinue.check(loopStmt.getBody())) {
+                return false;
+            }
+        }
+
+        return context.reduceEverywhere()
+                || currentProgramPointIsDeadCode()
+                || (StmtReductionOpportunities.isLiveCodeInjection(compoundStmt)
+                && !isLoopLimiterCheck(compoundStmt))
+                || SideEffectChecker.isSideEffectFree(compoundStmt, context.getShadingLanguageVersion(),
+                shaderKind);
+    }
+
+    private boolean isLoopLimiterCheck(Stmt compoundStmt) {
+        return compoundStmt instanceof IfStmt
+                && loopLimiterImpactChecker.referencesNonRedundantLoopLimiter(compoundStmt,
+                getCurrentScope());
+    }
 
 }

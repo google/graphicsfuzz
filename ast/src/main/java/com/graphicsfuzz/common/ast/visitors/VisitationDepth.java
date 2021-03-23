@@ -24,18 +24,18 @@ package com.graphicsfuzz.common.ast.visitors;
  */
 public class VisitationDepth implements Comparable<VisitationDepth> {
 
-  private final Integer depth;
+    private final Integer depth;
 
-  public VisitationDepth(int depth) {
-    this.depth = depth;
-  }
+    public VisitationDepth(int depth) {
+        this.depth = depth;
+    }
 
-  public VisitationDepth deeper() {
-    return new VisitationDepth(depth + 1);
-  }
+    @Override
+    public int compareTo(VisitationDepth other) {
+        return depth.compareTo(other.depth);
+    }
 
-  @Override
-  public int compareTo(VisitationDepth other) {
-    return depth.compareTo(other.depth);
-  }
+    public VisitationDepth deeper() {
+        return new VisitationDepth(depth + 1);
+    }
 }

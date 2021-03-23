@@ -22,8 +22,8 @@ package com.graphicsfuzz.common.ast.visitors;
  */
 public class UnsupportedLanguageFeatureException extends RuntimeException {
 
-  public UnsupportedLanguageFeatureException(String message) {
-    super(message);
-  }
+    public UnsupportedLanguageFeatureException(String message) {
+        super(message);
+    }
 
 }

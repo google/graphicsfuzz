@@ -24,44 +24,44 @@ import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 
 class ShadowChecker extends ScopeTrackingVisitor {
 
-  private final BlockStmt blockOfInterest;
-  private final String nameOfInterest;
+    private final BlockStmt blockOfInterest;
+    private final String nameOfInterest;
 
-  private boolean inBlock = false;
-  private ScopeEntry possiblyShadowedScopeEntry = null;
-  private boolean ok = true;
+    private boolean inBlock = false;
+    private ScopeEntry possiblyShadowedScopeEntry = null;
+    private boolean ok = true;
 
-  ShadowChecker(BlockStmt blockOfInterest, String nameOfInterest) {
-    this.blockOfInterest = blockOfInterest;
-    this.nameOfInterest = nameOfInterest;
-  }
-
-  @Override
-  public void visitBlockStmt(BlockStmt stmt) {
-    if (stmt == blockOfInterest) {
-      inBlock = true;
-      possiblyShadowedScopeEntry = getCurrentScope().lookupScopeEntry(nameOfInterest);
+    ShadowChecker(BlockStmt blockOfInterest, String nameOfInterest) {
+        this.blockOfInterest = blockOfInterest;
+        this.nameOfInterest = nameOfInterest;
     }
-    super.visitBlockStmt(stmt);
-    if (stmt == blockOfInterest) {
-      inBlock = false;
-      possiblyShadowedScopeEntry = null;
-    }
-  }
 
-  @Override
-  public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
-    super.visitVariableIdentifierExpr(variableIdentifierExpr);
-    if (inBlock && possiblyShadowedScopeEntry != null
-          && getCurrentScope().lookupScopeEntry(variableIdentifierExpr.getName())
-          == possiblyShadowedScopeEntry) {
-      ok = false;
+    boolean isOk(TranslationUnit tu) {
+        visit(tu);
+        return ok;
     }
-  }
 
-  boolean isOk(TranslationUnit tu) {
-    visit(tu);
-    return ok;
-  }
+    @Override
+    public void visitBlockStmt(BlockStmt stmt) {
+        if (stmt == blockOfInterest) {
+            inBlock = true;
+            possiblyShadowedScopeEntry = getCurrentScope().lookupScopeEntry(nameOfInterest);
+        }
+        super.visitBlockStmt(stmt);
+        if (stmt == blockOfInterest) {
+            inBlock = false;
+            possiblyShadowedScopeEntry = null;
+        }
+    }
+
+    @Override
+    public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
+        super.visitVariableIdentifierExpr(variableIdentifierExpr);
+        if (inBlock && possiblyShadowedScopeEntry != null
+                && getCurrentScope().lookupScopeEntry(variableIdentifierExpr.getName())
+                == possiblyShadowedScopeEntry) {
+            ok = false;
+        }
+    }
 
 }

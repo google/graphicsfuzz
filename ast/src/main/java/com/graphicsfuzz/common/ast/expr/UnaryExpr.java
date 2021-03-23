@@ -22,58 +22,58 @@ import java.util.Collections;
 
 public class UnaryExpr extends Expr {
 
-  private Expr expr;
-  private UnOp op;
+    private Expr expr;
+    private UnOp op;
 
-  public UnaryExpr(Expr expr, UnOp op) {
-    checkNoTopLevelCommaExpression(Collections.singletonList(expr));
-    this.expr = expr;
-    this.op = op;
-  }
-
-  public Expr getExpr() {
-    return expr;
-  }
-
-  public UnOp getOp() {
-    return op;
-  }
-
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitUnaryExpr(this);
-  }
-
-  @Override
-  public UnaryExpr clone() {
-    return new UnaryExpr(expr.clone(), op);
-  }
-
-  @Override
-  public boolean hasChild(IAstNode candidateChild) {
-    return candidateChild == expr;
-  }
-
-  @Override
-  public Expr getChild(int index) {
-    if (index == 0) {
-      return expr;
+    public UnaryExpr(Expr expr, UnOp op) {
+        checkNoTopLevelCommaExpression(Collections.singletonList(expr));
+        this.expr = expr;
+        this.op = op;
     }
-    throw new IndexOutOfBoundsException("Index for UnaryExpr must be 0");
-  }
 
-  @Override
-  public void setChild(int index, Expr expr) {
-    if (index == 0) {
-      this.expr = expr;
-      return;
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitUnaryExpr(this);
     }
-    throw new IndexOutOfBoundsException("Index for UnaryExpr must be 0");
-  }
 
-  @Override
-  public int getNumChildren() {
-    return 1;
-  }
+    @Override
+    public UnaryExpr clone() {
+        return new UnaryExpr(expr.clone(), op);
+    }
+
+    @Override
+    public Expr getChild(int index) {
+        if (index == 0) {
+            return expr;
+        }
+        throw new IndexOutOfBoundsException("Index for UnaryExpr must be 0");
+    }
+
+    public Expr getExpr() {
+        return expr;
+    }
+
+    @Override
+    public int getNumChildren() {
+        return 1;
+    }
+
+    public UnOp getOp() {
+        return op;
+    }
+
+    @Override
+    public boolean hasChild(IAstNode candidateChild) {
+        return candidateChild == expr;
+    }
+
+    @Override
+    public void setChild(int index, Expr expr) {
+        if (index == 0) {
+            this.expr = expr;
+            return;
+        }
+        throw new IndexOutOfBoundsException("Index for UnaryExpr must be 0");
+    }
 
 }

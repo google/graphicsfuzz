@@ -31,76 +31,75 @@ import org.slf4j.LoggerFactory;
 
 public class ImageGenErrorShaderFileJudge implements IFileJudge {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ImageGenErrorShaderFileJudge.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ImageGenErrorShaderFileJudge.class);
+    private final boolean skipRender;
+    private final boolean throwExceptionOnValidationError;
+    private final ShaderJobFileOperations fileOps;
+    private String errorString;
+    private IShaderDispatcher imageGenerator;
 
-  private String errorString;
-  private IShaderDispatcher imageGenerator;
-  private final boolean skipRender;
-  private final boolean throwExceptionOnValidationError;
-  private final ShaderJobFileOperations fileOps;
-
-  public ImageGenErrorShaderFileJudge(
-      String errorString,
-      IShaderDispatcher imageGenerator,
-      boolean skipRender,
-      boolean throwExceptionOnValidationError,
-      ShaderJobFileOperations fileOps) {
-    this.errorString = errorString;
-    this.imageGenerator = imageGenerator;
-    this.skipRender = skipRender;
-    this.throwExceptionOnValidationError = throwExceptionOnValidationError;
-    this.fileOps = fileOps;
-  }
-
-  @Override
-  public boolean isInteresting(
-      File shaderJobFile,
-      File shaderResultFileOutput
-  ) throws FileJudgeException {
-
-    // 1. Shader file validates.
-    // 2. Generate image.
-
-    try {
-      if (!fileOps.areShadersValid(shaderJobFile, throwExceptionOnValidationError)) {
-        return false;
-      }
-
-      // 2.
-      // Read shader job into an image job.
-      ImageJob imageJob = new ImageJob();
-      fileOps.readShaderJobFileToImageJob(shaderJobFile, imageJob);
-      imageJob.setSkipRender(skipRender);
-
-      // Run the image job.
-      ImageJobResult imageRes = imageGenerator.getImage(imageJob);
-
-      // Write the shader result file.
-      fileOps.writeShaderResultToFile(imageRes, shaderResultFileOutput, Optional.empty());
-
-      switch (imageRes.getStatus()) {
-        case SUCCESS:
-        case SAME_AS_REFERENCE:
-          LOGGER.info("Get_image succeeded on shader. Not interesting.");
-          return false;
-        default:
-          LOGGER.info("get_image failed...which is good.");
-          if (errorString == null) {
-            LOGGER.info("Interesting.");
-            return true;
-          }
-          if (imageRes.getLog().contains(errorString)) {
-            LOGGER.info("Error string was found. Interesting");
-            return true;
-          }
-          LOGGER.info("Error string was not found. Not interesting");
-
-          return false;
-      }
-    } catch (InterruptedException | IllegalStateException | IOException
-          | ShaderDispatchException exception) {
-      LOGGER.error("Error occurred while checking if file was interesting.", exception);
-      throw new FileJudgeException(exception);
+    public ImageGenErrorShaderFileJudge(
+            String errorString,
+            IShaderDispatcher imageGenerator,
+            boolean skipRender,
+            boolean throwExceptionOnValidationError,
+            ShaderJobFileOperations fileOps) {
+        this.errorString = errorString;
+        this.imageGenerator = imageGenerator;
+        this.skipRender = skipRender;
+        this.throwExceptionOnValidationError = throwExceptionOnValidationError;
+        this.fileOps = fileOps;
     }
-  }
+
+    @Override
+    public boolean isInteresting(
+            File shaderJobFile,
+            File shaderResultFileOutput
+    ) throws FileJudgeException {
+
+        // 1. Shader file validates.
+        // 2. Generate image.
+
+        try {
+            if (!fileOps.areShadersValid(shaderJobFile, throwExceptionOnValidationError)) {
+                return false;
+            }
+
+            // 2.
+            // Read shader job into an image job.
+            ImageJob imageJob = new ImageJob();
+            fileOps.readShaderJobFileToImageJob(shaderJobFile, imageJob);
+            imageJob.setSkipRender(skipRender);
+
+            // Run the image job.
+            ImageJobResult imageRes = imageGenerator.getImage(imageJob);
+
+            // Write the shader result file.
+            fileOps.writeShaderResultToFile(imageRes, shaderResultFileOutput, Optional.empty());
+
+            switch (imageRes.getStatus()) {
+                case SUCCESS:
+                case SAME_AS_REFERENCE:
+                    LOGGER.info("Get_image succeeded on shader. Not interesting.");
+                    return false;
+                default:
+                    LOGGER.info("get_image failed...which is good.");
+                    if (errorString == null) {
+                        LOGGER.info("Interesting.");
+                        return true;
+                    }
+                    if (imageRes.getLog().contains(errorString)) {
+                        LOGGER.info("Error string was found. Interesting");
+                        return true;
+                    }
+                    LOGGER.info("Error string was not found. Not interesting");
+
+                    return false;
+            }
+        } catch (InterruptedException | IllegalStateException | IOException
+                | ShaderDispatchException exception) {
+            LOGGER.error("Error occurred while checking if file was interesting.", exception);
+            throw new FileJudgeException(exception);
+        }
+    }
 }

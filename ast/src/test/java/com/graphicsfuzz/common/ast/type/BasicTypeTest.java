@@ -16,32 +16,32 @@
 
 package com.graphicsfuzz.common.ast.type;
 
+import com.graphicsfuzz.common.typing.Scope;
+import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-import com.graphicsfuzz.common.typing.Scope;
-import org.junit.Test;
-
 public class BasicTypeTest {
 
-  @Test
-  public void testCanonicalConstant() {
-    assertEquals("1", BasicType.INT.getCanonicalConstant(new Scope()).getText());
-    assertEquals("1u", BasicType.UINT.getCanonicalConstant(new Scope()).getText());
-    assertEquals("1.0", BasicType.FLOAT.getCanonicalConstant(new Scope()).getText());
-    assertEquals("true", BasicType.BOOL.getCanonicalConstant(new Scope()).getText());
-    assertEquals("uvec4(1u)", BasicType.UVEC4.getCanonicalConstant(new Scope()).getText());
-    assertEquals("mat2(1.0)", BasicType.MAT2X2.getCanonicalConstant(new Scope()).getText());
-  }
+    @Test
+    public void testCanonicalConstant() {
+        assertEquals("1", BasicType.INT.getCanonicalConstant(new Scope()).getText());
+        assertEquals("1u", BasicType.UINT.getCanonicalConstant(new Scope()).getText());
+        assertEquals("1.0", BasicType.FLOAT.getCanonicalConstant(new Scope()).getText());
+        assertEquals("true", BasicType.BOOL.getCanonicalConstant(new Scope()).getText());
+        assertEquals("uvec4(1u)", BasicType.UVEC4.getCanonicalConstant(new Scope()).getText());
+        assertEquals("mat2(1.0)", BasicType.MAT2X2.getCanonicalConstant(new Scope()).getText());
+    }
 
-  @Test
-  public void testNumericTypes() {
-    assertTrue(BasicType.allNumericTypes().contains(BasicType.IVEC2));
-    assertFalse(BasicType.allNumericTypes().contains(BasicType.BOOL));
-    assertFalse(BasicType.allNumericTypes().contains(BasicType.BVEC2));
-    assertFalse(BasicType.allNumericTypes().contains(BasicType.BVEC3));
-    assertFalse(BasicType.allNumericTypes().contains(BasicType.BVEC4));
-  }
+    @Test
+    public void testNumericTypes() {
+        assertTrue(BasicType.allNumericTypes().contains(BasicType.IVEC2));
+        assertFalse(BasicType.allNumericTypes().contains(BasicType.BOOL));
+        assertFalse(BasicType.allNumericTypes().contains(BasicType.BVEC2));
+        assertFalse(BasicType.allNumericTypes().contains(BasicType.BVEC3));
+        assertFalse(BasicType.allNumericTypes().contains(BasicType.BVEC4));
+    }
 
 }

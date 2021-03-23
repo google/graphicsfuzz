@@ -25,76 +25,76 @@ import org.apache.commons.lang3.StringUtils;
 
 public final class ReductionProgressHelper {
 
-  private ReductionProgressHelper() {
-    // Utility class
-  }
-
-  static int compareReductionTemporaryFiles(String first, String second,
-        String shaderJobShortName) {
-    return getReductionStepFromFile(first, shaderJobShortName)
-          .compareTo(getReductionStepFromFile(second, shaderJobShortName));
-  }
-
-  static boolean isAReductionStepFile(String name, String shaderJobShortName,
-                                      boolean restrictToSuccess) {
-    if (!name.startsWith(shaderJobShortName)) {
-      return false;
+    private ReductionProgressHelper() {
+        // Utility class
     }
-    if (!name.contains("reduced")) {
-      return false;
+
+    static int compareReductionTemporaryFiles(String first, String second,
+                                              String shaderJobShortName) {
+        return getReductionStepFromFile(first, shaderJobShortName)
+                .compareTo(getReductionStepFromFile(second, shaderJobShortName));
     }
-    if (!name.endsWith("success.json")) {
-      if (restrictToSuccess) {
-        return false;
-      }
-      if (!name.endsWith("fail.json")) {
-        return false;
-      }
+
+    public static Optional<Integer> getLatestReductionStep(
+            boolean restrictToSuccess,
+            File workDir,
+            String shaderJobShortName,
+            ShaderJobFileOperations fileOps) throws IOException {
+
+        File[] jsonFiles =
+                fileOps
+                        .listShaderJobFiles(
+                                workDir,
+                                (dir, name) -> isAReductionStepFile(name, shaderJobShortName, restrictToSuccess));
+
+        return Arrays.stream(jsonFiles)
+                .map(File::getName)
+                .max((item1, item2) -> compareReductionTemporaryFiles(item1, item2, shaderJobShortName))
+                .flatMap(item -> Optional.of(getReductionStepFromFile(item, shaderJobShortName)));
     }
-    final String[] components = getNameComponents(name);
-    return components.length >= 2 && StringUtils.isNumeric(components[components.length - 2]);
-  }
 
-  private static Integer getReductionStepFromFile(String name, String shaderJobShortName) {
-    assert isAReductionStepFile(name, shaderJobShortName, false);
-    final String[] components = getNameComponents(name);
-    return new Integer(components[components.length - 2]);
-  }
+    public static Optional<Integer> getLatestReductionStepAny(File workDir,
+                                                              String shaderJobShortName, ShaderJobFileOperations fileOps) throws IOException {
+        return getLatestReductionStep(false, workDir, shaderJobShortName, fileOps);
+    }
 
-  private static String[] getNameComponents(String name) {
-    return FilenameUtils.removeExtension(name).split("_");
-  }
+    public static Optional<Integer> getLatestReductionStepSuccess(File workDir,
+                                                                  String shaderJobShortName, ShaderJobFileOperations fileOps) throws IOException {
+        return getLatestReductionStep(true, workDir, shaderJobShortName, fileOps);
+    }
 
-  public static Optional<Integer> getLatestReductionStep(
-      boolean restrictToSuccess,
-      File workDir,
-      String shaderJobShortName,
-      ShaderJobFileOperations fileOps) throws IOException {
+    public static File getReductionExceptionFile(File workDir, String shaderJobShortName) {
+        return new File(workDir, shaderJobShortName + ".exception");
+    }
 
-    File[] jsonFiles =
-        fileOps
-            .listShaderJobFiles(
-                workDir,
-                (dir, name) -> isAReductionStepFile(name, shaderJobShortName, restrictToSuccess));
+    static boolean isAReductionStepFile(String name, String shaderJobShortName,
+                                        boolean restrictToSuccess) {
+        if (!name.startsWith(shaderJobShortName)) {
+            return false;
+        }
+        if (!name.contains("reduced")) {
+            return false;
+        }
+        if (!name.endsWith("success.json")) {
+            if (restrictToSuccess) {
+                return false;
+            }
+            if (!name.endsWith("fail.json")) {
+                return false;
+            }
+        }
+        final String[] components = getNameComponents(name);
+        return components.length >= 2 && StringUtils.isNumeric(components[components.length - 2]);
+    }
 
-    return Arrays.stream(jsonFiles)
-          .map(File::getName)
-          .max((item1, item2) -> compareReductionTemporaryFiles(item1, item2, shaderJobShortName))
-          .flatMap(item -> Optional.of(getReductionStepFromFile(item, shaderJobShortName)));
-  }
+    private static String[] getNameComponents(String name) {
+        return FilenameUtils.removeExtension(name).split("_");
+    }
 
-  public static Optional<Integer> getLatestReductionStepAny(File workDir,
-        String shaderJobShortName, ShaderJobFileOperations fileOps) throws IOException {
-    return getLatestReductionStep(false, workDir, shaderJobShortName, fileOps);
-  }
-
-  public static Optional<Integer> getLatestReductionStepSuccess(File workDir,
-        String shaderJobShortName, ShaderJobFileOperations fileOps) throws IOException {
-    return getLatestReductionStep(true, workDir, shaderJobShortName, fileOps);
-  }
-
-  public static File getReductionExceptionFile(File workDir, String shaderJobShortName) {
-    return new File(workDir, shaderJobShortName + ".exception");
-  }
+    private static Integer getReductionStepFromFile(String name, String shaderJobShortName) {
+        assert isAReductionStepFile(name, shaderJobShortName, false);
+        final String[] components = getNameComponents(name);
+        return new Integer(components[components.length - 2]);
+    }
 
 }

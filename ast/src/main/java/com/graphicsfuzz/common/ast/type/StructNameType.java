@@ -22,63 +22,63 @@ import com.graphicsfuzz.common.typing.Scope;
 
 public final class StructNameType extends UnqualifiedType {
 
-  private String name;
+    private String name;
 
-  public StructNameType(String name) {
-    this.name = name;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public void setName(String name) {
-    this.name = name;
-  }
-
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitStructNameType(this);
-  }
-
-  @Override
-  public StructNameType clone() {
-    return new StructNameType(name);
-  }
-
-  @Override
-  public boolean equals(Object that) {
-    if (this == that) {
-      return true;
+    public StructNameType(String name) {
+        this.name = name;
     }
-    if (!(that instanceof StructNameType)) {
-      return false;
+
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitStructNameType(this);
     }
-    return name.equals(((StructNameType) that).name);
-  }
 
-  @Override
-  public int hashCode() {
-    return name.hashCode();
-  }
-
-  @Override
-  public String toString() {
-    return name;
-  }
-
-  @Override
-  public final boolean hasCanonicalConstant(Scope scope) {
-    if (scope.lookupStructName(name) == null) {
-      throw new RuntimeException("Attempt to check whether a struct has a canonical constant when"
-          + " the struct is not in scope.");
+    @Override
+    public StructNameType clone() {
+        return new StructNameType(name);
     }
-    return scope.lookupStructName(name).hasCanonicalConstant(scope);
-  }
 
-  @Override
-  public final Expr getCanonicalConstant(Scope scope) {
-    return scope.lookupStructName(name).getCanonicalConstant(scope);
-  }
+    @Override
+    public boolean equals(Object that) {
+        if (this == that) {
+            return true;
+        }
+        if (!(that instanceof StructNameType)) {
+            return false;
+        }
+        return name.equals(((StructNameType) that).name);
+    }
+
+    @Override
+    public final Expr getCanonicalConstant(Scope scope) {
+        return scope.lookupStructName(name).getCanonicalConstant(scope);
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
+    }
+
+    @Override
+    public final boolean hasCanonicalConstant(Scope scope) {
+        if (scope.lookupStructName(name) == null) {
+            throw new RuntimeException("Attempt to check whether a struct has a canonical constant when"
+                    + " the struct is not in scope.");
+        }
+        return scope.lookupStructName(name).hasCanonicalConstant(scope);
+    }
+
+    @Override
+    public int hashCode() {
+        return name.hashCode();
+    }
+
+    @Override
+    public String toString() {
+        return name;
+    }
 
 }

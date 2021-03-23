@@ -34,72 +34,72 @@ import java.util.stream.Collectors;
 
 public class OutlinedStatementReductionOpportunities extends StandardVisitor {
 
-  private final TranslationUnit tu;
+    private final TranslationUnit tu;
 
-  private List<OutlinedStatementReductionOpportunity> opportunities;
+    private List<OutlinedStatementReductionOpportunity> opportunities;
 
-  private OutlinedStatementReductionOpportunities(TranslationUnit tu) {
-    this.tu = tu;
-    this.opportunities = new ArrayList<>();
-  }
-
-  static List<OutlinedStatementReductionOpportunity> findOpportunities(
-        ShaderJob shaderJob,
-        ReducerContext context) {
-    return shaderJob.getShaders()
-        .stream()
-        .map(OutlinedStatementReductionOpportunities::findOpportunitiesForShader)
-        .reduce(Collections.emptyList(), ListConcat::concatenate);
-  }
-
-  private static List<OutlinedStatementReductionOpportunity> findOpportunitiesForShader(
-      TranslationUnit tu) {
-    OutlinedStatementReductionOpportunities finder =
-          new OutlinedStatementReductionOpportunities(tu);
-    finder.visit(tu);
-    return finder.opportunities;
-  }
-
-  @Override
-  public void visitExprStmt(ExprStmt exprStmt) {
-    super.visitExprStmt(exprStmt);
-    if (!(exprStmt.getExpr() instanceof BinaryExpr)) {
-      return;
-    }
-    final BinaryExpr be = (BinaryExpr) exprStmt.getExpr();
-    if (be.getOp() != BinOp.ASSIGN) {
-      return;
-    }
-    if (!(be.getRhs() instanceof FunctionCallExpr)) {
-      return;
-    }
-    final String callee = ((FunctionCallExpr) be.getRhs()).getCallee();
-    if (!callee.startsWith(Constants.OUTLINED_FUNCTION_PREFIX)) {
-      return;
-    }
-    final List<FunctionDefinition> relevantFunctions = tu.getTopLevelDeclarations()
-          .stream()
-          .filter(item -> item instanceof FunctionDefinition)
-          .map(item -> (FunctionDefinition) item)
-          .filter(item -> item.getPrototype().getName().equals(callee))
-          .collect(Collectors.toList());
-    if (relevantFunctions.size() != 1) {
-      throw new RuntimeException("Expected single function definition named " + callee);
+    private OutlinedStatementReductionOpportunities(TranslationUnit tu) {
+        this.tu = tu;
+        this.opportunities = new ArrayList<>();
     }
 
-    FunctionDefinition relevantFunction = relevantFunctions.get(0);
+    static List<OutlinedStatementReductionOpportunity> findOpportunities(
+            ShaderJob shaderJob,
+            ReducerContext context) {
+        return shaderJob.getShaders()
+                .stream()
+                .map(OutlinedStatementReductionOpportunities::findOpportunitiesForShader)
+                .reduce(Collections.emptyList(), ListConcat::concatenate);
+    }
 
-    // For simplicitly, we only inline outlined functions comprising a single return statement.
-    // This is what they look like when created, but they may get more complex due to other
-    // injections.
-    if (relevantFunction.getBody().getNumStmts() != 1) {
-      return;
+    @Override
+    public void visitExprStmt(ExprStmt exprStmt) {
+        super.visitExprStmt(exprStmt);
+        if (!(exprStmt.getExpr() instanceof BinaryExpr)) {
+            return;
+        }
+        final BinaryExpr be = (BinaryExpr) exprStmt.getExpr();
+        if (be.getOp() != BinOp.ASSIGN) {
+            return;
+        }
+        if (!(be.getRhs() instanceof FunctionCallExpr)) {
+            return;
+        }
+        final String callee = ((FunctionCallExpr) be.getRhs()).getCallee();
+        if (!callee.startsWith(Constants.OUTLINED_FUNCTION_PREFIX)) {
+            return;
+        }
+        final List<FunctionDefinition> relevantFunctions = tu.getTopLevelDeclarations()
+                .stream()
+                .filter(item -> item instanceof FunctionDefinition)
+                .map(item -> (FunctionDefinition) item)
+                .filter(item -> item.getPrototype().getName().equals(callee))
+                .collect(Collectors.toList());
+        if (relevantFunctions.size() != 1) {
+            throw new RuntimeException("Expected single function definition named " + callee);
+        }
+
+        FunctionDefinition relevantFunction = relevantFunctions.get(0);
+
+        // For simplicitly, we only inline outlined functions comprising a single return statement.
+        // This is what they look like when created, but they may get more complex due to other
+        // injections.
+        if (relevantFunction.getBody().getNumStmts() != 1) {
+            return;
+        }
+        if (!(relevantFunction.getBody().getStmt(0) instanceof ReturnStmt)) {
+            return;
+        }
+        opportunities.add(new OutlinedStatementReductionOpportunity(exprStmt,
+                relevantFunctions.get(0), getVistitationDepth()));
     }
-    if (!(relevantFunction.getBody().getStmt(0) instanceof ReturnStmt)) {
-      return;
+
+    private static List<OutlinedStatementReductionOpportunity> findOpportunitiesForShader(
+            TranslationUnit tu) {
+        OutlinedStatementReductionOpportunities finder =
+                new OutlinedStatementReductionOpportunities(tu);
+        finder.visit(tu);
+        return finder.opportunities;
     }
-    opportunities.add(new OutlinedStatementReductionOpportunity(exprStmt,
-          relevantFunctions.get(0), getVistitationDepth()));
-  }
 
 }

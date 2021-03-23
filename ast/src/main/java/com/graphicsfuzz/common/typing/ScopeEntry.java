@@ -24,67 +24,67 @@ import java.util.Optional;
 
 public class ScopeEntry {
 
-  private final Optional<ParameterDecl> parameterDecl;
+    private final Optional<ParameterDecl> parameterDecl;
 
-  private final Type type;
+    private final Type type;
 
-  // Represents the VariableDeclInfo that this variable came from, if one exists.  If there is no
-  // such object (e.g. because the variable came from a parameter, or was made up for purposes of
-  // fuzzing, or some such, the optional is empty.
-  private final Optional<VariableDeclInfo> variableDeclInfo;
+    // Represents the VariableDeclInfo that this variable came from, if one exists.  If there is no
+    // such object (e.g. because the variable came from a parameter, or was made up for purposes of
+    // fuzzing, or some such, the optional is empty.
+    private final Optional<VariableDeclInfo> variableDeclInfo;
 
-  // Represents the list of variable declarations that this variable came from, if one exists.
-  // If there is no such object, the optional is empty.
-  private final Optional<VariablesDeclaration> variablesDeclaration;
+    // Represents the list of variable declarations that this variable came from, if one exists.
+    // If there is no such object, the optional is empty.
+    private final Optional<VariablesDeclaration> variablesDeclaration;
 
-  private ScopeEntry(Type type, Optional<ParameterDecl> parameterDecl,
-        Optional<VariableDeclInfo> variableDeclInfo,
-        Optional<VariablesDeclaration> variablesDecl) {
-    this.type = type;
-    this.parameterDecl = parameterDecl;
-    this.variableDeclInfo = variableDeclInfo;
-    this.variablesDeclaration = variablesDecl;
-  }
+    private ScopeEntry(Type type, Optional<ParameterDecl> parameterDecl,
+                       Optional<VariableDeclInfo> variableDeclInfo,
+                       Optional<VariablesDeclaration> variablesDecl) {
+        this.type = type;
+        this.parameterDecl = parameterDecl;
+        this.variableDeclInfo = variableDeclInfo;
+        this.variablesDeclaration = variablesDecl;
+    }
 
-  public ScopeEntry(Type type,
-      Optional<ParameterDecl> parameterDecl,
-      VariableDeclInfo variableDeclInfo,
-      VariablesDeclaration variablesDecl) {
-    this(type, parameterDecl, Optional.of(variableDeclInfo), Optional.of(variablesDecl));
-    assert variableDeclInfo != null;
-    assert variablesDecl != null;
-  }
+    public ScopeEntry(Type type,
+                      Optional<ParameterDecl> parameterDecl,
+                      VariableDeclInfo variableDeclInfo,
+                      VariablesDeclaration variablesDecl) {
+        this(type, parameterDecl, Optional.of(variableDeclInfo), Optional.of(variablesDecl));
+        assert variableDeclInfo != null;
+        assert variablesDecl != null;
+    }
 
-  public ScopeEntry(Type type, Optional<ParameterDecl> parameterDecl) {
-    this(type, parameterDecl, Optional.empty(), Optional.empty());
-  }
+    public ScopeEntry(Type type, Optional<ParameterDecl> parameterDecl) {
+        this(type, parameterDecl, Optional.empty(), Optional.empty());
+    }
 
-  public Type getType() {
-    return type;
-  }
+    public ParameterDecl getParameterDecl() {
+        return parameterDecl.get();
+    }
 
-  public VariableDeclInfo getVariableDeclInfo() {
-    return variableDeclInfo.get();
-  }
+    public Type getType() {
+        return type;
+    }
 
-  public boolean hasVariableDeclInfo() {
-    return variableDeclInfo.isPresent();
-  }
+    public VariableDeclInfo getVariableDeclInfo() {
+        return variableDeclInfo.get();
+    }
 
-  public VariablesDeclaration getVariablesDeclaration() {
-    return variablesDeclaration.get();
-  }
+    public VariablesDeclaration getVariablesDeclaration() {
+        return variablesDeclaration.get();
+    }
 
-  public boolean hasVariablesDeclaration() {
-    return variablesDeclaration.isPresent();
-  }
+    public boolean hasParameterDecl() {
+        return parameterDecl.isPresent();
+    }
 
-  public ParameterDecl getParameterDecl() {
-    return parameterDecl.get();
-  }
+    public boolean hasVariableDeclInfo() {
+        return variableDeclInfo.isPresent();
+    }
 
-  public boolean hasParameterDecl() {
-    return parameterDecl.isPresent();
-  }
+    public boolean hasVariablesDeclaration() {
+        return variablesDeclaration.isPresent();
+    }
 
 }

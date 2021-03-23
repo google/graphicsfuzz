@@ -17,13 +17,13 @@
 package com.graphicsfuzz.reducer;
 
 public enum ReductionKind {
-  CUSTOM,
-  NO_IMAGE,
-  NOT_IDENTICAL,
-  IDENTICAL,
-  BELOW_THRESHOLD,
-  ABOVE_THRESHOLD,
-  VALIDATOR_ERROR,
-  ALWAYS_REDUCE, // Used for testing: always say that a reduction step is interesting
-  FUZZ,
+    CUSTOM,
+    NO_IMAGE,
+    NOT_IDENTICAL,
+    IDENTICAL,
+    BELOW_THRESHOLD,
+    ABOVE_THRESHOLD,
+    VALIDATOR_ERROR,
+    ALWAYS_REDUCE, // Used for testing: always say that a reduction step is interesting
+    FUZZ,
 }

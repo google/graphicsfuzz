@@ -24,41 +24,41 @@ import org.slf4j.LoggerFactory;
 
 public class ExactImageFileComparator implements IImageFileComparator {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(ExactImageFileComparator.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ExactImageFileComparator.class);
 
-  private final boolean identicalIsInteresting;
-  private final ShaderJobFileOperations fileOps;
+    private final boolean identicalIsInteresting;
+    private final ShaderJobFileOperations fileOps;
 
-  public ExactImageFileComparator(
-      boolean identicalIsInteresting,
-      ShaderJobFileOperations fileOps) {
-    this.identicalIsInteresting = identicalIsInteresting;
-    this.fileOps = fileOps;
-  }
-
-  @Override
-  public boolean areFilesInteresting(
-      File shaderResultFileReference,
-      File shaderResultFileVariant) {
-
-    try {
-
-      boolean equalContent = fileOps.areImagesOfShaderResultsIdentical(
-          shaderResultFileReference,
-          shaderResultFileVariant);
-
-      if (!equalContent && identicalIsInteresting) {
-        LOGGER.info("Not interesting: images do not match");
-        return false;
-      }
-      if (equalContent && !identicalIsInteresting) {
-        LOGGER.info("Not interesting: images match");
-        return false;
-      }
-      return true;
-    } catch (IOException exception) {
-      LOGGER.error("Not interesting: exception while comparing files", exception);
-      throw new RuntimeException(exception);
+    public ExactImageFileComparator(
+            boolean identicalIsInteresting,
+            ShaderJobFileOperations fileOps) {
+        this.identicalIsInteresting = identicalIsInteresting;
+        this.fileOps = fileOps;
     }
-  }
+
+    @Override
+    public boolean areFilesInteresting(
+            File shaderResultFileReference,
+            File shaderResultFileVariant) {
+
+        try {
+
+            boolean equalContent = fileOps.areImagesOfShaderResultsIdentical(
+                    shaderResultFileReference,
+                    shaderResultFileVariant);
+
+            if (!equalContent && identicalIsInteresting) {
+                LOGGER.info("Not interesting: images do not match");
+                return false;
+            }
+            if (equalContent && !identicalIsInteresting) {
+                LOGGER.info("Not interesting: images match");
+                return false;
+            }
+            return true;
+        } catch (IOException exception) {
+            LOGGER.error("Not interesting: exception while comparing files", exception);
+            throw new RuntimeException(exception);
+        }
+    }
 }

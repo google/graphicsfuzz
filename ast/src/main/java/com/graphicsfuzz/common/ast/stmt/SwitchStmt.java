@@ -22,46 +22,46 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class SwitchStmt extends Stmt {
 
-  private Expr expr;
-  private BlockStmt body;
+    private Expr expr;
+    private BlockStmt body;
 
-  public SwitchStmt(Expr expr, BlockStmt body) {
-    this.expr = expr;
-    this.body = body;
-  }
-
-  public Expr getExpr() {
-    return expr;
-  }
-
-  public BlockStmt getBody() {
-    return body;
-  }
-
-  @Override
-  public boolean hasChild(IAstNode candidateChild) {
-    return candidateChild == expr || candidateChild == body;
-  }
-
-  @Override
-  public void replaceChild(IAstNode child, IAstNode newChild) {
-    if (child == expr) {
-      expr = (Expr) newChild;
-    } else if (child == body) {
-      body = (BlockStmt) newChild;
-    } else {
-      throw new IllegalArgumentException();
+    public SwitchStmt(Expr expr, BlockStmt body) {
+        this.expr = expr;
+        this.body = body;
     }
-  }
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitSwitchStmt(this);
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitSwitchStmt(this);
+    }
 
-  @Override
-  public Stmt clone() {
-    return new SwitchStmt(expr.clone(), body.clone());
-  }
+    @Override
+    public Stmt clone() {
+        return new SwitchStmt(expr.clone(), body.clone());
+    }
+
+    public BlockStmt getBody() {
+        return body;
+    }
+
+    public Expr getExpr() {
+        return expr;
+    }
+
+    @Override
+    public boolean hasChild(IAstNode candidateChild) {
+        return candidateChild == expr || candidateChild == body;
+    }
+
+    @Override
+    public void replaceChild(IAstNode child, IAstNode newChild) {
+        if (child == expr) {
+            expr = (Expr) newChild;
+        } else if (child == body) {
+            body = (BlockStmt) newChild;
+        } else {
+            throw new IllegalArgumentException();
+        }
+    }
 
 }

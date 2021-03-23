@@ -22,103 +22,104 @@ import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 
 public abstract class LoopStmt extends Stmt {
 
-  private Expr condition;
-  private Stmt body;
+    private Expr condition;
+    private Stmt body;
 
-  LoopStmt(Expr condition, Stmt body) {
-    this.condition = condition;
-    this.body = body;
-  }
-
-  public final Stmt getBody() {
-    return body;
-  }
-
-  public final void setBody(Stmt body) {
-    this.body = body;
-  }
-
-  /**
-   * Reports whether a condition for the loop is present (it is not in e.g. "for(init; ; inc)"
-   * @return Whether condition is present.
-   */
-  public abstract boolean hasCondition();
-
-  public final Expr getCondition() {
-    return condition;
-  }
-
-  public final void setCondition(Expr condition) {
-    this.condition = condition;
-  }
-
-  @Override
-  public void replaceChild(IAstNode child, IAstNode newChild) {
-    if (child == body) {
-      setBody((Stmt) newChild);
-    } else if (child == condition) {
-      setCondition((Expr) newChild);
-    } else {
-      throw new IllegalArgumentException();
-    }
-  }
-
-  @Override
-  public boolean hasChild(IAstNode candidateChild) {
-    return candidateChild == body
-          || candidateChild == condition;
-  }
-
-  /**
-   * Determines whether the loop's body contains any break or continue statements
-   * that are not nested in inner loops.
-   */
-  public boolean containsDirectBreakOrContinueStmt() {
-    return new ContainsDirectBreakOrContinueStmt().check();
-  }
-
-  private class ContainsDirectBreakOrContinueStmt extends StandardVisitor {
-
-    private class FoundBreakOrContinueStmtException extends RuntimeException {
-
+    LoopStmt(Expr condition, Stmt body) {
+        this.condition = condition;
+        this.body = body;
     }
 
-    private int nestingDepth = 0;
+    /**
+     * Determines whether the loop's body contains any break or continue statements
+     * that are not nested in inner loops.
+     */
+    public boolean containsDirectBreakOrContinueStmt() {
+        return new ContainsDirectBreakOrContinueStmt().check();
+    }
 
-    public boolean check() {
-      try {
-        visit(body);
-        return false;
-      } catch (FoundBreakOrContinueStmtException exception) {
-        return true;
-      }
+    public final Stmt getBody() {
+        return body;
+    }
+
+    public final void setBody(Stmt body) {
+        this.body = body;
+    }
+
+    public final Expr getCondition() {
+        return condition;
+    }
+
+    public final void setCondition(Expr condition) {
+        this.condition = condition;
     }
 
     @Override
-    public void visit(IAstNode node) {
-      if (node instanceof LoopStmt) {
-        nestingDepth++;
-      }
-      super.visit(node);
-      if (node instanceof LoopStmt) {
-        nestingDepth--;
-      }
+    public boolean hasChild(IAstNode candidateChild) {
+        return candidateChild == body
+                || candidateChild == condition;
     }
+
+    /**
+     * Reports whether a condition for the loop is present (it is not in e.g. "for(init; ; inc)"
+     *
+     * @return Whether condition is present.
+     */
+    public abstract boolean hasCondition();
 
     @Override
-    public void visitBreakStmt(BreakStmt breakStmt) {
-      if (nestingDepth == 0) {
-        throw new FoundBreakOrContinueStmtException();
-      }
+    public void replaceChild(IAstNode child, IAstNode newChild) {
+        if (child == body) {
+            setBody((Stmt) newChild);
+        } else if (child == condition) {
+            setCondition((Expr) newChild);
+        } else {
+            throw new IllegalArgumentException();
+        }
     }
 
-    @Override
-    public void visitContinueStmt(ContinueStmt continueStmt) {
-      if (nestingDepth == 0) {
-        throw new FoundBreakOrContinueStmtException();
-      }
-    }
+    private class ContainsDirectBreakOrContinueStmt extends StandardVisitor {
 
-  }
+        private int nestingDepth = 0;
+
+        public boolean check() {
+            try {
+                visit(body);
+                return false;
+            } catch (FoundBreakOrContinueStmtException exception) {
+                return true;
+            }
+        }
+
+        @Override
+        public void visit(IAstNode node) {
+            if (node instanceof LoopStmt) {
+                nestingDepth++;
+            }
+            super.visit(node);
+            if (node instanceof LoopStmt) {
+                nestingDepth--;
+            }
+        }
+
+        @Override
+        public void visitBreakStmt(BreakStmt breakStmt) {
+            if (nestingDepth == 0) {
+                throw new FoundBreakOrContinueStmtException();
+            }
+        }
+
+        @Override
+        public void visitContinueStmt(ContinueStmt continueStmt) {
+            if (nestingDepth == 0) {
+                throw new FoundBreakOrContinueStmtException();
+            }
+        }
+
+        private class FoundBreakOrContinueStmtException extends RuntimeException {
+
+        }
+
+    }
 
 }

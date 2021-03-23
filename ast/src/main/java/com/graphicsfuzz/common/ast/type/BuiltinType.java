@@ -18,9 +18,9 @@ package com.graphicsfuzz.common.ast.type;
 
 public abstract class BuiltinType extends UnqualifiedType {
 
-  @Override
-  public final BuiltinType clone() {
-    return this;
-  }
+    @Override
+    public final BuiltinType clone() {
+        return this;
+    }
 
 }

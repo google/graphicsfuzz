@@ -18,26 +18,26 @@ package com.graphicsfuzz.common.transformreduce;
 
 public class MergedVariablesComponentData {
 
-  private final int offset;
-  private final int width;
-  private final String name;
+    private final int offset;
+    private final int width;
+    private final String name;
 
-  public MergedVariablesComponentData(int offset, int width, String name) {
-    this.offset = offset;
-    this.width = width;
-    this.name = name;
-  }
+    public MergedVariablesComponentData(int offset, int width, String name) {
+        this.offset = offset;
+        this.width = width;
+        this.name = name;
+    }
 
-  public int getOffset() {
-    return offset;
-  }
+    public String getName() {
+        return name;
+    }
 
-  public int getWidth() {
-    return width;
-  }
+    public int getOffset() {
+        return offset;
+    }
 
-  public String getName() {
-    return name;
-  }
+    public int getWidth() {
+        return width;
+    }
 
 }

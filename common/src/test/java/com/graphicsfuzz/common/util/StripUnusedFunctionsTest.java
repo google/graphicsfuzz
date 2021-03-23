@@ -16,59 +16,59 @@
 
 package com.graphicsfuzz.common.util;
 
-import static org.junit.Assert.assertEquals;
-
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+
 public class StripUnusedFunctionsTest {
 
-  @Test
-  public void strip() throws Exception {
-    String programBefore =
-          "void foo();\n"
-        + "void bar() {\n"
-        + "}\n"
-        + "void buzz() {\n"
-        + "}\n"
-        + "void baz() {\n"
-        + "  buzz();\n"
-        + "}\n"
-        + "int garb(int z) {\n"
-        + "}\n"
-        + "int glib() {\n"
-        + "  return 2;\n"
-        + "}\n"
-        + "void main() {\n"
-        + "  int z = garb(glib());\n"
-        + "  baz();"
-        + "}\n";
+    @Test
+    public void strip() throws Exception {
+        String programBefore =
+                "void foo();\n"
+                        + "void bar() {\n"
+                        + "}\n"
+                        + "void buzz() {\n"
+                        + "}\n"
+                        + "void baz() {\n"
+                        + "  buzz();\n"
+                        + "}\n"
+                        + "int garb(int z) {\n"
+                        + "}\n"
+                        + "int glib() {\n"
+                        + "  return 2;\n"
+                        + "}\n"
+                        + "void main() {\n"
+                        + "  int z = garb(glib());\n"
+                        + "  baz();"
+                        + "}\n";
 
-    String programAfter =
-          "void buzz() {\n"
-        + "}\n"
-        + "void baz() {\n"
-        + "  buzz();\n"
-        + "}\n"
-        + "int garb(int z) {\n"
-        + "}\n"
-        + "int glib() {\n"
-        + "  return 2;\n"
-        + "}\n"
-        + "void main() {\n"
-        + "  int z = garb(glib());\n"
-        + "  baz();"
-        + "}\n";
+        String programAfter =
+                "void buzz() {\n"
+                        + "}\n"
+                        + "void baz() {\n"
+                        + "  buzz();\n"
+                        + "}\n"
+                        + "int garb(int z) {\n"
+                        + "}\n"
+                        + "int glib() {\n"
+                        + "  return 2;\n"
+                        + "}\n"
+                        + "void main() {\n"
+                        + "  int z = garb(glib());\n"
+                        + "  baz();"
+                        + "}\n";
 
-    TranslationUnit tuBefore = ParseHelper.parse(programBefore);
-    TranslationUnit tuAfter = ParseHelper.parse(programAfter);
-    StripUnusedFunctions.strip(tuBefore);
-    assertEquals(
-        PrettyPrinterVisitor.prettyPrintAsString(tuAfter),
-        PrettyPrinterVisitor.prettyPrintAsString(tuBefore)
-    );
+        TranslationUnit tuBefore = ParseHelper.parse(programBefore);
+        TranslationUnit tuAfter = ParseHelper.parse(programAfter);
+        StripUnusedFunctions.strip(tuBefore);
+        assertEquals(
+                PrettyPrinterVisitor.prettyPrintAsString(tuAfter),
+                PrettyPrinterVisitor.prettyPrintAsString(tuBefore)
+        );
 
-  }
+    }
 
 }

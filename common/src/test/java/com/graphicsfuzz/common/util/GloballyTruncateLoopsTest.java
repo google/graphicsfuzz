@@ -24,101 +24,101 @@ import org.junit.Test;
 
 public class GloballyTruncateLoopsTest {
 
-  @Test
-  public void basicTest() throws Exception {
+    @Test
+    public void basicTest() throws Exception {
 
-    final String shader = "#version 310 es\n"
-        + "void foo(int x) {\n"
-        + "  for (int i = 0; i < 100; ) ;\n"
-        + "  for (int i = 0; i < 100; ) {\n"
-        + "    int j = 0;\n"
-        + "    while (j < x) {\n"
-        + "      j++;\n"
-        + "    }\n"
-        + "    while (false) {\n"
-        + "      j++;\n"
-        + "    }\n"
-        + "  }\n"
-        + "}\n"
-        + "void main() {\n"
-        + "  do {\n"
-        + "    foo(1);\n"
-        + "  } while(false);\n"
-        + "  do {\n"
-        + "    foo(1);\n"
-        + "  } while(true);\n"
-        + "  for (int i = 0; false; i++) {\n"
-        + "  }\n"
-        + "  for (int i = 0; false; i++) ;\n"
-        + "}\n";
+        final String shader = "#version 310 es\n"
+                + "void foo(int x) {\n"
+                + "  for (int i = 0; i < 100; ) ;\n"
+                + "  for (int i = 0; i < 100; ) {\n"
+                + "    int j = 0;\n"
+                + "    while (j < x) {\n"
+                + "      j++;\n"
+                + "    }\n"
+                + "    while (false) {\n"
+                + "      j++;\n"
+                + "    }\n"
+                + "  }\n"
+                + "}\n"
+                + "void main() {\n"
+                + "  do {\n"
+                + "    foo(1);\n"
+                + "  } while(false);\n"
+                + "  do {\n"
+                + "    foo(1);\n"
+                + "  } while(true);\n"
+                + "  for (int i = 0; false; i++) {\n"
+                + "  }\n"
+                + "  for (int i = 0; false; i++) ;\n"
+                + "}\n";
 
-    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
-        new PipelineInfo(), ParseHelper.parse(shader, ShaderKind.VERTEX),
-        ParseHelper.parse(shader, ShaderKind.FRAGMENT));
+        final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+                new PipelineInfo(), ParseHelper.parse(shader, ShaderKind.VERTEX),
+                ParseHelper.parse(shader, ShaderKind.FRAGMENT));
 
-    GloballyTruncateLoops.truncate(shaderJob, 100, "LOOP_COUNT", "LOOP_BOUND");
+        GloballyTruncateLoops.truncate(shaderJob, 100, "LOOP_COUNT", "LOOP_BOUND");
 
-    final String expectedShader = "#version 310 es\n"
-        + "const int LOOP_BOUND = 100;\n"
-        + "int LOOP_COUNT = 0;\n"
-        + "void foo(int x) {\n"
-        + "  for (int i = 0; (i < 100) && (LOOP_COUNT < LOOP_BOUND); ) {\n"
-        + "    LOOP_COUNT++;\n"
-        + "    ;\n"
-        + "  }\n"
-        + "  for (int i = 0; (i < 100) && (LOOP_COUNT < LOOP_BOUND); ) {\n"
-        + "    LOOP_COUNT++;\n"
-        + "    int j = 0;\n"
-        + "    while ((j < x) && (LOOP_COUNT < LOOP_BOUND)) {\n"
-        + "      LOOP_COUNT++;\n"
-        + "      j++;\n"
-        + "    }\n"
-        + "    while (false) {\n"
-        + "      j++;\n"
-        + "    }\n"
-        + "  }\n"
-        + "}\n"
-        + "void main() {\n"
-        + "  do {\n"
-        + "    foo(1);\n"
-        + "  } while(false);\n"
-        + "  do {\n"
-        + "    LOOP_COUNT++;\n"
-        + "    foo(1);\n"
-        + "  } while((true) && (LOOP_COUNT < LOOP_BOUND));\n"
-        + "  for (int i = 0; false; i++) {\n"
-        + "  }\n"
-        + "  for (int i = 0; false; i++) ;\n"
-        + "}\n";
+        final String expectedShader = "#version 310 es\n"
+                + "const int LOOP_BOUND = 100;\n"
+                + "int LOOP_COUNT = 0;\n"
+                + "void foo(int x) {\n"
+                + "  for (int i = 0; (i < 100) && (LOOP_COUNT < LOOP_BOUND); ) {\n"
+                + "    LOOP_COUNT++;\n"
+                + "    ;\n"
+                + "  }\n"
+                + "  for (int i = 0; (i < 100) && (LOOP_COUNT < LOOP_BOUND); ) {\n"
+                + "    LOOP_COUNT++;\n"
+                + "    int j = 0;\n"
+                + "    while ((j < x) && (LOOP_COUNT < LOOP_BOUND)) {\n"
+                + "      LOOP_COUNT++;\n"
+                + "      j++;\n"
+                + "    }\n"
+                + "    while (false) {\n"
+                + "      j++;\n"
+                + "    }\n"
+                + "  }\n"
+                + "}\n"
+                + "void main() {\n"
+                + "  do {\n"
+                + "    foo(1);\n"
+                + "  } while(false);\n"
+                + "  do {\n"
+                + "    LOOP_COUNT++;\n"
+                + "    foo(1);\n"
+                + "  } while((true) && (LOOP_COUNT < LOOP_BOUND));\n"
+                + "  for (int i = 0; false; i++) {\n"
+                + "  }\n"
+                + "  for (int i = 0; false; i++) ;\n"
+                + "}\n";
 
-    for (TranslationUnit tu : shaderJob.getShaders()) {
-      CompareAsts.assertEqualAsts(expectedShader, tu);
+        for (TranslationUnit tu : shaderJob.getShaders()) {
+            CompareAsts.assertEqualAsts(expectedShader, tu);
+        }
+
     }
 
-  }
+    @Test
+    public void doNotAddDeclarationsIfNothingToTruncate() throws Exception {
 
-  @Test
-  public void doNotAddDeclarationsIfNothingToTruncate() throws Exception {
+        // If no loop truncation is required, the loop bound and loop count declarations
+        // should not be emitted.
 
-    // If no loop truncation is required, the loop bound and loop count declarations
-    // should not be emitted.
+        final String shader = "#version 310 es\n"
+                + "void main() {\n"
+                + "  do {\n"
+                + "  } while(false);\n"
+                + "}\n";
 
-    final String shader = "#version 310 es\n"
-        + "void main() {\n"
-        + "  do {\n"
-        + "  } while(false);\n"
-        + "}\n";
+        final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+                new PipelineInfo(), ParseHelper.parse(shader, ShaderKind.VERTEX),
+                ParseHelper.parse(shader, ShaderKind.FRAGMENT));
 
-    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
-        new PipelineInfo(), ParseHelper.parse(shader, ShaderKind.VERTEX),
-        ParseHelper.parse(shader, ShaderKind.FRAGMENT));
+        GloballyTruncateLoops.truncate(shaderJob, 100, "LOOP_COUNT", "LOOP_BOUND");
 
-    GloballyTruncateLoops.truncate(shaderJob, 100, "LOOP_COUNT", "LOOP_BOUND");
+        for (TranslationUnit tu : shaderJob.getShaders()) {
+            CompareAsts.assertEqualAsts(shader, tu);
+        }
 
-    for (TranslationUnit tu : shaderJob.getShaders()) {
-      CompareAsts.assertEqualAsts(shader, tu);
     }
-
-  }
 
 }

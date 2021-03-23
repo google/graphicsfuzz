@@ -22,65 +22,66 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class ForStmt extends LoopStmt {
 
-  private Stmt init;
-  private Expr increment;
+    private Stmt init;
+    private Expr increment;
 
-  public ForStmt(Stmt init, Expr condition, Expr increment, Stmt body) {
-    super(condition, body);
-    this.init = init;
-    this.increment = increment;
-  }
-
-  @Override
-  public boolean hasCondition() {
-    return getCondition() != null;
-  }
-
-  /**
-   * Reports whether a condition for the loop is present (it is not in e.g. "for(init; cond; )"
-   * @return Whether increment is present.
-   */
-  public boolean hasIncrement() {
-    return getIncrement() != null;
-  }
-
-  public Stmt getInit() {
-    return init;
-  }
-
-  public Expr getIncrement() {
-    return increment;
-  }
-
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitForStmt(this);
-  }
-
-  @Override
-  public ForStmt clone() {
-    return new ForStmt(init.clone(),
-        hasCondition() ? getCondition().clone() : null,
-        hasIncrement() ? increment.clone() : null,
-        getBody().clone());
-  }
-
-  @Override
-  public void replaceChild(IAstNode child, IAstNode newChild) {
-    if (child == init) {
-      init = (Stmt) newChild;
-    } else if (child == increment) {
-      increment = (Expr) newChild;
-    } else {
-      super.replaceChild(child, newChild);
+    public ForStmt(Stmt init, Expr condition, Expr increment, Stmt body) {
+        super(condition, body);
+        this.init = init;
+        this.increment = increment;
     }
-  }
 
-  @Override
-  public boolean hasChild(IAstNode candidateChild) {
-    return candidateChild == init
-          || candidateChild == increment
-          || super.hasChild(candidateChild);
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitForStmt(this);
+    }
+
+    @Override
+    public ForStmt clone() {
+        return new ForStmt(init.clone(),
+                hasCondition() ? getCondition().clone() : null,
+                hasIncrement() ? increment.clone() : null,
+                getBody().clone());
+    }
+
+    public Expr getIncrement() {
+        return increment;
+    }
+
+    public Stmt getInit() {
+        return init;
+    }
+
+    @Override
+    public boolean hasChild(IAstNode candidateChild) {
+        return candidateChild == init
+                || candidateChild == increment
+                || super.hasChild(candidateChild);
+    }
+
+    @Override
+    public boolean hasCondition() {
+        return getCondition() != null;
+    }
+
+    /**
+     * Reports whether a condition for the loop is present (it is not in e.g. "for(init; cond; )"
+     *
+     * @return Whether increment is present.
+     */
+    public boolean hasIncrement() {
+        return getIncrement() != null;
+    }
+
+    @Override
+    public void replaceChild(IAstNode child, IAstNode newChild) {
+        if (child == init) {
+            init = (Stmt) newChild;
+        } else if (child == increment) {
+            increment = (Expr) newChild;
+        } else {
+            super.replaceChild(child, newChild);
+        }
+    }
 
 }

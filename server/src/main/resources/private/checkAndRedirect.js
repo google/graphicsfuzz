@@ -15,8 +15,8 @@
  */
 
 function checkAndRedirect(msg, url) {
-  var c = confirm(msg);
-  if (c === true) {
-    window.location.assign(url);
-  }
+    var c = confirm(msg);
+    if (c === true) {
+        window.location.assign(url);
+    }
 }

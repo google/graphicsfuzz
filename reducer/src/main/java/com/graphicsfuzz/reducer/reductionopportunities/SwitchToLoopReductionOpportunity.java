@@ -33,30 +33,30 @@ import java.util.Collections;
  */
 public class SwitchToLoopReductionOpportunity extends AbstractReductionOpportunity {
 
-  // The parent of the switch statement
-  private final IAstNode parent;
+    // The parent of the switch statement
+    private final IAstNode parent;
 
-  // The switch statement to be replaced
-  private final SwitchStmt switchStmt;
+    // The switch statement to be replaced
+    private final SwitchStmt switchStmt;
 
-  SwitchToLoopReductionOpportunity(VisitationDepth depth, IAstNode parent, SwitchStmt switchStmt) {
-    super(depth);
-    this.parent = parent;
-    this.switchStmt = switchStmt;
-  }
+    SwitchToLoopReductionOpportunity(VisitationDepth depth, IAstNode parent, SwitchStmt switchStmt) {
+        super(depth);
+        this.parent = parent;
+        this.switchStmt = switchStmt;
+    }
 
-  @Override
-  void applyReductionImpl() {
-    final BlockStmt loopBody = new BlockStmt(Collections.emptyList(), true);
-    loopBody.addStmt(new ExprStmt(switchStmt.getExpr()));
-    switchStmt.getBody().getStmts().stream().filter(item -> !(item instanceof CaseLabel))
-            .forEach(loopBody::addStmt);
-    parent.replaceChild(switchStmt, new DoStmt(loopBody, new BoolConstantExpr(false)));
-  }
+    @Override
+    void applyReductionImpl() {
+        final BlockStmt loopBody = new BlockStmt(Collections.emptyList(), true);
+        loopBody.addStmt(new ExprStmt(switchStmt.getExpr()));
+        switchStmt.getBody().getStmts().stream().filter(item -> !(item instanceof CaseLabel))
+                .forEach(loopBody::addStmt);
+        parent.replaceChild(switchStmt, new DoStmt(loopBody, new BoolConstantExpr(false)));
+    }
 
-  @Override
-  public boolean preconditionHolds() {
-    return parent.hasChild(switchStmt);
-  }
+    @Override
+    public boolean preconditionHolds() {
+        return parent.hasChild(switchStmt);
+    }
 
 }

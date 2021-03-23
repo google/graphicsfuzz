@@ -22,52 +22,52 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class ReturnStmt extends Stmt {
 
-  private Expr expr;
+    private Expr expr;
 
-  public ReturnStmt(Expr expr) {
-    assert expr != null;
-    this.expr = expr;
-  }
-
-  public ReturnStmt() {
-    this.expr = null;
-  }
-
-  public Expr getExpr() {
-    return expr;
-  }
-
-  public void setExpr(Expr expr) {
-    this.expr = expr;
-  }
-
-  public boolean hasExpr() {
-    return getExpr() != null;
-  }
-
-  @Override
-  public void replaceChild(IAstNode child, IAstNode newChild) {
-    assert child == expr;
-    assert newChild instanceof Expr;
-    this.expr = (Expr) newChild;
-  }
-
-  @Override
-  public boolean hasChild(IAstNode candidateChild) {
-    return candidateChild == expr;
-  }
-
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitReturnStmt(this);
-  }
-
-  @Override
-  public ReturnStmt clone() {
-    if (expr == null) {
-      return new ReturnStmt();
+    public ReturnStmt(Expr expr) {
+        assert expr != null;
+        this.expr = expr;
     }
-    return new ReturnStmt(expr.clone());
-  }
+
+    public ReturnStmt() {
+        this.expr = null;
+    }
+
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitReturnStmt(this);
+    }
+
+    @Override
+    public ReturnStmt clone() {
+        if (expr == null) {
+            return new ReturnStmt();
+        }
+        return new ReturnStmt(expr.clone());
+    }
+
+    public Expr getExpr() {
+        return expr;
+    }
+
+    public void setExpr(Expr expr) {
+        this.expr = expr;
+    }
+
+    @Override
+    public boolean hasChild(IAstNode candidateChild) {
+        return candidateChild == expr;
+    }
+
+    public boolean hasExpr() {
+        return getExpr() != null;
+    }
+
+    @Override
+    public void replaceChild(IAstNode child, IAstNode newChild) {
+        assert child == expr;
+        assert newChild instanceof Expr;
+        this.expr = (Expr) newChild;
+    }
 
 }

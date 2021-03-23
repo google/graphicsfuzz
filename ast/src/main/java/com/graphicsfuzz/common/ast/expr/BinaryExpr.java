@@ -22,90 +22,90 @@ import java.util.Arrays;
 
 public class BinaryExpr extends Expr {
 
-  private Expr lhs;
-  private Expr rhs;
-  private BinOp op;
+    private Expr lhs;
+    private Expr rhs;
+    private BinOp op;
 
-  /**
-   * Makes a binary expression from the given expressions and operator.
-   *
-   * @param lhs Left hand sub-expression
-   * @param rhs Right had sub-expression
-   * @param op Operator
-   */
-  public BinaryExpr(Expr lhs, Expr rhs, BinOp op) {
-    assert lhs != null;
-    assert rhs != null;
-    if (op != BinOp.COMMA) {
-      checkNoTopLevelCommaExpression(Arrays.asList(lhs, rhs));
+    /**
+     * Makes a binary expression from the given expressions and operator.
+     *
+     * @param lhs Left hand sub-expression
+     * @param rhs Right had sub-expression
+     * @param op  Operator
+     */
+    public BinaryExpr(Expr lhs, Expr rhs, BinOp op) {
+        assert lhs != null;
+        assert rhs != null;
+        if (op != BinOp.COMMA) {
+            checkNoTopLevelCommaExpression(Arrays.asList(lhs, rhs));
+        }
+        this.lhs = lhs;
+        this.rhs = rhs;
+        this.op = op;
     }
-    this.lhs = lhs;
-    this.rhs = rhs;
-    this.op = op;
-  }
 
-  public Expr getLhs() {
-    return lhs;
-  }
-
-  public void setLhs(Expr lhs) {
-    this.lhs = lhs;
-  }
-
-  public Expr getRhs() {
-    return rhs;
-  }
-
-  public void setRhs(Expr rhs) {
-    this.rhs = rhs;
-  }
-
-  public BinOp getOp() {
-    return op;
-  }
-
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitBinaryExpr(this);
-  }
-
-  @Override
-  public BinaryExpr clone() {
-    return new BinaryExpr(lhs.clone(), rhs.clone(), op);
-  }
-
-  @Override
-  public boolean hasChild(IAstNode candidateChild) {
-    return lhs == candidateChild || rhs == candidateChild;
-  }
-
-  @Override
-  public Expr getChild(int index) {
-    if (index == 0) {
-      return getLhs();
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitBinaryExpr(this);
     }
-    if (index == 1) {
-      return getRhs();
-    }
-    throw new IndexOutOfBoundsException("Index for BinaryExpr must be 0 or 1");
-  }
 
-  @Override
-  public void setChild(int index, Expr expr) {
-    if (index == 0) {
-      lhs = expr;
-      return;
+    @Override
+    public BinaryExpr clone() {
+        return new BinaryExpr(lhs.clone(), rhs.clone(), op);
     }
-    if (index == 1) {
-      rhs = expr;
-      return;
-    }
-    throw new IndexOutOfBoundsException("Index for BinaryExpr must be 0 or 1");
-  }
 
-  @Override
-  public int getNumChildren() {
-    return 2;
-  }
+    @Override
+    public Expr getChild(int index) {
+        if (index == 0) {
+            return getLhs();
+        }
+        if (index == 1) {
+            return getRhs();
+        }
+        throw new IndexOutOfBoundsException("Index for BinaryExpr must be 0 or 1");
+    }
+
+    public Expr getLhs() {
+        return lhs;
+    }
+
+    public void setLhs(Expr lhs) {
+        this.lhs = lhs;
+    }
+
+    @Override
+    public int getNumChildren() {
+        return 2;
+    }
+
+    public BinOp getOp() {
+        return op;
+    }
+
+    public Expr getRhs() {
+        return rhs;
+    }
+
+    public void setRhs(Expr rhs) {
+        this.rhs = rhs;
+    }
+
+    @Override
+    public boolean hasChild(IAstNode candidateChild) {
+        return lhs == candidateChild || rhs == candidateChild;
+    }
+
+    @Override
+    public void setChild(int index, Expr expr) {
+        if (index == 0) {
+            lhs = expr;
+            return;
+        }
+        if (index == 1) {
+            rhs = expr;
+            return;
+        }
+        throw new IndexOutOfBoundsException("Index for BinaryExpr must be 0 or 1");
+    }
 
 }

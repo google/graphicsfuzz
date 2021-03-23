@@ -29,34 +29,34 @@ import java.util.function.Supplier;
 
 public class CheckAstFeaturesFileJudge implements IFileJudge {
 
-  private final List<Supplier<CheckAstFeatureVisitor>> visitorSuppliers;
-  private final ShaderKind shaderKind;
-  private final ShaderJobFileOperations fileOps;
+    private final List<Supplier<CheckAstFeatureVisitor>> visitorSuppliers;
+    private final ShaderKind shaderKind;
+    private final ShaderJobFileOperations fileOps;
 
-  public CheckAstFeaturesFileJudge(
-      List<Supplier<CheckAstFeatureVisitor>> visitorSuppliers,
-      ShaderKind shaderKind,
-      ShaderJobFileOperations fileOps) {
-    this.visitorSuppliers = visitorSuppliers;
-    this.shaderKind = shaderKind;
-    this.fileOps = fileOps;
-  }
-
-  @Override
-  public boolean isInteresting(
-      File shaderJobFile,
-      File shaderResultFileOutput) {
-    try {
-      ShaderJob shaderJob = fileOps.readShaderJobFile(shaderJobFile);
-      // This judge harks from fragment shader-centric days and is only intended for use
-      // on single-shader shader jobs.
-      assert shaderJob.getShaders().size() == 1;
-      final TranslationUnit tu = shaderJob.getShaders().get(0);
-      return visitorSuppliers.stream().allMatch(item -> item.get().check(tu));
-    } catch (IOException | ParseTimeoutException | InterruptedException
-        | GlslParserException exception) {
-      throw new RuntimeException(exception);
+    public CheckAstFeaturesFileJudge(
+            List<Supplier<CheckAstFeatureVisitor>> visitorSuppliers,
+            ShaderKind shaderKind,
+            ShaderJobFileOperations fileOps) {
+        this.visitorSuppliers = visitorSuppliers;
+        this.shaderKind = shaderKind;
+        this.fileOps = fileOps;
     }
-  }
+
+    @Override
+    public boolean isInteresting(
+            File shaderJobFile,
+            File shaderResultFileOutput) {
+        try {
+            ShaderJob shaderJob = fileOps.readShaderJobFile(shaderJobFile);
+            // This judge harks from fragment shader-centric days and is only intended for use
+            // on single-shader shader jobs.
+            assert shaderJob.getShaders().size() == 1;
+            final TranslationUnit tu = shaderJob.getShaders().get(0);
+            return visitorSuppliers.stream().allMatch(item -> item.get().check(tu));
+        } catch (IOException | ParseTimeoutException | InterruptedException
+                | GlslParserException exception) {
+            throw new RuntimeException(exception);
+        }
+    }
 
 }

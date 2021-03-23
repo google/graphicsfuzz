@@ -32,57 +32,57 @@ import net.sourceforge.argparse4j.inf.Namespace;
 
 class PrettyPrint {
 
-  private static Namespace parse(String[] args) throws ArgumentParserException {
-    ArgumentParser parser = ArgumentParsers.newArgumentParser("PrettyPrint")
-        .defaultHelp(true)
-        .description("Pretty print a shader.");
+    public static void main(String[] args) throws IOException, InterruptedException {
 
-    // Required arguments
-    parser.addArgument("shader")
-        .help("Path of shader to be pretty-printed.")
-        .type(File.class);
+        try {
+            Namespace ns = parse(args);
+            long startTime = System.currentTimeMillis();
+            TranslationUnit tu = ParseHelper.parse(new File(ns.getString("shader")));
+            long endTime = System.currentTimeMillis();
 
-    parser.addArgument("output")
-        .help("Target file name.")
-        .type(String.class);
+            if (ns.getBoolean("add_braces")) {
+                tu = AddBraces.transform(tu);
+            }
 
-    parser.addArgument("--add-braces")
-        .help("Add braces even for single-statement code blocks")
-        .action(Arguments.storeTrue());
+            prettyPrintShader(ns, tu);
 
-    return parser.parseArgs(args);
+            System.err.println("Time for parsing: " + (endTime - startTime));
+        } catch (Throwable exception) {
+            exception.printStackTrace();
+            System.exit(1);
+        }
 
-  }
-
-  public static void main(String[] args) throws IOException, InterruptedException {
-
-    try {
-      Namespace ns = parse(args);
-      long startTime = System.currentTimeMillis();
-      TranslationUnit tu = ParseHelper.parse(new File(ns.getString("shader")));
-      long endTime = System.currentTimeMillis();
-
-      if (ns.getBoolean("add_braces")) {
-        tu = AddBraces.transform(tu);
-      }
-
-      prettyPrintShader(ns, tu);
-
-      System.err.println("Time for parsing: " + (endTime - startTime));
-    } catch (Throwable exception) {
-      exception.printStackTrace();
-      System.exit(1);
     }
 
-  }
+    private static Namespace parse(String[] args) throws ArgumentParserException {
+        ArgumentParser parser = ArgumentParsers.newArgumentParser("PrettyPrint")
+                .defaultHelp(true)
+                .description("Pretty print a shader.");
 
-  private static void prettyPrintShader(Namespace ns, TranslationUnit tu)
-      throws FileNotFoundException {
-    try (PrintStream stream =
-             new PrintStream(new FileOutputStream(new File(ns.getString("output"))))) {
-      PrettyPrinterVisitor ppv = new PrettyPrinterVisitor(stream);
-      ppv.visit(tu);
+        // Required arguments
+        parser.addArgument("shader")
+                .help("Path of shader to be pretty-printed.")
+                .type(File.class);
+
+        parser.addArgument("output")
+                .help("Target file name.")
+                .type(String.class);
+
+        parser.addArgument("--add-braces")
+                .help("Add braces even for single-statement code blocks")
+                .action(Arguments.storeTrue());
+
+        return parser.parseArgs(args);
+
     }
-  }
+
+    private static void prettyPrintShader(Namespace ns, TranslationUnit tu)
+            throws FileNotFoundException {
+        try (PrintStream stream =
+                     new PrintStream(new FileOutputStream(new File(ns.getString("output"))))) {
+            PrettyPrinterVisitor ppv = new PrettyPrinterVisitor(stream);
+            ppv.visit(tu);
+        }
+    }
 
 }

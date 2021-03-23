@@ -25,59 +25,59 @@ import java.util.stream.Collectors;
 
 public class ArrayConstructorExpr extends Expr {
 
-  private final ArrayType arrayType;
-  private final List<Expr> args;
+    private final ArrayType arrayType;
+    private final List<Expr> args;
 
-  public ArrayConstructorExpr(ArrayType arrayType, List<Expr> args) {
-    this.arrayType = arrayType;
-    this.args = args;
-  }
-
-  public ArrayType getArrayType() {
-    return arrayType;
-  }
-
-  public List<Expr> getArgs() {
-    return Collections.unmodifiableList(args);
-  }
-
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitArrayConstructorExpr(this);
-  }
-
-  @Override
-  public ArrayConstructorExpr clone() {
-    List<Expr> newArgs = args.stream().map(Expr::clone).collect(Collectors.toList());
-    return new ArrayConstructorExpr(arrayType.clone(), newArgs);
-  }
-
-  @Override
-  public boolean hasChild(IAstNode candidateChild) {
-    return args.contains(candidateChild);
-  }
-
-  @Override
-  public Expr getChild(int index) {
-    checkBounds(index);
-    return args.get(index);
-  }
-
-  @Override
-  public void setChild(int index, Expr expr) {
-    checkBounds(index);
-    args.set(index, expr);
-  }
-
-  @Override
-  public int getNumChildren() {
-    return args.size();
-  }
-
-  private void checkBounds(int index) {
-    if (!(index >= 0 && index < getNumChildren())) {
-      throw new IndexOutOfBoundsException("No child at index " + index);
+    public ArrayConstructorExpr(ArrayType arrayType, List<Expr> args) {
+        this.arrayType = arrayType;
+        this.args = args;
     }
-  }
+
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitArrayConstructorExpr(this);
+    }
+
+    @Override
+    public ArrayConstructorExpr clone() {
+        List<Expr> newArgs = args.stream().map(Expr::clone).collect(Collectors.toList());
+        return new ArrayConstructorExpr(arrayType.clone(), newArgs);
+    }
+
+    public List<Expr> getArgs() {
+        return Collections.unmodifiableList(args);
+    }
+
+    public ArrayType getArrayType() {
+        return arrayType;
+    }
+
+    @Override
+    public Expr getChild(int index) {
+        checkBounds(index);
+        return args.get(index);
+    }
+
+    @Override
+    public int getNumChildren() {
+        return args.size();
+    }
+
+    @Override
+    public boolean hasChild(IAstNode candidateChild) {
+        return args.contains(candidateChild);
+    }
+
+    @Override
+    public void setChild(int index, Expr expr) {
+        checkBounds(index);
+        args.set(index, expr);
+    }
+
+    private void checkBounds(int index) {
+        if (!(index >= 0 && index < getNumChildren())) {
+            throw new IndexOutOfBoundsException("No child at index " + index);
+        }
+    }
 
 }

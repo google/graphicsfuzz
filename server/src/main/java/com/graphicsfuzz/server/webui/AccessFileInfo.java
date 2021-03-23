@@ -30,63 +30,63 @@ import java.util.HashMap;
 
 public class AccessFileInfo {
 
-  Gson gson;
+    Gson gson;
 
-  HashMap<String, JsonObject> workerInfoMap;
-  HashMap<String, Long> workerInfoLastModified;
+    HashMap<String, JsonObject> workerInfoMap;
+    HashMap<String, Long> workerInfoLastModified;
 
-  HashMap<String, JsonObject> resultInfoMap;
-  HashMap<String, Long> resultInfoLastModified;
+    HashMap<String, JsonObject> resultInfoMap;
+    HashMap<String, Long> resultInfoLastModified;
 
-  public AccessFileInfo() {
-    gson = new Gson();
-    workerInfoMap = new HashMap<String, JsonObject>();
-    workerInfoLastModified = new HashMap<String, Long>();
-    resultInfoMap = new HashMap<String, JsonObject>();
-    resultInfoLastModified = new HashMap<String, Long>();
-  }
-
-  // Worker info ==============================================================
-
-  public JsonObject getWorkerInfo(String workerName) throws  FileNotFoundException {
-    File workerInfoFile = new File(WebUiConstants.WORKER_DIR
-        + "/" + workerName
-        + "/" + WebUiConstants.WORKER_INFO_FILE);
-    if (workerInfoMap.containsKey(workerName)
-        && workerInfoFile.lastModified() == workerInfoLastModified.get(workerName).longValue()) {
-      return workerInfoMap.get(workerName);
-    } else {
-      JsonObject workerInfo = readWorkerInfoFromFile(workerInfoFile);
-      workerInfoMap.put(workerName, workerInfo);
-      workerInfoLastModified.put(workerName, new Long(workerInfoFile.lastModified()));
-      return workerInfo;
+    public AccessFileInfo() {
+        gson = new Gson();
+        workerInfoMap = new HashMap<String, JsonObject>();
+        workerInfoLastModified = new HashMap<String, Long>();
+        resultInfoMap = new HashMap<String, JsonObject>();
+        resultInfoLastModified = new HashMap<String, Long>();
     }
-  }
 
-  private JsonObject readWorkerInfoFromFile(File workerInfoFile) throws FileNotFoundException {
-    JsonObject json = gson
-        .fromJson(new FileReader(workerInfoFile), JsonObject.class)
-        .getAsJsonObject("platform_info");
-    return json;
-  }
+    // Worker info ==============================================================
 
-  // Result info ==============================================================
-
-  public JsonObject getResultInfo(File resultInfoFile) throws FileNotFoundException {
-    String resultPath = resultInfoFile.getPath();
-    if (resultInfoMap.containsKey(resultPath)
-        && resultInfoFile.lastModified() == resultInfoLastModified.get(resultPath).longValue()) {
-      return resultInfoMap.get(resultPath);
-    } else {
-      JsonObject resultInfo = readResultInfoFromFile(resultInfoFile);
-      resultInfoMap.put(resultPath, resultInfo);
-      resultInfoLastModified.put(resultPath, new Long(resultInfoFile.lastModified()));
-      return resultInfo;
+    public JsonObject getResultInfo(File resultInfoFile) throws FileNotFoundException {
+        String resultPath = resultInfoFile.getPath();
+        if (resultInfoMap.containsKey(resultPath)
+                && resultInfoFile.lastModified() == resultInfoLastModified.get(resultPath).longValue()) {
+            return resultInfoMap.get(resultPath);
+        } else {
+            JsonObject resultInfo = readResultInfoFromFile(resultInfoFile);
+            resultInfoMap.put(resultPath, resultInfo);
+            resultInfoLastModified.put(resultPath, new Long(resultInfoFile.lastModified()));
+            return resultInfo;
+        }
     }
-  }
 
-  private JsonObject readResultInfoFromFile(File resultInfoFile) throws FileNotFoundException {
-    return gson.fromJson(new FileReader(resultInfoFile), JsonObject.class);
-  }
+    public JsonObject getWorkerInfo(String workerName) throws FileNotFoundException {
+        File workerInfoFile = new File(WebUiConstants.WORKER_DIR
+                + "/" + workerName
+                + "/" + WebUiConstants.WORKER_INFO_FILE);
+        if (workerInfoMap.containsKey(workerName)
+                && workerInfoFile.lastModified() == workerInfoLastModified.get(workerName).longValue()) {
+            return workerInfoMap.get(workerName);
+        } else {
+            JsonObject workerInfo = readWorkerInfoFromFile(workerInfoFile);
+            workerInfoMap.put(workerName, workerInfo);
+            workerInfoLastModified.put(workerName, new Long(workerInfoFile.lastModified()));
+            return workerInfo;
+        }
+    }
+
+    // Result info ==============================================================
+
+    private JsonObject readResultInfoFromFile(File resultInfoFile) throws FileNotFoundException {
+        return gson.fromJson(new FileReader(resultInfoFile), JsonObject.class);
+    }
+
+    private JsonObject readWorkerInfoFromFile(File workerInfoFile) throws FileNotFoundException {
+        JsonObject json = gson
+                .fromJson(new FileReader(workerInfoFile), JsonObject.class)
+                .getAsJsonObject("platform_info");
+        return json;
+    }
 
 }

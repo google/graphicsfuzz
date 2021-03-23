@@ -24,38 +24,38 @@ import java.util.Optional;
 
 public class ReductionFilesHelper {
 
-  static File getReductionDir(String worker, String shaderSet, String variant) {
-    return new File(WebUiConstants.WORKER_DIR + "/" + worker + "/" + shaderSet
-        + "/reductions/" + variant);
-  }
+    static Optional<File> getLatestReductionImage(
+            String worker,
+            String shaderset,
+            String shader,
+            ShaderJobFileOperations fileOps) throws IOException {
 
-  static Optional<File> getLatestReductionImage(
-      String worker,
-      String shaderset,
-      String shader,
-      ShaderJobFileOperations fileOps) throws IOException {
+        final File reductionDir = getReductionDir(worker, shaderset, shader);
+        final Optional<Integer> latestSuccessfulReductionStep =
+                ReductionProgressHelper.getLatestReductionStepSuccess(
+                        reductionDir,
+                        "variant",
+                        fileOps);
 
-    final File reductionDir = getReductionDir(worker, shaderset, shader);
-    final Optional<Integer> latestSuccessfulReductionStep =
-          ReductionProgressHelper.getLatestReductionStepSuccess(
-              reductionDir,
-              "variant",
-              fileOps);
+        if (!latestSuccessfulReductionStep.isPresent()) {
+            return Optional.empty();
+        }
+        final File simplifiedImage = new File(reductionDir, shader + "_reduced_"
+                + latestSuccessfulReductionStep.get() + "_simplified.png");
+        if (simplifiedImage.exists()) {
+            return Optional.of(simplifiedImage);
+        }
+        final File latestImage = new File(reductionDir, shader + "_reduced_"
+                + latestSuccessfulReductionStep.get() + "_success.png");
+        if (!latestImage.exists()) {
+            return Optional.empty();
+        }
+        return Optional.of(latestImage);
+    }
 
-    if (!latestSuccessfulReductionStep.isPresent()) {
-      return Optional.empty();
+    static File getReductionDir(String worker, String shaderSet, String variant) {
+        return new File(WebUiConstants.WORKER_DIR + "/" + worker + "/" + shaderSet
+                + "/reductions/" + variant);
     }
-    final File simplifiedImage = new File(reductionDir, shader + "_reduced_"
-          + latestSuccessfulReductionStep.get() + "_simplified.png");
-    if (simplifiedImage.exists()) {
-      return Optional.of(simplifiedImage);
-    }
-    final File latestImage = new File(reductionDir, shader + "_reduced_"
-          + latestSuccessfulReductionStep.get() + "_success.png");
-    if (!latestImage.exists()) {
-      return Optional.empty();
-    }
-    return Optional.of(latestImage);
-  }
 
 }

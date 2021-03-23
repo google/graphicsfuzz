@@ -22,35 +22,39 @@ import com.graphicsfuzz.common.typing.Scope;
 
 public abstract class Type implements IAstNode {
 
-  @Override
-  public abstract Type clone();
+    @Override
+    public abstract Type clone();
 
-  /**
-   * Determines whether a canonical constant exists for the type.
-   * @param scope Used to provide details of struct types.
-   * @return true if and only if the type has a canonical constant.
-   */
-  public abstract boolean hasCanonicalConstant(Scope scope);
+    /**
+     * Requires that hasCanonicalConstant(scope) holds.  Returns the canonical constant for this type.
+     *
+     * @param scope Used to provide details of struct types.
+     * @return A constant expression of this type.
+     */
+    public abstract Expr getCanonicalConstant(Scope scope);
 
-  /**
-   * Requires that hasCanonicalConstant(scope) holds.  Returns the canonical constant for this type.
-   * @param scope Used to provide details of struct types.
-   * @return A constant expression of this type.
-   */
-  public abstract Expr getCanonicalConstant(Scope scope);
+    /**
+     * Yields an unqualified version of the type.
+     *
+     * @return A type identical to the original type, but with no qualifiers (which will be the
+     * original type if it was already unqualified.
+     */
+    public abstract Type getWithoutQualifiers();
 
-  /**
-   * Yields an unqualified version of the type.
-   * @return A type identical to the original type, but with no qualifiers (which will be the
-   *         original type if it was already unqualified.
-   */
-  public abstract Type getWithoutQualifiers();
+    /**
+     * Determines whether a canonical constant exists for the type.
+     *
+     * @param scope Used to provide details of struct types.
+     * @return true if and only if the type has a canonical constant.
+     */
+    public abstract boolean hasCanonicalConstant(Scope scope);
 
-  /**
-   * Returns true if and only if this is a qualified type that has the given qualifier.
-   * @param qualifier A qualifier to be tested for.
-   * @return true if and only if the type has the given qualifier.
-   */
-  public abstract boolean hasQualifier(TypeQualifier qualifier);
+    /**
+     * Returns true if and only if this is a qualified type that has the given qualifier.
+     *
+     * @param qualifier A qualifier to be tested for.
+     * @return true if and only if the type has the given qualifier.
+     */
+    public abstract boolean hasQualifier(TypeQualifier qualifier);
 
 }

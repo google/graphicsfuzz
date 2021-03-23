@@ -26,42 +26,42 @@ import org.slf4j.LoggerFactory;
 
 public class MetricImageFileComparator implements IImageFileComparator {
 
-  private static final Logger LOGGER = LoggerFactory.getLogger(MetricImageFileComparator.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MetricImageFileComparator.class);
 
-  private final double threshold;
-  private final boolean above;
-  private final ImageComparisonMetric metric;
-  private final ShaderJobFileOperations fileOps;
+    private final double threshold;
+    private final boolean above;
+    private final ImageComparisonMetric metric;
+    private final ShaderJobFileOperations fileOps;
 
-  public MetricImageFileComparator(
-      double threshold,
-      boolean above,
-      ImageComparisonMetric metric,
-      ShaderJobFileOperations fileOps) {
-    this.threshold = threshold;
-    this.above = above;
-    this.metric = metric;
-    this.fileOps = fileOps;
-  }
-
-  @Override
-  public boolean areFilesInteresting(File shaderResultFileReference, File shaderResultFileVariant)
-      throws IOException {
-    try {
-
-      return fileOps.areImagesOfShaderResultsInteresting(
-          shaderResultFileReference,
-          shaderResultFileVariant,
-          metric,
-          threshold,
-          above);
-
-    } catch (FileNotFoundException exception) {
-      LOGGER.error(
-          "Exception occurred during image comparison using metric {}. {}",
-          metric.toString(),
-          exception);
-      throw new RuntimeException(exception);
+    public MetricImageFileComparator(
+            double threshold,
+            boolean above,
+            ImageComparisonMetric metric,
+            ShaderJobFileOperations fileOps) {
+        this.threshold = threshold;
+        this.above = above;
+        this.metric = metric;
+        this.fileOps = fileOps;
     }
-  }
+
+    @Override
+    public boolean areFilesInteresting(File shaderResultFileReference, File shaderResultFileVariant)
+            throws IOException {
+        try {
+
+            return fileOps.areImagesOfShaderResultsInteresting(
+                    shaderResultFileReference,
+                    shaderResultFileVariant,
+                    metric,
+                    threshold,
+                    above);
+
+        } catch (FileNotFoundException exception) {
+            LOGGER.error(
+                    "Exception occurred during image comparison using metric {}. {}",
+                    metric.toString(),
+                    exception);
+            throw new RuntimeException(exception);
+        }
+    }
 }

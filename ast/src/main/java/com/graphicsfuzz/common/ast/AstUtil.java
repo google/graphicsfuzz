@@ -25,55 +25,55 @@ import java.util.stream.Stream;
 
 public final class AstUtil {
 
-  private AstUtil() {
-    // Utility class should not be instantiable.
-  }
+    private AstUtil() {
+        // Utility class should not be instantiable.
+    }
 
-  /**
-   * Gets prototypes for all the functions declared, either via full declarations or
-   * just prototypes, in the given shader.
-   *
-   * @param shader A shader from which function prototypes should be extracted
-   * @return set of prototypes for all functions declared fully or via prototypes in the shader
-   */
-  public static List<FunctionPrototype> getFunctionPrototypesFromShader(TranslationUnit shader) {
-    return getPrototypesForAllFunctions(shader.getTopLevelDeclarations());
-  }
+    /**
+     * Gets prototypes for all the functions declared, either via full declarations or
+     * just prototypes, in the given shader.
+     *
+     * @param shader A shader from which function prototypes should be extracted
+     * @return set of prototypes for all functions declared fully or via prototypes in the shader
+     */
+    public static List<FunctionPrototype> getFunctionPrototypesFromShader(TranslationUnit shader) {
+        return getPrototypesForAllFunctions(shader.getTopLevelDeclarations());
+    }
 
-  /**
-   * Gets prototypes for all the functions declarations or prototypes in the given list of
-   * declarations.
-   *
-   * @param decls A list of declarations
-   * @return set of prototypes for all functions declared fully or via prototypes in the declaration
-   *         list
-   */
-  public static List<FunctionPrototype> getPrototypesForAllFunctions(List<Declaration> decls) {
-    // Grab all prototypes associated with function definitions
-    List<FunctionPrototype> result =
-        getFunctionDefinitions(decls).map(x -> x.getPrototype()).collect(Collectors.toList());
-    // Add any additional prototypes
-    // TODO: we only check whether a function definition with a matching name is present;
-    //       we should strengthen this to consider instead an exact prototype match.
-    result.addAll(
-        getFunctionPrototypes(decls).filter(
-            x -> !getFunctionNames(result)
-                .contains(x.getName())).collect(Collectors.toList()));
-    return result;
-  }
+    /**
+     * Gets prototypes for all the functions declarations or prototypes in the given list of
+     * declarations.
+     *
+     * @param decls A list of declarations
+     * @return set of prototypes for all functions declared fully or via prototypes in the declaration
+     * list
+     */
+    public static List<FunctionPrototype> getPrototypesForAllFunctions(List<Declaration> decls) {
+        // Grab all prototypes associated with function definitions
+        List<FunctionPrototype> result =
+                getFunctionDefinitions(decls).map(x -> x.getPrototype()).collect(Collectors.toList());
+        // Add any additional prototypes
+        // TODO: we only check whether a function definition with a matching name is present;
+        //       we should strengthen this to consider instead an exact prototype match.
+        result.addAll(
+                getFunctionPrototypes(decls).filter(
+                        x -> !getFunctionNames(result)
+                                .contains(x.getName())).collect(Collectors.toList()));
+        return result;
+    }
 
-  private static Stream<FunctionDefinition> getFunctionDefinitions(List<Declaration> decls) {
-    return decls.stream().filter(x -> x instanceof FunctionDefinition)
-        .map(x -> ((FunctionDefinition) x));
-  }
+    private static Stream<FunctionDefinition> getFunctionDefinitions(List<Declaration> decls) {
+        return decls.stream().filter(x -> x instanceof FunctionDefinition)
+                .map(x -> ((FunctionDefinition) x));
+    }
 
-  private static Stream<FunctionPrototype> getFunctionPrototypes(List<Declaration> decls) {
-    return decls.stream().filter(x -> x instanceof FunctionPrototype)
-        .map(x -> (FunctionPrototype) x);
-  }
+    private static List<String> getFunctionNames(List<FunctionPrototype> prototypes) {
+        return prototypes.stream().map(y -> y.getName()).collect(Collectors.toList());
+    }
 
-  private static List<String> getFunctionNames(List<FunctionPrototype> prototypes) {
-    return prototypes.stream().map(y -> y.getName()).collect(Collectors.toList());
-  }
+    private static Stream<FunctionPrototype> getFunctionPrototypes(List<Declaration> decls) {
+        return decls.stream().filter(x -> x instanceof FunctionPrototype)
+                .map(x -> (FunctionPrototype) x);
+    }
 
 }

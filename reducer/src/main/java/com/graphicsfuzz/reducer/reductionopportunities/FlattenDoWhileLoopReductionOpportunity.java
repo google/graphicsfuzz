@@ -26,17 +26,17 @@ import java.util.List;
 
 public class FlattenDoWhileLoopReductionOpportunity extends FlattenLoopReductionOpportunity {
 
-  public FlattenDoWhileLoopReductionOpportunity(IAstNode parent, DoStmt doStmt,
-                                                VisitationDepth depth) {
-    super(parent, doStmt, depth);
-  }
+    public FlattenDoWhileLoopReductionOpportunity(IAstNode parent, DoStmt doStmt,
+                                                  VisitationDepth depth) {
+        super(parent, doStmt, depth);
+    }
 
-  @Override
-  void applyReductionImpl() {
-    final List<Stmt> newStmts = new ArrayList<>();
-    addLoopBody(newStmts);
-    newStmts.add(new ExprStmt(getLoopStmt().getCondition()));
-    doReplacement(newStmts);
-  }
+    @Override
+    void applyReductionImpl() {
+        final List<Stmt> newStmts = new ArrayList<>();
+        addLoopBody(newStmts);
+        newStmts.add(new ExprStmt(getLoopStmt().getCondition()));
+        doReplacement(newStmts);
+    }
 
 }

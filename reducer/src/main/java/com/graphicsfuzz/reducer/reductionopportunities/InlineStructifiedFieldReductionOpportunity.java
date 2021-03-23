@@ -40,107 +40,107 @@ import java.util.Map;
  */
 public class InlineStructifiedFieldReductionOpportunity extends AbstractReductionOpportunity {
 
-  private final StructDefinitionType outerStruct;
-  private final StructDefinitionType innerStruct;
-  private final String fieldToInline;
-  private final TranslationUnit tu;
+    private final StructDefinitionType outerStruct;
+    private final StructDefinitionType innerStruct;
+    private final String fieldToInline;
+    private final TranslationUnit tu;
 
-  public InlineStructifiedFieldReductionOpportunity(StructDefinitionType outerStruct,
-                                                    StructDefinitionType innerStruct,
-                                                    String fieldToInline, TranslationUnit tu,
-                                                    VisitationDepth depth) {
-    super(depth);
-    this.outerStruct = outerStruct;
-    this.innerStruct = innerStruct;
-    this.fieldToInline = fieldToInline;
-    this.tu = tu;
-    assert outerStruct != innerStruct;
-    assert fieldToInline.startsWith(Constants.STRUCTIFICATION_FIELD_PREFIX);
-    assert outerStruct.getFieldType(fieldToInline).getWithoutQualifiers()
-        instanceof StructNameType : "Can only inline a struct field of a struct";
-  }
-
-  @Override
-  public void applyReductionImpl() {
-
-    final Typer typer = new Typer(tu);
-
-    final int indexOfInlinedField = outerStruct.getFieldIndex(fieldToInline);
-    outerStruct.removeField(fieldToInline);
-
-    final Map<String, String> oldToNewFieldNames = new HashMap<>();
-
-    for (int i = 0; i < innerStruct.getNumFields(); i++) {
-      final String oldFieldName = innerStruct.getFieldName(i);
-      final String newFieldName = oldFieldName.startsWith(Constants.STRUCTIFICATION_FIELD_PREFIX)
-          ? fieldToInline + oldFieldName
-          : oldFieldName;
-      oldToNewFieldNames.put(oldFieldName, newFieldName);
-      outerStruct.insertField(indexOfInlinedField + i, newFieldName, innerStruct.getFieldType(i));
+    public InlineStructifiedFieldReductionOpportunity(StructDefinitionType outerStruct,
+                                                      StructDefinitionType innerStruct,
+                                                      String fieldToInline, TranslationUnit tu,
+                                                      VisitationDepth depth) {
+        super(depth);
+        this.outerStruct = outerStruct;
+        this.innerStruct = innerStruct;
+        this.fieldToInline = fieldToInline;
+        this.tu = tu;
+        assert outerStruct != innerStruct;
+        assert fieldToInline.startsWith(Constants.STRUCTIFICATION_FIELD_PREFIX);
+        assert outerStruct.getFieldType(fieldToInline).getWithoutQualifiers()
+                instanceof StructNameType : "Can only inline a struct field of a struct";
     }
 
-    // Now need to replace all references to the old fields, and patch up all type constructors
-    new StandardVisitor() {
+    @Override
+    public void applyReductionImpl() {
 
-      @Override
-      public void visitTypeConstructorExpr(TypeConstructorExpr typeConstructorExpr) {
-        super.visitTypeConstructorExpr(typeConstructorExpr);
-        if (typeConstructorExpr.getTypename().equals(getOuterStructName())) {
-          TypeConstructorExpr oldArg =
-              (TypeConstructorExpr) typeConstructorExpr.removeArg(indexOfInlinedField);
-          for (int i = 0; i < oldArg.getNumArgs(); i++) {
-            typeConstructorExpr.insertArg(indexOfInlinedField + i, oldArg.getArg(i));
-          }
-        }
-      }
+        final Typer typer = new Typer(tu);
 
-      @Override
-      public void visitMemberLookupExpr(MemberLookupExpr memberLookupExpr) {
-        super.visitMemberLookupExpr(memberLookupExpr);
-        final Type recordedType = typer.lookupType(memberLookupExpr.getStructure());
-        if (recordedType == null) {
-          return;
-        }
-        if (!(recordedType
-            .getWithoutQualifiers() instanceof StructNameType)) {
-          // The structure might be a vector or matrix, or we might not have a type.
-          return;
-        }
-        final StructNameType structType = (StructNameType) recordedType
-            .getWithoutQualifiers();
-        if (!structType.equals(innerStruct.getStructNameType())) {
-          return;
-        }
-        if (!(memberLookupExpr.getStructure() instanceof MemberLookupExpr)) {
-          return;
-        }
-        MemberLookupExpr outerMemberLookupExpr = (MemberLookupExpr) memberLookupExpr.getStructure();
-        if (!typer.lookupType(outerMemberLookupExpr.getStructure())
-            .getWithoutQualifiers()
-            .equals(outerStruct.getStructNameType())) {
-          return;
-        }
-        if (!(outerMemberLookupExpr.getMember().equals(fieldToInline))) {
-          return;
+        final int indexOfInlinedField = outerStruct.getFieldIndex(fieldToInline);
+        outerStruct.removeField(fieldToInline);
+
+        final Map<String, String> oldToNewFieldNames = new HashMap<>();
+
+        for (int i = 0; i < innerStruct.getNumFields(); i++) {
+            final String oldFieldName = innerStruct.getFieldName(i);
+            final String newFieldName = oldFieldName.startsWith(Constants.STRUCTIFICATION_FIELD_PREFIX)
+                    ? fieldToInline + oldFieldName
+                    : oldFieldName;
+            oldToNewFieldNames.put(oldFieldName, newFieldName);
+            outerStruct.insertField(indexOfInlinedField + i, newFieldName, innerStruct.getFieldType(i));
         }
 
-        memberLookupExpr.setStructure(outerMemberLookupExpr.getStructure());
-        memberLookupExpr.setMember(oldToNewFieldNames.get(memberLookupExpr.getMember()));
-      }
+        // Now need to replace all references to the old fields, and patch up all type constructors
+        new StandardVisitor() {
 
-    }.visit(tu);
-  }
+            @Override
+            public void visitMemberLookupExpr(MemberLookupExpr memberLookupExpr) {
+                super.visitMemberLookupExpr(memberLookupExpr);
+                final Type recordedType = typer.lookupType(memberLookupExpr.getStructure());
+                if (recordedType == null) {
+                    return;
+                }
+                if (!(recordedType
+                        .getWithoutQualifiers() instanceof StructNameType)) {
+                    // The structure might be a vector or matrix, or we might not have a type.
+                    return;
+                }
+                final StructNameType structType = (StructNameType) recordedType
+                        .getWithoutQualifiers();
+                if (!structType.equals(innerStruct.getStructNameType())) {
+                    return;
+                }
+                if (!(memberLookupExpr.getStructure() instanceof MemberLookupExpr)) {
+                    return;
+                }
+                MemberLookupExpr outerMemberLookupExpr = (MemberLookupExpr) memberLookupExpr.getStructure();
+                if (!typer.lookupType(outerMemberLookupExpr.getStructure())
+                        .getWithoutQualifiers()
+                        .equals(outerStruct.getStructNameType())) {
+                    return;
+                }
+                if (!(outerMemberLookupExpr.getMember().equals(fieldToInline))) {
+                    return;
+                }
 
-  @Override
-  public boolean preconditionHolds() {
-    if (!outerStruct.hasField(fieldToInline)) {
-      // The field has been reduced away.
-      return false;
+                memberLookupExpr.setStructure(outerMemberLookupExpr.getStructure());
+                memberLookupExpr.setMember(oldToNewFieldNames.get(memberLookupExpr.getMember()));
+            }
+
+            @Override
+            public void visitTypeConstructorExpr(TypeConstructorExpr typeConstructorExpr) {
+                super.visitTypeConstructorExpr(typeConstructorExpr);
+                if (typeConstructorExpr.getTypename().equals(getOuterStructName())) {
+                    TypeConstructorExpr oldArg =
+                            (TypeConstructorExpr) typeConstructorExpr.removeArg(indexOfInlinedField);
+                    for (int i = 0; i < oldArg.getNumArgs(); i++) {
+                        typeConstructorExpr.insertArg(indexOfInlinedField + i, oldArg.getArg(i));
+                    }
+                }
+            }
+
+        }.visit(tu);
     }
-    return true;
-  }
 
-  public String getOuterStructName() {
-    return outerStruct.getStructNameType().getName();
-  }
+    public String getOuterStructName() {
+        return outerStruct.getStructNameType().getName();
+    }
+
+    @Override
+    public boolean preconditionHolds() {
+        if (!outerStruct.hasField(fieldToInline)) {
+            // The field has been reduced away.
+            return false;
+        }
+        return true;
+    }
 }

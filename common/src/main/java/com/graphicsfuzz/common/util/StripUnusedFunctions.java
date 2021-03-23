@@ -33,78 +33,77 @@ import java.util.Set;
  */
 public class StripUnusedFunctions extends StandardVisitor {
 
-  private Optional<FunctionDefinition> enclosingFunction;
-  private Map<String, Set<String>> callGraphEdges;
+    private Optional<FunctionDefinition> enclosingFunction;
+    private Map<String, Set<String>> callGraphEdges;
 
-  private StripUnusedFunctions() {
-    this.enclosingFunction = Optional.empty();
-    this.callGraphEdges = new HashMap<>();
-  }
+    private StripUnusedFunctions() {
+        this.enclosingFunction = Optional.empty();
+        this.callGraphEdges = new HashMap<>();
+    }
 
-  public static void strip(TranslationUnit tu) {
-    new StripUnusedFunctions().applyStrip(tu);
-  }
+    public static void strip(TranslationUnit tu) {
+        new StripUnusedFunctions().applyStrip(tu);
+    }
 
-  public void applyStrip(TranslationUnit tu) {
-    visit(tu);
-    Set<String> callableFromMain = computeCallable("main", new HashSet<>());
-    sweep(tu, callableFromMain);
-  }
+    public void applyStrip(TranslationUnit tu) {
+        visit(tu);
+        Set<String> callableFromMain = computeCallable("main", new HashSet<>());
+        sweep(tu, callableFromMain);
+    }
 
-  private void sweep(TranslationUnit tu, Set<String> callableFromMain) {
-    for (int i = tu.getTopLevelDeclarations().size() - 1; i >= 0; i--) {
-      Declaration decl = tu.getTopLevelDeclarations().get(i);
-      if (decl instanceof FunctionPrototype) {
-        if (!callableFromMain.contains(((FunctionPrototype) decl).getName())) {
-          tu.removeTopLevelDeclaration(i);
+    @Override
+    public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
+        super.visitFunctionCallExpr(functionCallExpr);
+        if (enclosingFunction.isPresent()) {
+            addCallGraphEdge(enclosingFunction.get().getPrototype().getName(),
+                    functionCallExpr.getCallee());
         }
-      }
-      if (decl instanceof FunctionDefinition) {
-        if (!callableFromMain.contains(((FunctionDefinition) decl).getPrototype().getName())) {
-          tu.removeTopLevelDeclaration(i);
+    }
+
+    @Override
+    public void visitFunctionDefinition(FunctionDefinition functionDefinition) {
+        assert !enclosingFunction.isPresent();
+        enclosingFunction = Optional.of(functionDefinition);
+        super.visitFunctionDefinition(functionDefinition);
+        enclosingFunction = Optional.empty();
+    }
+
+    private void addCallGraphEdge(String caller, String callee) {
+        if (!callGraphEdges.containsKey(caller)) {
+            callGraphEdges.put(caller, new HashSet<>());
         }
-      }
+        callGraphEdges.get(caller).add(callee);
     }
-  }
 
-  private Set<String> computeCallable(String functionName, Set<String> previouslySeen) {
-    if (previouslySeen.contains(functionName)) {
-      return new HashSet<>();
+    private Set<String> computeCallable(String functionName, Set<String> previouslySeen) {
+        if (previouslySeen.contains(functionName)) {
+            return new HashSet<>();
+        }
+        Set<String> result = new HashSet<>();
+        result.add(functionName);
+        previouslySeen.add(functionName);
+        if (callGraphEdges.containsKey(functionName)) {
+            for (String callee : callGraphEdges.get(functionName)) {
+                result.addAll(computeCallable(callee, previouslySeen));
+            }
+        }
+        return result;
     }
-    Set<String> result = new HashSet<>();
-    result.add(functionName);
-    previouslySeen.add(functionName);
-    if (callGraphEdges.containsKey(functionName)) {
-      for (String callee : callGraphEdges.get(functionName)) {
-        result.addAll(computeCallable(callee, previouslySeen));
-      }
+
+    private void sweep(TranslationUnit tu, Set<String> callableFromMain) {
+        for (int i = tu.getTopLevelDeclarations().size() - 1; i >= 0; i--) {
+            Declaration decl = tu.getTopLevelDeclarations().get(i);
+            if (decl instanceof FunctionPrototype) {
+                if (!callableFromMain.contains(((FunctionPrototype) decl).getName())) {
+                    tu.removeTopLevelDeclaration(i);
+                }
+            }
+            if (decl instanceof FunctionDefinition) {
+                if (!callableFromMain.contains(((FunctionDefinition) decl).getPrototype().getName())) {
+                    tu.removeTopLevelDeclaration(i);
+                }
+            }
+        }
     }
-    return result;
-  }
-
-
-  @Override
-  public void visitFunctionDefinition(FunctionDefinition functionDefinition) {
-    assert !enclosingFunction.isPresent();
-    enclosingFunction = Optional.of(functionDefinition);
-    super.visitFunctionDefinition(functionDefinition);
-    enclosingFunction = Optional.empty();
-  }
-
-  @Override
-  public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
-    super.visitFunctionCallExpr(functionCallExpr);
-    if (enclosingFunction.isPresent()) {
-      addCallGraphEdge(enclosingFunction.get().getPrototype().getName(),
-          functionCallExpr.getCallee());
-    }
-  }
-
-  private void addCallGraphEdge(String caller, String callee) {
-    if (!callGraphEdges.containsKey(caller)) {
-      callGraphEdges.put(caller, new HashSet<>());
-    }
-    callGraphEdges.get(caller).add(callee);
-  }
 
 }

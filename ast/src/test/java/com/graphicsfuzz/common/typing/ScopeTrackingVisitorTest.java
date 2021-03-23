@@ -22,22 +22,22 @@ import org.junit.Test;
 
 public class ScopeTrackingVisitorTest {
 
-  @Test
-  public void testSwitch() throws Exception {
-    final String program = "void main() {"
-        + "  switch(1) {"
-        + "    default:"
-        + "      int v0;"
-        + "      switch(1) {"
-        + "        default:"
-        + "          int v0;"
-        + "      }"
-        + "  }"
-        + "}";
-    final TranslationUnit tu = ParseHelper.parse(program);
-    new ScopeTrackingVisitor() {
-    }.visit(tu);
+    @Test
+    public void testSwitch() throws Exception {
+        final String program = "void main() {"
+                + "  switch(1) {"
+                + "    default:"
+                + "      int v0;"
+                + "      switch(1) {"
+                + "        default:"
+                + "          int v0;"
+                + "      }"
+                + "  }"
+                + "}";
+        final TranslationUnit tu = ParseHelper.parse(program);
+        new ScopeTrackingVisitor() {
+        }.visit(tu);
 
-  }
+    }
 
 }

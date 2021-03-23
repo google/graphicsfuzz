@@ -18,12 +18,12 @@ package com.graphicsfuzz.common.ast;
 
 public interface IParentMap {
 
-  boolean hasParent(IAstNode node);
+    static IParentMap createParentMap(IAstNode root) {
+        return new ParentMap(root);
+    }
 
-  IAstNode getParent(IAstNode node);
+    IAstNode getParent(IAstNode node);
 
-  static IParentMap createParentMap(IAstNode root) {
-    return new ParentMap(root);
-  }
+    boolean hasParent(IAstNode node);
 
 }

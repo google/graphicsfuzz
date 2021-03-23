@@ -23,21 +23,21 @@ import java.util.Map;
 
 public class ApplySubstitution extends ScopeTrackingVisitor {
 
-  private Map<String, String> substitution;
+    private Map<String, String> substitution;
 
-  public ApplySubstitution(Map<String, String> substitution, IAstNode node) {
-    this.substitution = substitution;
-    visit(node);
-  }
-
-  @Override
-  public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
-    String name = variableIdentifierExpr.getName();
-    if (getCurrentScope().lookupType(name) == null) {
-      if (substitution.containsKey(name)) {
-        variableIdentifierExpr.setName(substitution.get(name));
-      }
+    public ApplySubstitution(Map<String, String> substitution, IAstNode node) {
+        this.substitution = substitution;
+        visit(node);
     }
-  }
+
+    @Override
+    public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
+        String name = variableIdentifierExpr.getName();
+        if (getCurrentScope().lookupType(name) == null) {
+            if (substitution.containsKey(name)) {
+                variableIdentifierExpr.setName(substitution.get(name));
+            }
+        }
+    }
 
 }

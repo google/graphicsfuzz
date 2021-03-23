@@ -20,14 +20,14 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public final class BreakStmt extends Stmt {
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitBreakStmt(this);
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitBreakStmt(this);
+    }
 
-  @Override
-  public BreakStmt clone() {
-    return new BreakStmt();
-  }
+    @Override
+    public BreakStmt clone() {
+        return new BreakStmt();
+    }
 
 }

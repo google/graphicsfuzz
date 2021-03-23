@@ -28,66 +28,66 @@ import java.util.List;
 
 public final class StructUtils {
 
-  private StructUtils() {
-    // Utility class.
-  }
+    private StructUtils() {
+        // Utility class.
+    }
 
-  public static int countStructReferences(IAstNode node, StructNameType toLookFor) {
-    return new StandardVisitor() {
+    public static int countStructReferences(IAstNode node, StructNameType toLookFor) {
+        return new StandardVisitor() {
 
-      private int counter = 0;
+            private int counter = 0;
 
-      @Override
-      public void visitStructNameType(StructNameType structNameType) {
-        if (structNameType.equals(toLookFor)) {
-          counter++;
-        }
-      }
+            @Override
+            public void visitStructNameType(StructNameType structNameType) {
+                if (structNameType.equals(toLookFor)) {
+                    counter++;
+                }
+            }
 
-      @Override
-      public void visitTypeConstructorExpr(TypeConstructorExpr typeConstructorExpr) {
-        super.visitTypeConstructorExpr(typeConstructorExpr);
-        if (typeConstructorExpr.getTypename().equals(toLookFor.getName())) {
-          counter++;
-        }
-      }
+            @Override
+            public void visitTypeConstructorExpr(TypeConstructorExpr typeConstructorExpr) {
+                super.visitTypeConstructorExpr(typeConstructorExpr);
+                if (typeConstructorExpr.getTypename().equals(toLookFor.getName())) {
+                    counter++;
+                }
+            }
 
-      private int count() {
-        visit(node);
-        return counter;
-      }
+            private int count() {
+                visit(node);
+                return counter;
+            }
 
-    }.count();
+        }.count();
 
-  }
+    }
 
-  public static List<StructDefinitionType> getStructDefinitions(IAstNode node) {
-    return new StandardVisitor() {
+    public static boolean declaresReferencedStruct(TranslationUnit tu,
+                                                   VariablesDeclaration variablesDeclaration) {
+        return StructUtils.getStructDefinitions(variablesDeclaration)
+                .stream()
+                .filter(item -> item.hasStructNameType())
+                .map(item -> item.getStructNameType())
+                .anyMatch(item -> countStructReferences(tu, item) > 1);
+    }
 
-      private final List<StructDefinitionType> structDefinitionTypes = new ArrayList<>();
+    public static List<StructDefinitionType> getStructDefinitions(IAstNode node) {
+        return new StandardVisitor() {
 
-      @Override
-      public void visitStructDefinitionType(StructDefinitionType structDefinitionType) {
-        super.visitStructDefinitionType(structDefinitionType);
-        structDefinitionTypes.add(structDefinitionType);
-      }
+            private final List<StructDefinitionType> structDefinitionTypes = new ArrayList<>();
 
-      private List<StructDefinitionType> find() {
-        visit(node);
-        return structDefinitionTypes;
-      }
+            @Override
+            public void visitStructDefinitionType(StructDefinitionType structDefinitionType) {
+                super.visitStructDefinitionType(structDefinitionType);
+                structDefinitionTypes.add(structDefinitionType);
+            }
 
-    }.find();
+            private List<StructDefinitionType> find() {
+                visit(node);
+                return structDefinitionTypes;
+            }
 
-  }
+        }.find();
 
-  public static boolean declaresReferencedStruct(TranslationUnit tu,
-                                          VariablesDeclaration variablesDeclaration) {
-    return StructUtils.getStructDefinitions(variablesDeclaration)
-        .stream()
-        .filter(item -> item.hasStructNameType())
-        .map(item -> item.getStructNameType())
-        .anyMatch(item -> countStructReferences(tu, item) > 1);
-  }
+    }
 
 }

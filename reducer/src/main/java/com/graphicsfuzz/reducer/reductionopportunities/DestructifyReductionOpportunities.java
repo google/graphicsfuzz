@@ -27,43 +27,43 @@ import java.util.List;
 
 public class DestructifyReductionOpportunities extends ScopeTrackingVisitor {
 
-  private final TranslationUnit tu;
-  private final List<DestructifyReductionOpportunity> opportunities;
+    private final TranslationUnit tu;
+    private final List<DestructifyReductionOpportunity> opportunities;
 
-  private DestructifyReductionOpportunities(TranslationUnit tu) {
-    this.tu = tu;
-    this.opportunities = new LinkedList<>();
-  }
-
-  static List<DestructifyReductionOpportunity> findOpportunities(
-        ShaderJob shaderJob,
-        ReducerContext context) {
-    return shaderJob.getShaders()
-        .stream()
-        .map(DestructifyReductionOpportunities::findOpportunitiesForShader)
-        .reduce(Arrays.asList(), ListConcat::concatenate);
-  }
-
-  private static List<DestructifyReductionOpportunity> findOpportunitiesForShader(
-      TranslationUnit tu) {
-    DestructifyReductionOpportunities finder = new DestructifyReductionOpportunities(tu);
-    finder.visit(tu);
-    return finder.opportunities;
-  }
-
-  @Override
-  public void visitDeclarationStmt(DeclarationStmt declarationStmt) {
-    super.visitDeclarationStmt(declarationStmt);
-    if (Util.isStructifiedDeclaration(declarationStmt)) {
-      final DestructifyReductionOpportunity op = new DestructifyReductionOpportunity(
-            declarationStmt,
-            tu,
-            currentBlock(),
-            getVistitationDepth());
-      if (op.preconditionHolds()) {
-        opportunities.add(op);
-      }
+    private DestructifyReductionOpportunities(TranslationUnit tu) {
+        this.tu = tu;
+        this.opportunities = new LinkedList<>();
     }
-  }
+
+    static List<DestructifyReductionOpportunity> findOpportunities(
+            ShaderJob shaderJob,
+            ReducerContext context) {
+        return shaderJob.getShaders()
+                .stream()
+                .map(DestructifyReductionOpportunities::findOpportunitiesForShader)
+                .reduce(Arrays.asList(), ListConcat::concatenate);
+    }
+
+    @Override
+    public void visitDeclarationStmt(DeclarationStmt declarationStmt) {
+        super.visitDeclarationStmt(declarationStmt);
+        if (Util.isStructifiedDeclaration(declarationStmt)) {
+            final DestructifyReductionOpportunity op = new DestructifyReductionOpportunity(
+                    declarationStmt,
+                    tu,
+                    currentBlock(),
+                    getVistitationDepth());
+            if (op.preconditionHolds()) {
+                opportunities.add(op);
+            }
+        }
+    }
+
+    private static List<DestructifyReductionOpportunity> findOpportunitiesForShader(
+            TranslationUnit tu) {
+        DestructifyReductionOpportunities finder = new DestructifyReductionOpportunities(tu);
+        finder.visit(tu);
+        return finder.opportunities;
+    }
 
 }

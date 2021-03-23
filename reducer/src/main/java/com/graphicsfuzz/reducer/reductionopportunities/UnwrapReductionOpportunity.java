@@ -33,91 +33,91 @@ import java.util.stream.Collectors;
 
 public final class UnwrapReductionOpportunity extends AbstractReductionOpportunity {
 
-  private final Stmt wrapper;
-  private final List<Stmt> wrapees;
-  private final IParentMap parentMap;
+    private final Stmt wrapper;
+    private final List<Stmt> wrapees;
+    private final IParentMap parentMap;
 
-  public UnwrapReductionOpportunity(Stmt wrapper, List<Stmt> wrapees, IParentMap parentMap,
-        VisitationDepth depth) {
-    super(depth);
-    this.wrapper = wrapper;
-    assert wrapees != null;
-    this.wrapees = new ArrayList<>();
-    this.wrapees.addAll(wrapees);
-    this.parentMap = parentMap;
-    if (wrapees.size() > 1) {
-      if (!(parentMap.getParent(wrapper) instanceof BlockStmt)) {
-        throw new RuntimeException("We can only unwrap a block containing multiple statements if "
-              + "its direct parent is a block.");
-      }
-    }
-
-  }
-
-  public UnwrapReductionOpportunity(Stmt wrapper, Stmt wrapee, IParentMap parentMap,
-        VisitationDepth depth) {
-    this(wrapper, Arrays.asList(wrapee), parentMap, depth);
-    assert wrapee != null;
-  }
-
-  @Override
-  public void applyReductionImpl() {
-    try {
-      Stmt parent = (Stmt) parentMap.getParent(wrapper);
-      if (parent instanceof BlockStmt) {
-        final BlockStmt parentBlock = (BlockStmt) parent;
-        if (!parentBlock.getStmts().contains(wrapper)) {
-          throw new ChildDoesNotExistException(wrapper, parentBlock);
+    public UnwrapReductionOpportunity(Stmt wrapper, List<Stmt> wrapees, IParentMap parentMap,
+                                      VisitationDepth depth) {
+        super(depth);
+        this.wrapper = wrapper;
+        assert wrapees != null;
+        this.wrapees = new ArrayList<>();
+        this.wrapees.addAll(wrapees);
+        this.parentMap = parentMap;
+        if (wrapees.size() > 1) {
+            if (!(parentMap.getParent(wrapper) instanceof BlockStmt)) {
+                throw new RuntimeException("We can only unwrap a block containing multiple statements if "
+                        + "its direct parent is a block.");
+            }
         }
-        for (Stmt stmt : wrapees) {
-          parentBlock.insertBefore(wrapper, stmt);
+
+    }
+
+    public UnwrapReductionOpportunity(Stmt wrapper, Stmt wrapee, IParentMap parentMap,
+                                      VisitationDepth depth) {
+        this(wrapper, Arrays.asList(wrapee), parentMap, depth);
+        assert wrapee != null;
+    }
+
+    static Set<String> getNamesDeclaredDirectlyByBlock(BlockStmt block) {
+        final List<Stmt> stmts = block.getStmts();
+        return getNamesDeclaredByStmtList(stmts);
+    }
+
+    @Override
+    public void applyReductionImpl() {
+        try {
+            Stmt parent = (Stmt) parentMap.getParent(wrapper);
+            if (parent instanceof BlockStmt) {
+                final BlockStmt parentBlock = (BlockStmt) parent;
+                if (!parentBlock.getStmts().contains(wrapper)) {
+                    throw new ChildDoesNotExistException(wrapper, parentBlock);
+                }
+                for (Stmt stmt : wrapees) {
+                    parentBlock.insertBefore(wrapper, stmt);
+                }
+                parentBlock.removeStmt(wrapper);
+            } else {
+                parent.replaceChild(wrapper,
+                        wrapees.size() == 1 ? wrapees.get(0) : new BlockStmt(wrapees, true));
+            }
+        } catch (ChildDoesNotExistException exception) {
+            // TODO: it would be cleaner to capture this in the precondition.
+            // The wrapper has already been eliminated
+            // by some other reduction opportunity
         }
-        parentBlock.removeStmt(wrapper);
-      } else {
-        parent.replaceChild(wrapper,
-              wrapees.size() == 1 ? wrapees.get(0) : new BlockStmt(wrapees, true));
-      }
-    } catch (ChildDoesNotExistException exception) {
-      // TODO: it would be cleaner to capture this in the precondition.
-      // The wrapper has already been eliminated
-      // by some other reduction opportunity
-    }
-  }
-
-  @Override
-  public boolean preconditionHolds() {
-    final IAstNode parentOfWrapper = parentMap.getParent(wrapper);
-    if (!(parentOfWrapper instanceof Stmt)) {
-      return false;
-    }
-    if (parentOfWrapper instanceof BlockStmt) {
-      // We need to make sure it is still the case that applying the unwrap will not lead to name
-      // clashes.  We only need to check the names declared directly by the parent block against
-      // the names declared inside the block being unwrapped, because it is only these sets of names
-      // that can have been affected by applying other reduction opportunities.
-      if (!Collections.disjoint(getNamesDeclaredDirectlyByBlock((BlockStmt) parentOfWrapper),
-          getNamesDeclaredByStmtList(wrapees))) {
-        return false;
-      }
     }
 
-    return true;
-  }
+    @Override
+    public boolean preconditionHolds() {
+        final IAstNode parentOfWrapper = parentMap.getParent(wrapper);
+        if (!(parentOfWrapper instanceof Stmt)) {
+            return false;
+        }
+        if (parentOfWrapper instanceof BlockStmt) {
+            // We need to make sure it is still the case that applying the unwrap will not lead to name
+            // clashes.  We only need to check the names declared directly by the parent block against
+            // the names declared inside the block being unwrapped, because it is only these sets of names
+            // that can have been affected by applying other reduction opportunities.
+            if (!Collections.disjoint(getNamesDeclaredDirectlyByBlock((BlockStmt) parentOfWrapper),
+                    getNamesDeclaredByStmtList(wrapees))) {
+                return false;
+            }
+        }
 
-  static Set<String> getNamesDeclaredDirectlyByBlock(BlockStmt block) {
-    final List<Stmt> stmts = block.getStmts();
-    return getNamesDeclaredByStmtList(stmts);
-  }
+        return true;
+    }
 
-  private static Set<String> getNamesDeclaredByStmtList(List<Stmt> stmts) {
-    return stmts
-        .stream()
-        .filter(item -> item instanceof DeclarationStmt)
-        .map(item -> ((DeclarationStmt) item).getVariablesDeclaration().getDeclInfos())
-        .reduce(Collections.emptyList(), ListConcat::concatenate)
-        .stream()
-        .map(item -> item.getName())
-        .collect(Collectors.toSet());
-  }
+    private static Set<String> getNamesDeclaredByStmtList(List<Stmt> stmts) {
+        return stmts
+                .stream()
+                .filter(item -> item instanceof DeclarationStmt)
+                .map(item -> ((DeclarationStmt) item).getVariablesDeclaration().getDeclInfos())
+                .reduce(Collections.emptyList(), ListConcat::concatenate)
+                .stream()
+                .map(item -> item.getName())
+                .collect(Collectors.toSet());
+    }
 
 }

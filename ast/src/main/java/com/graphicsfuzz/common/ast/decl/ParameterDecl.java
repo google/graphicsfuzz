@@ -22,48 +22,48 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 
 public class ParameterDecl implements IAstNode {
 
-  private String name;
-  private Type type;
-  private ArrayInfo arrayInfo;
+    private String name;
+    private Type type;
+    private ArrayInfo arrayInfo;
 
-  public ParameterDecl(String name, Type type, ArrayInfo arrayInfo) {
-    this.name = name;
-    this.type = type;
-    this.arrayInfo = arrayInfo;
-  }
+    public ParameterDecl(String name, Type type, ArrayInfo arrayInfo) {
+        this.name = name;
+        this.type = type;
+        this.arrayInfo = arrayInfo;
+    }
 
-  public String getName() {
-    return name;
-  }
+    @Override
+    public void accept(IAstVisitor visitor) {
+        visitor.visitParameterDecl(this);
+    }
 
-  public void setName(String name) {
-    this.name = name;
-  }
+    @Override
+    public ParameterDecl clone() {
+        return new ParameterDecl(name, type.clone(), arrayInfo == null ? null : arrayInfo.clone());
+    }
 
-  public Type getType() {
-    return type;
-  }
+    public ArrayInfo getArrayInfo() {
+        return arrayInfo;
+    }
 
-  public void setType(Type type) {
-    this.type = type;
-  }
+    public String getName() {
+        return name;
+    }
 
-  public ArrayInfo getArrayInfo() {
-    return arrayInfo;
-  }
+    public void setName(String name) {
+        this.name = name;
+    }
 
-  public boolean hasArrayInfo() {
-    return arrayInfo != null;
-  }
+    public Type getType() {
+        return type;
+    }
 
-  @Override
-  public void accept(IAstVisitor visitor) {
-    visitor.visitParameterDecl(this);
-  }
+    public void setType(Type type) {
+        this.type = type;
+    }
 
-  @Override
-  public ParameterDecl clone() {
-    return new ParameterDecl(name, type.clone(), arrayInfo == null ? null : arrayInfo.clone());
-  }
+    public boolean hasArrayInfo() {
+        return arrayInfo != null;
+    }
 
 }

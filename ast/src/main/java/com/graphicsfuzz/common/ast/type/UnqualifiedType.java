@@ -18,14 +18,14 @@ package com.graphicsfuzz.common.ast.type;
 
 public abstract class UnqualifiedType extends Type {
 
-  @Override
-  public final boolean hasQualifier(TypeQualifier qualifier) {
-    return false;
-  }
+    @Override
+    public final UnqualifiedType getWithoutQualifiers() {
+        return this;
+    }
 
-  @Override
-  public final UnqualifiedType getWithoutQualifiers() {
-    return this;
-  }
+    @Override
+    public final boolean hasQualifier(TypeQualifier qualifier) {
+        return false;
+    }
 
 }

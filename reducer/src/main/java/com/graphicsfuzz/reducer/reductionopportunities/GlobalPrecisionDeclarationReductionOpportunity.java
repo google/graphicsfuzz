@@ -22,25 +22,25 @@ import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 
 public class GlobalPrecisionDeclarationReductionOpportunity extends AbstractReductionOpportunity {
 
-  final TranslationUnit translationUnit;
-  final PrecisionDeclaration precisionDeclaration;
+    final TranslationUnit translationUnit;
+    final PrecisionDeclaration precisionDeclaration;
 
-  public GlobalPrecisionDeclarationReductionOpportunity(TranslationUnit translationUnit,
-                                                        PrecisionDeclaration precisionDeclaration,
-                                                        VisitationDepth depth) {
-    super(depth);
-    this.translationUnit = translationUnit;
-    this.precisionDeclaration = precisionDeclaration;
-  }
+    public GlobalPrecisionDeclarationReductionOpportunity(TranslationUnit translationUnit,
+                                                          PrecisionDeclaration precisionDeclaration,
+                                                          VisitationDepth depth) {
+        super(depth);
+        this.translationUnit = translationUnit;
+        this.precisionDeclaration = precisionDeclaration;
+    }
 
-  @Override
-  void applyReductionImpl() {
-    translationUnit.removeTopLevelDeclaration(precisionDeclaration);
-  }
+    @Override
+    void applyReductionImpl() {
+        translationUnit.removeTopLevelDeclaration(precisionDeclaration);
+    }
 
-  @Override
-  public boolean preconditionHolds() {
-    return translationUnit.getTopLevelDeclarations().contains(precisionDeclaration);
-  }
+    @Override
+    public boolean preconditionHolds() {
+        return translationUnit.getTopLevelDeclarations().contains(precisionDeclaration);
+    }
 
 }

@@ -23,26 +23,26 @@ import java.util.Optional;
 
 public interface ShaderJob {
 
-  PipelineInfo getPipelineInfo();
+    ShaderJob clone();
 
-  Optional<String> getLicense();
+    Optional<TranslationUnit> getComputeShader();
 
-  void makeUniformBindings(Optional<String> pushConstant);
+    Optional<TranslationUnit> getFragmentShader();
 
-  void removeUniformBindings();
+    Optional<String> getLicense();
 
-  boolean hasUniformBindings();
+    PipelineInfo getPipelineInfo();
 
-  List<TranslationUnit> getShaders();
+    Optional<String> getPushConstant();
 
-  Optional<TranslationUnit> getVertexShader();
+    List<TranslationUnit> getShaders();
 
-  Optional<TranslationUnit> getFragmentShader();
+    Optional<TranslationUnit> getVertexShader();
 
-  Optional<TranslationUnit> getComputeShader();
+    boolean hasUniformBindings();
 
-  Optional<String> getPushConstant();
+    void makeUniformBindings(Optional<String> pushConstant);
 
-  ShaderJob clone();
+    void removeUniformBindings();
 
 }

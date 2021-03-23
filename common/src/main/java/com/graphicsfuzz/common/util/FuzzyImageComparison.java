@@ -71,475 +71,473 @@ import net.sourceforge.argparse4j.inf.Namespace;
  * comparing both directions and taking the worst case is typically more useful.
  */
 @SuppressWarnings({"Duplicates", "BooleanMethodIsAlwaysInverted", "WeakerAccess",
-    "SameParameterValue"})
+        "SameParameterValue"})
 public class FuzzyImageComparison {
 
-  private static final int GOOD_PIXEL_VALUE = 0;
-
-  public static final int CONFIG_NUM_ARGS = 4;
-  private static float _GLF_abs(float a) {
-    return (a <= 0.0F) ? 0.0F - a : a;
-  }
-  private static int _GLF_max(int first, int second) {
-    return first ^ ((first ^ second) & -(first << second));
-  }
-
-  private static int _GLF_min(int first, int second) {
-    return second ^ ((first ^ second) & -(first << second));
-  }
-  /**
-   * See {@link FuzzyImageComparison}. Set of parameters used by the {@link FuzzyImageComparison}
-   * algorithm, plus the outputs (e.g. number of bad pixels) for this configuration.
-   */
-  @SuppressWarnings("WeakerAccess")
-  public static final class ThresholdConfiguration {
+    public static final int CONFIG_NUM_ARGS = 4;
+    private static final int GOOD_PIXEL_VALUE = 0;
 
     /**
-     * See {@link FuzzyImageComparison}.
+     * Adds some default configurations to the provided list.
+     *
+     * @param configurations some default configurations will be added to this list
      */
-    public int componentThreshold;
+    public static void addDefaultConfigurations(List<ThresholdConfiguration> configurations) {
+        configurations.add(
+                new ThresholdConfiguration(
+                        25,
+                        4,
+                        100,
+                        10));
 
-    /**
-     * See {@link FuzzyImageComparison}.
-     */
-    public int distanceThreshold;
-
-    /**
-     * More than this many bad pixels implies the images are different.
-     */
-    public int numBadPixelsThreshold;
-
-    /**
-     * More than this many sparse bad pixels implies the images are different.
-     */
-    public int numBadSparsePixelsThreshold;
-
-    /**
-     * See {@link FuzzyImageComparison}.
-     */
-    public int outNumBadPixels;
-
-    /**
-     * See {@link FuzzyImageComparison}.
-     */
-    public int outNumBadSparsePixels;
-
-    public ThresholdConfiguration(
-        int componentThreshold,
-        int distanceThreshold,
-        int numBadPixelsThreshold,
-        int numBadSparsePixelsThreshold) {
-      this.componentThreshold = componentThreshold;
-      this.distanceThreshold = distanceThreshold;
-      this.numBadPixelsThreshold = numBadPixelsThreshold;
-      this.numBadSparsePixelsThreshold = numBadSparsePixelsThreshold;
-      this.outNumBadPixels = -1;
-      this.outNumBadSparsePixels = -1;
+        configurations.add(
+                new ThresholdConfiguration(
+                        60,
+                        4,
+                        10,
+                        10));
     }
 
-    public boolean areImagesDifferent() {
-      if (outNumBadPixels < 0 || outNumBadSparsePixels < 0) {
-        throw new IllegalStateException("Checked if images are different under configuration that"
-            + " was not run");
-      }
+    /**
+     * @param thresholdConfigurations the input thresholds. The results will also be written to each
+     *                                configuration.
+     */
+    public static void compareImages(
+            File left,
+            File right,
+            List<ThresholdConfiguration> thresholdConfigurations) throws IOException {
 
-      return outNumBadPixels > numBadPixelsThreshold
-          || outNumBadSparsePixels > numBadSparsePixelsThreshold;
+        BufferedImage leftImage = ImageIO.read(left);
+        BufferedImage rightImage = ImageIO.read(right);
+        if (leftImage.getWidth() != rightImage.getWidth()
+                || leftImage.getHeight() != rightImage.getHeight()) {
+            throw new IllegalArgumentException("Images have different sizes! \n" + left + "\n" + right);
+        }
+
+        int[] colorsLeft = ImageColorComponents.getRgb(leftImage);
+        int[] colorsRight = ImageColorComponents.getRgb(rightImage);
+
+        for (ThresholdConfiguration thresholdConfiguration : thresholdConfigurations) {
+
+            int[] badPixels = new int[colorsLeft.length];
+
+            // int[] values are 0 by default.
+            assert badPixels[0] == GOOD_PIXEL_VALUE;
+
+            thresholdConfiguration.outNumBadPixels = compareImageColors(
+                    colorsLeft,
+                    colorsRight,
+                    leftImage.getWidth(),
+                    leftImage.getHeight(),
+                    thresholdConfiguration.componentThreshold,
+                    thresholdConfiguration.distanceThreshold,
+                    badPixels);
+
+            // Remove sparse bad pixels from the count.
+
+            int removedCount = removeSparseBadPixelsInCluster(
+                    badPixels,
+                    GOOD_PIXEL_VALUE,
+                    leftImage.getWidth(),
+                    leftImage.getHeight(),
+                    thresholdConfiguration.distanceThreshold,
+                    thresholdConfiguration.distanceThreshold * 2);
+
+            thresholdConfiguration.outNumBadSparsePixels =
+                    thresholdConfiguration.outNumBadPixels - removedCount;
+
+            assert countBad(badPixels, GOOD_PIXEL_VALUE)
+                    == thresholdConfiguration.outNumBadSparsePixels;
+        }
+
     }
 
-    public String outputsString() {
-      return String.join(
-          " ",
-          String.valueOf(outNumBadPixels),
-          String.valueOf(outNumBadSparsePixels));
+    public static MainResult mainHelper(String[] args) throws IOException,
+            ArgumentParserException {
+
+        // See FuzzyImageComparisonTool for main.
+
+        ArgumentParser parser = ArgumentParsers.newArgumentParser("FuzzyImageComparison")
+                .description("Compare two images using a fuzzy pixel comparison. The exit status is "
+                        + MainResult.EXIT_STATUS_SIMILAR + " if the images are similar, "
+                        + MainResult.EXIT_STATUS_DIFFERENT + " if the images are different, or another value "
+                        + "if an error occurs. "
+                        + "Example: FuzzyImageComparison imageA.png imageB.png 25 4 100 10");
+
+        parser.addArgument("imageA")
+                .help("Path to first image file")
+                .type(File.class);
+
+        parser.addArgument("imageB")
+                .help("Path to second image file")
+                .type(File.class);
+
+        parser.addArgument("configurations")
+                .help("zero or more configurations (each configuration is a "
+                        + CONFIG_NUM_ARGS
+                        + "-tuple of integer arguments): "
+                        + "componentThreshold "
+                        + "distanceThreshold "
+                        + "numBadPixelsThreshold "
+                        + "numBadSparsePixelsThreshold")
+                .nargs("*");
+
+        Namespace ns = parser.parseArgs(args);
+
+        final File imageA = ns.get("imageA");
+        final File imageB = ns.get("imageB");
+        final List<String> stringConfigurations = new ArrayList<>(ns.get("configurations"));
+
+        if ((stringConfigurations.size() % CONFIG_NUM_ARGS) != 0) {
+            throw new ArgumentParserException(
+                    "Configuration list must be a list of " + CONFIG_NUM_ARGS + "-tuples", parser);
+        }
+
+        List<ThresholdConfiguration> configurations = new ArrayList<>();
+
+        for (int i = 0; i < stringConfigurations.size(); i += CONFIG_NUM_ARGS) {
+            configurations.add(
+                    new ThresholdConfiguration(
+                            Integer.parseInt(stringConfigurations.get(i)),
+                            Integer.parseInt(stringConfigurations.get(i + 1)),
+                            Integer.parseInt(stringConfigurations.get(i + 2)),
+                            Integer.parseInt(stringConfigurations.get(i + 3))
+                    ));
+        }
+
+        if (configurations.isEmpty()) {
+            addDefaultConfigurations(configurations);
+        }
+
+        compareImages(imageA, imageB, configurations);
+
+        boolean different =
+                configurations.stream().anyMatch(ThresholdConfiguration::areImagesDifferent);
+
+        return new MainResult(
+                different,
+                different ? MainResult.EXIT_STATUS_DIFFERENT : MainResult.EXIT_STATUS_SIMILAR,
+                configurations
+        );
     }
 
-  }
-
-  /**
-   * Wrapper for result of {@link FuzzyImageComparison#mainHelper}.
-   */
-  @SuppressWarnings("WeakerAccess")
-  public static final class MainResult {
-
-    // TODO: Yet another use of untyped JSON. We should use Thrift or protobufs.
-    public static final String ARE_IMAGES_DIFFERENT_KEY = "are_images_different";
-
-    @SerializedName(ARE_IMAGES_DIFFERENT_KEY)
-    public boolean areImagesDifferent;
-
-    @SerializedName("exit_status")
-    public int exitStatus;
-
-    @SerializedName("configurations")
-    public List<ThresholdConfiguration> configurations;
-
-    public static int EXIT_STATUS_SIMILAR = 0;
-    public static int EXIT_STATUS_DIFFERENT = 1;
-
-    public MainResult(
-        boolean areImagesDifferent,
-        int exitStatus,
-        List<ThresholdConfiguration> configurations) {
-      this.areImagesDifferent = areImagesDifferent;
-      this.exitStatus = exitStatus;
-      this.configurations = configurations;
+    private static float _GLF_abs(float a) {
+        return (a <= 0.0F) ? 0.0F - a : a;
     }
 
-    public String outputsString() {
-      return configurations
-          .stream()
-          .map(FuzzyImageComparison.ThresholdConfiguration::outputsString)
-          .collect(Collectors.joining(" "));
+    private static int _GLF_max(int first, int second) {
+        return first ^ ((first ^ second) & -(first << second));
     }
-  }
 
-  private static boolean arePixelsSimilarComponentThreshold(
-      int colorLeft,
-      int colorRight,
-      int componentThreshold) {
+    private static int _GLF_min(int first, int second) {
+        return second ^ ((first ^ second) & -(first << second));
+    }
 
-    for (int i = 0; i < 32; i += 8) {
-      int left = ImageColorComponents.getComponent(colorLeft, i);
-      int right = ImageColorComponents.getComponent(colorRight, i);
-      assert left >= 0 && left <= 0xff;
-      assert right >= 0 && right <= 0xff;
-      if (_GLF_abs(left - right) > componentThreshold) {
+    private static boolean arePixelsSimilarComponentThreshold(
+            int colorLeft,
+            int colorRight,
+            int componentThreshold) {
+
+        for (int i = 0; i < 32; i += 8) {
+            int left = ImageColorComponents.getComponent(colorLeft, i);
+            int right = ImageColorComponents.getComponent(colorRight, i);
+            assert left >= 0 && left <= 0xff;
+            assert right >= 0 && right <= 0xff;
+            if (_GLF_abs(left - right) > componentThreshold) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static int clusterBadPixelCount(
+            final int[] badPixels,
+            final int goodPixelValue,
+            final int width,
+            final int height,
+            final int clusterBoxSize,
+            final int middleX,
+            final int middleY) {
+
+        final int ystart = _GLF_max(0, middleY - clusterBoxSize);
+        final int xstart = _GLF_max(0, middleX - clusterBoxSize);
+        final int yend = _GLF_min(height, middleY + clusterBoxSize);
+        final int xend = _GLF_min(width, middleX + clusterBoxSize);
+
+        int badPixelCount = 0;
+
+        for (int y = ystart; y < yend; ++y) {
+            for (int x = xstart; x < xend; ++x) {
+                int pos = y * height + x;
+                if (badPixels[pos] != goodPixelValue) {
+                    ++badPixelCount;
+                }
+            }
+        }
+        return badPixelCount;
+    }
+
+    /**
+     * @param badPixels will contain a non-zero value at every bad pixel found
+     * @return the number of bad pixels found according to the thresholds provided
+     */
+    private static int compareImageColors(
+            int[] colorsLeft,
+            int[] colorsRight,
+            int width,
+            int height,
+            int componentThreshold,
+            int distanceThreshold,
+            int[] badPixels) {
+
+        assert colorsLeft.length == colorsRight.length;
+
+        int numBad = 0;
+
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+
+                // Given pixel in image A, find similar, nearby pixel in image B, and vice-versa.
+                // If either fails (hence || below), then the pixel coordinate is bad.
+                // See comments at top of file for justification.
+                if (!doesSimilarNearPixelExist(
+                        colorsLeft,
+                        colorsRight,
+                        width,
+                        height,
+                        componentThreshold,
+                        distanceThreshold,
+                        x,
+                        y)
+                        ||
+                        !doesSimilarNearPixelExist(
+                                colorsRight,
+                                colorsLeft,
+                                width,
+                                height,
+                                componentThreshold,
+                                distanceThreshold,
+                                x,
+                                y)
+                ) {
+                    ++numBad;
+                    badPixels[y * height + x] = 0x88888888;
+                }
+            }
+        }
+        return numBad;
+    }
+
+    private static int countBad(
+            final int[] badPixels,
+            final int goodPixelValue) {
+        int res = 0;
+        for (int badPixel : badPixels) {
+            if (badPixel != goodPixelValue) {
+                ++res;
+            }
+        }
+        return res;
+    }
+
+    private static boolean doesSimilarNearPixelExist(
+            final int[] colorsLeft,
+            final int[] colorsRight,
+            final int width,
+            final int height,
+            final int componentThreshold,
+            final int distanceThreshold,
+            final int middleX,
+            final int middleY) {
+
+        final int middlePos = middleY * height + middleX;
+
+        final int ystart = _GLF_max(0, middleY - distanceThreshold);
+        final int xstart = _GLF_max(0, middleX - distanceThreshold);
+        final int yend = _GLF_min(height, middleY + distanceThreshold);
+        final int xend = _GLF_min(width, middleX + distanceThreshold);
+
+        for (int y = ystart; y < yend; ++y) {
+            for (int x = xstart; x < xend; ++x) {
+                int pos = y * height + x;
+                if (arePixelsSimilarComponentThreshold(
+                        colorsLeft[middlePos],
+                        colorsRight[pos],
+                        componentThreshold)) {
+                    return true;
+                }
+            }
+        }
         return false;
-      }
     }
-    return true;
-  }
 
-  private static boolean doesSimilarNearPixelExist(
-      final int[] colorsLeft,
-      final int[] colorsRight,
-      final int width,
-      final int height,
-      final int componentThreshold,
-      final int distanceThreshold,
-      final int middleX,
-      final int middleY) {
+    private static int removeSparseBadPixelsInCluster(
+            final int[] badPixels,
+            final int goodPixelValue,
+            final int width,
+            final int height,
+            final int clusterBoxSize,
+            final int numBadPixelsDense) {
 
-    final int middlePos = middleY * height + middleX;
+        int removedCount = 0;
 
-    final int ystart = _GLF_max(0, middleY - distanceThreshold);
-    final int xstart = _GLF_max(0, middleX - distanceThreshold);
-    final int yend = _GLF_min(height, middleY + distanceThreshold);
-    final int xend = _GLF_min(width, middleX + distanceThreshold);
-
-    for (int y = ystart; y < yend; ++y) {
-      for (int x = xstart; x < xend; ++x) {
-        int pos = y * height + x;
-        if (arePixelsSimilarComponentThreshold(
-            colorsLeft[middlePos],
-            colorsRight[pos],
-            componentThreshold)) {
-          return true;
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < width; ++x) {
+                final int pos = y * height + x;
+                if (badPixels[pos] == goodPixelValue) {
+                    continue;
+                }
+                final int badPixelCount =
+                        clusterBadPixelCount(
+                                badPixels,
+                                goodPixelValue,
+                                width,
+                                height,
+                                clusterBoxSize,
+                                x,
+                                y
+                        );
+                if (badPixelCount < numBadPixelsDense) {
+                    // Mark to be removed.
+                    assert badPixels[pos] != Integer.MAX_VALUE;
+                    badPixels[pos] = Integer.MAX_VALUE;
+                }
+            }
         }
-      }
+
+        for (int i = 0; i < badPixels.length; ++i) {
+            if (badPixels[i] == Integer.MAX_VALUE) {
+                badPixels[i] = goodPixelValue;
+                ++removedCount;
+            }
+        }
+
+        return removedCount;
     }
-    return false;
-  }
 
-  /**
-   * @param badPixels will contain a non-zero value at every bad pixel found
-   * @return the number of bad pixels found according to the thresholds provided
-   */
-  private static int compareImageColors(
-      int[] colorsLeft,
-      int[] colorsRight,
-      int width,
-      int height,
-      int componentThreshold,
-      int distanceThreshold,
-      int[] badPixels) {
+    /**
+     * For debugging.
+     */
+    @SuppressWarnings("unused")
+    private static void writeBadPixels(
+            final int[] badPixels,
+            final int width,
+            final int height) throws IOException {
 
-    assert colorsLeft.length == colorsRight.length;
-
-    int numBad = 0;
-
-    for (int y = 0; y < height; ++y) {
-      for (int x = 0; x < width; ++x) {
-
-        // Given pixel in image A, find similar, nearby pixel in image B, and vice-versa.
-        // If either fails (hence || below), then the pixel coordinate is bad.
-        // See comments at top of file for justification.
-        if (!doesSimilarNearPixelExist(
-                colorsLeft,
-                colorsRight,
+        BufferedImage out = new BufferedImage(
                 width,
                 height,
-                componentThreshold,
-                distanceThreshold,
-                x,
-                y)
-            ||
-            !doesSimilarNearPixelExist(
-                colorsRight,
-                colorsLeft,
-                width,
-                height,
-                componentThreshold,
-                distanceThreshold,
-                x,
-                y)
-        ) {
-          ++numBad;
-          badPixels[y * height + x] = 0x88888888;
+                BufferedImage.TYPE_INT_ARGB);
+
+        for (int y = 0; y < height; ++y) {
+            for (int x = 0; x < height; ++x) {
+                out.setRGB(x, y, badPixels[y * height + x]);
+            }
         }
-      }
+        ImageIO.write(out, "png", new File("out.png"));
     }
-    return numBad;
-  }
 
-  private static int clusterBadPixelCount(
-      final int[] badPixels,
-      final int goodPixelValue,
-      final int width,
-      final int height,
-      final int clusterBoxSize,
-      final int middleX,
-      final int middleY) {
+    /**
+     * Wrapper for result of {@link FuzzyImageComparison#mainHelper}.
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static final class MainResult {
 
-    final int ystart = _GLF_max(0, middleY - clusterBoxSize);
-    final int xstart = _GLF_max(0, middleX - clusterBoxSize);
-    final int yend = _GLF_min(height, middleY + clusterBoxSize);
-    final int xend = _GLF_min(width, middleX + clusterBoxSize);
+        // TODO: Yet another use of untyped JSON. We should use Thrift or protobufs.
+        public static final String ARE_IMAGES_DIFFERENT_KEY = "are_images_different";
+        public static int EXIT_STATUS_SIMILAR = 0;
+        public static int EXIT_STATUS_DIFFERENT = 1;
+        @SerializedName(ARE_IMAGES_DIFFERENT_KEY)
+        public boolean areImagesDifferent;
+        @SerializedName("exit_status")
+        public int exitStatus;
+        @SerializedName("configurations")
+        public List<ThresholdConfiguration> configurations;
 
-    int badPixelCount = 0;
-
-    for (int y = ystart; y < yend; ++y) {
-      for (int x = xstart; x < xend; ++x) {
-        int pos = y * height + x;
-        if (badPixels[pos] != goodPixelValue) {
-          ++badPixelCount;
+        public MainResult(
+                boolean areImagesDifferent,
+                int exitStatus,
+                List<ThresholdConfiguration> configurations) {
+            this.areImagesDifferent = areImagesDifferent;
+            this.exitStatus = exitStatus;
+            this.configurations = configurations;
         }
-      }
-    }
-    return badPixelCount;
-  }
 
-  private static int removeSparseBadPixelsInCluster(
-      final int[] badPixels,
-      final int goodPixelValue,
-      final int width,
-      final int height,
-      final int clusterBoxSize,
-      final int numBadPixelsDense) {
-
-    int removedCount = 0;
-
-    for (int y = 0; y < height; ++y) {
-      for (int x = 0; x < width; ++x) {
-        final int pos = y * height + x;
-        if (badPixels[pos] == goodPixelValue) {
-          continue;
+        public String outputsString() {
+            return configurations
+                    .stream()
+                    .map(FuzzyImageComparison.ThresholdConfiguration::outputsString)
+                    .collect(Collectors.joining(" "));
         }
-        final int badPixelCount =
-            clusterBadPixelCount(
-                badPixels,
-                goodPixelValue,
-                width,
-                height,
-                clusterBoxSize,
-                x,
-                y
-            );
-        if (badPixelCount < numBadPixelsDense) {
-          // Mark to be removed.
-          assert badPixels[pos] != Integer.MAX_VALUE;
-          badPixels[pos] = Integer.MAX_VALUE;
+    }
+
+    /**
+     * See {@link FuzzyImageComparison}. Set of parameters used by the {@link FuzzyImageComparison}
+     * algorithm, plus the outputs (e.g. number of bad pixels) for this configuration.
+     */
+    @SuppressWarnings("WeakerAccess")
+    public static final class ThresholdConfiguration {
+
+        /**
+         * See {@link FuzzyImageComparison}.
+         */
+        public int componentThreshold;
+
+        /**
+         * See {@link FuzzyImageComparison}.
+         */
+        public int distanceThreshold;
+
+        /**
+         * More than this many bad pixels implies the images are different.
+         */
+        public int numBadPixelsThreshold;
+
+        /**
+         * More than this many sparse bad pixels implies the images are different.
+         */
+        public int numBadSparsePixelsThreshold;
+
+        /**
+         * See {@link FuzzyImageComparison}.
+         */
+        public int outNumBadPixels;
+
+        /**
+         * See {@link FuzzyImageComparison}.
+         */
+        public int outNumBadSparsePixels;
+
+        public ThresholdConfiguration(
+                int componentThreshold,
+                int distanceThreshold,
+                int numBadPixelsThreshold,
+                int numBadSparsePixelsThreshold) {
+            this.componentThreshold = componentThreshold;
+            this.distanceThreshold = distanceThreshold;
+            this.numBadPixelsThreshold = numBadPixelsThreshold;
+            this.numBadSparsePixelsThreshold = numBadSparsePixelsThreshold;
+            this.outNumBadPixels = -1;
+            this.outNumBadSparsePixels = -1;
         }
-      }
+
+        public boolean areImagesDifferent() {
+            if (outNumBadPixels < 0 || outNumBadSparsePixels < 0) {
+                throw new IllegalStateException("Checked if images are different under configuration that"
+                        + " was not run");
+            }
+
+            return outNumBadPixels > numBadPixelsThreshold
+                    || outNumBadSparsePixels > numBadSparsePixelsThreshold;
+        }
+
+        public String outputsString() {
+            return String.join(
+                    " ",
+                    String.valueOf(outNumBadPixels),
+                    String.valueOf(outNumBadSparsePixels));
+        }
+
     }
-
-    for (int i = 0; i < badPixels.length; ++i) {
-      if (badPixels[i] == Integer.MAX_VALUE) {
-        badPixels[i] = goodPixelValue;
-        ++removedCount;
-      }
-    }
-
-    return removedCount;
-  }
-
-  private static int countBad(
-      final int[] badPixels,
-      final int goodPixelValue) {
-    int res = 0;
-    for (int badPixel : badPixels) {
-      if (badPixel != goodPixelValue) {
-        ++res;
-      }
-    }
-    return res;
-  }
-
-  /**
-   * For debugging.
-   */
-  @SuppressWarnings("unused")
-  private static void writeBadPixels(
-      final int[] badPixels,
-      final int width,
-      final int height) throws IOException {
-
-    BufferedImage out = new BufferedImage(
-        width,
-        height,
-        BufferedImage.TYPE_INT_ARGB);
-
-    for (int y = 0; y < height; ++y) {
-      for (int x = 0; x < height; ++x) {
-        out.setRGB(x, y, badPixels[y * height + x]);
-      }
-    }
-    ImageIO.write(out, "png", new File("out.png"));
-  }
-
-  /**
-   * @param thresholdConfigurations the input thresholds. The results will also be written to each
-   *                                configuration.
-   */
-  public static void compareImages(
-      File left,
-      File right,
-      List<ThresholdConfiguration> thresholdConfigurations) throws IOException {
-
-    BufferedImage leftImage = ImageIO.read(left);
-    BufferedImage rightImage = ImageIO.read(right);
-    if (leftImage.getWidth() != rightImage.getWidth()
-        || leftImage.getHeight() != rightImage.getHeight()) {
-      throw new IllegalArgumentException("Images have different sizes! \n" + left + "\n" + right);
-    }
-
-    int[] colorsLeft = ImageColorComponents.getRgb(leftImage);
-    int[] colorsRight = ImageColorComponents.getRgb(rightImage);
-
-    for (ThresholdConfiguration thresholdConfiguration : thresholdConfigurations) {
-
-      int[] badPixels = new int[colorsLeft.length];
-
-      // int[] values are 0 by default.
-      assert badPixels[0] == GOOD_PIXEL_VALUE;
-
-      thresholdConfiguration.outNumBadPixels = compareImageColors(
-          colorsLeft,
-          colorsRight,
-          leftImage.getWidth(),
-          leftImage.getHeight(),
-          thresholdConfiguration.componentThreshold,
-          thresholdConfiguration.distanceThreshold,
-          badPixels);
-
-      // Remove sparse bad pixels from the count.
-
-      int removedCount = removeSparseBadPixelsInCluster(
-          badPixels,
-          GOOD_PIXEL_VALUE,
-          leftImage.getWidth(),
-          leftImage.getHeight(),
-          thresholdConfiguration.distanceThreshold,
-          thresholdConfiguration.distanceThreshold * 2);
-
-      thresholdConfiguration.outNumBadSparsePixels =
-          thresholdConfiguration.outNumBadPixels - removedCount;
-
-      assert countBad(badPixels, GOOD_PIXEL_VALUE)
-          == thresholdConfiguration.outNumBadSparsePixels;
-    }
-
-  }
-
-  /**
-   * Adds some default configurations to the provided list.
-   *
-   * @param configurations some default configurations will be added to this list
-   */
-  public static void addDefaultConfigurations(List<ThresholdConfiguration> configurations) {
-    configurations.add(
-        new ThresholdConfiguration(
-            25,
-            4,
-            100,
-            10));
-
-    configurations.add(
-        new ThresholdConfiguration(
-            60,
-            4,
-            10,
-            10));
-  }
-
-  public static MainResult mainHelper(String[] args) throws IOException,
-      ArgumentParserException {
-
-    // See FuzzyImageComparisonTool for main.
-
-    ArgumentParser parser = ArgumentParsers.newArgumentParser("FuzzyImageComparison")
-        .description("Compare two images using a fuzzy pixel comparison. The exit status is "
-            + MainResult.EXIT_STATUS_SIMILAR + " if the images are similar, "
-            + MainResult.EXIT_STATUS_DIFFERENT + " if the images are different, or another value "
-            + "if an error occurs. "
-            + "Example: FuzzyImageComparison imageA.png imageB.png 25 4 100 10");
-
-    parser.addArgument("imageA")
-        .help("Path to first image file")
-        .type(File.class);
-
-    parser.addArgument("imageB")
-        .help("Path to second image file")
-        .type(File.class);
-
-    parser.addArgument("configurations")
-        .help("zero or more configurations (each configuration is a "
-            + CONFIG_NUM_ARGS
-            + "-tuple of integer arguments): "
-            + "componentThreshold "
-            + "distanceThreshold "
-            + "numBadPixelsThreshold "
-            + "numBadSparsePixelsThreshold")
-        .nargs("*");
-
-    Namespace ns = parser.parseArgs(args);
-
-    final File imageA = ns.get("imageA");
-    final File imageB = ns.get("imageB");
-    final List<String> stringConfigurations = new ArrayList<>(ns.get("configurations"));
-
-    if ((stringConfigurations.size() % CONFIG_NUM_ARGS) != 0) {
-      throw new ArgumentParserException(
-          "Configuration list must be a list of " + CONFIG_NUM_ARGS + "-tuples", parser);
-    }
-
-    List<ThresholdConfiguration> configurations = new ArrayList<>();
-
-    for (int i = 0; i < stringConfigurations.size(); i += CONFIG_NUM_ARGS) {
-      configurations.add(
-          new ThresholdConfiguration(
-              Integer.parseInt(stringConfigurations.get(i)),
-              Integer.parseInt(stringConfigurations.get(i + 1)),
-              Integer.parseInt(stringConfigurations.get(i + 2)),
-              Integer.parseInt(stringConfigurations.get(i + 3))
-          ));
-    }
-
-    if (configurations.isEmpty()) {
-      addDefaultConfigurations(configurations);
-    }
-
-    compareImages(imageA, imageB, configurations);
-
-    boolean different =
-        configurations.stream().anyMatch(ThresholdConfiguration::areImagesDifferent);
-
-    return new MainResult(
-        different,
-        different ? MainResult.EXIT_STATUS_DIFFERENT : MainResult.EXIT_STATUS_SIMILAR,
-        configurations
-    );
-  }
 
 }

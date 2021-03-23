@@ -21,9 +21,9 @@ import org.junit.Test;
 
 public class ReplaceLoopCounterTest {
 
-  @Test
-  public void checkUtility() throws Exception {
-    CheckUtilityClass.assertUtilityClassWellDefined(ReplaceLoopCounter.class);
-  }
+    @Test
+    public void checkUtility() throws Exception {
+        CheckUtilityClass.assertUtilityClassWellDefined(ReplaceLoopCounter.class);
+    }
 
 }

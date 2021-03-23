@@ -20,23 +20,24 @@ import com.graphicsfuzz.parser.GLSLParser;
 
 public class GlslParserException extends Exception {
 
-  private final GLSLParser parser;
+    private final GLSLParser parser;
 
-  public GlslParserException(GLSLParser parser) {
-    this.parser = parser;
-  }
+    public GlslParserException(GLSLParser parser) {
+        this.parser = parser;
+    }
 
-  /**
-   * Provides access to the parser instance that failed to parse the GLSL shader.
-   * @return Parser instance.
-   */
-  public GLSLParser getParser() {
-    return parser;
-  }
+    @Override
+    public String getMessage() {
+        return "Syntax errors occurred during parsing.";
+    }
 
-  @Override
-  public String getMessage() {
-    return "Syntax errors occurred during parsing.";
-  }
+    /**
+     * Provides access to the parser instance that failed to parse the GLSL shader.
+     *
+     * @return Parser instance.
+     */
+    public GLSLParser getParser() {
+        return parser;
+    }
 
 }

@@ -18,8 +18,8 @@ package com.graphicsfuzz.common.ast.inliner;
 
 public class CannotInlineCallException extends Exception {
 
-  public CannotInlineCallException(String messsage) {
-    super(messsage);
-  }
+    public CannotInlineCallException(String messsage) {
+        super(messsage);
+    }
 
 }

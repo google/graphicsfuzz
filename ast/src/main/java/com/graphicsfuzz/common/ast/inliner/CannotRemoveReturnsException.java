@@ -18,8 +18,8 @@ package com.graphicsfuzz.common.ast.inliner;
 
 public class CannotRemoveReturnsException extends Exception {
 
-  public CannotRemoveReturnsException(String message) {
-    super(message);
-  }
+    public CannotRemoveReturnsException(String message) {
+        super(message);
+    }
 
 }

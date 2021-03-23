@@ -16,19 +16,19 @@
 
 package com.graphicsfuzz.common.ast.expr;
 
+import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 
-import org.junit.Test;
-
 public class FloatConstantExprTest {
 
-  @Test
-  public void testClone() throws Exception {
-    FloatConstantExpr fce = new FloatConstantExpr("42.0");
-    FloatConstantExpr fce2 = fce.clone();
-    assertEquals(fce.getValue(), fce2.getValue());
-    assertFalse(fce == fce2);
-  }
+    @Test
+    public void testClone() throws Exception {
+        FloatConstantExpr fce = new FloatConstantExpr("42.0");
+        FloatConstantExpr fce2 = fce.clone();
+        assertEquals(fce.getValue(), fce2.getValue());
+        assertFalse(fce == fce2);
+    }
 
 }

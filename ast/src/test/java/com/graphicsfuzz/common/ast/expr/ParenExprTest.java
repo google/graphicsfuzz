@@ -16,95 +16,95 @@
 
 package com.graphicsfuzz.common.ast.expr;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotSame;
+
 public class ParenExprTest {
 
-  private VariableIdentifierExpr vie;
-  private ParenExpr pe;
+    private VariableIdentifierExpr vie;
+    private ParenExpr pe;
 
-  @Before
-  public void setUp() {
-    vie = new VariableIdentifierExpr("x");
-    pe = new ParenExpr(vie);
-  }
-
-  @Test
-  public void getExpr() {
-    assertEquals(vie, pe.getExpr());
-  }
-
-  @Test
-  public void accept() {
-    ParenExpr nested =
-        new ParenExpr(
-            new ParenExpr(
+    @Test
+    public void accept() {
+        ParenExpr nested =
                 new ParenExpr(
-                    new ParenExpr(
                         new ParenExpr(
-                            vie)))));
-    assertEquals(5,
-        new StandardVisitor() {
+                                new ParenExpr(
+                                        new ParenExpr(
+                                                new ParenExpr(
+                                                        vie)))));
+        assertEquals(5,
+                new StandardVisitor() {
 
-          private int numParens;
+                    private int numParens;
 
-          @Override
-          public void visitParenExpr(ParenExpr parenExpr) {
-            super.visitParenExpr(parenExpr);
-            numParens++;
-          }
+                    int getNumParens(ParenExpr expr) {
+                        numParens = 0;
+                        visit(expr);
+                        return numParens;
+                    }
 
-          int getNumParens(ParenExpr expr) {
-            numParens = 0;
-            visit(expr);
-            return numParens;
-          }
-        }.getNumParens(nested)
-    );
+                    @Override
+                    public void visitParenExpr(ParenExpr parenExpr) {
+                        super.visitParenExpr(parenExpr);
+                        numParens++;
+                    }
+                }.getNumParens(nested)
+        );
 
 
-  }
+    }
 
-  @Test
-  public void testClone() {
-    ParenExpr pe2 = pe.clone();
-    assertNotSame(pe, pe2);
-    assertNotSame(pe.getExpr(), pe2.getExpr());
-    assertEquals(((VariableIdentifierExpr) pe.getExpr()).getName(),
-        ((VariableIdentifierExpr) pe2.getExpr()).getName());
-  }
+    @Test
+    public void getChild() {
+        assertEquals(vie, pe.getChild(0));
+    }
 
-  @Test
-  public void getChild() {
-    assertEquals(vie, pe.getChild(0));
-  }
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void getChildBad() {
+        pe.getChild(1);
+    }
 
-  @Test(expected = IndexOutOfBoundsException.class)
-  public void getChildBad() {
-    pe.getChild(1);
-  }
+    @Test
+    public void getExpr() {
+        assertEquals(vie, pe.getExpr());
+    }
 
-  @Test
-  public void setChild() {
-    VariableIdentifierExpr y = new VariableIdentifierExpr("y");
-    pe.setChild(0, y);
-    assertEquals(y, pe.getChild(0));
-  }
+    @Test
+    public void getNumChildren() {
+        assertEquals(1, pe.getNumChildren());
+    }
 
-  @Test(expected = IndexOutOfBoundsException.class)
-  public void setChildBad() {
-    VariableIdentifierExpr y = new VariableIdentifierExpr("y");
-    pe.setChild(1, y);
-  }
+    @Test
+    public void setChild() {
+        VariableIdentifierExpr y = new VariableIdentifierExpr("y");
+        pe.setChild(0, y);
+        assertEquals(y, pe.getChild(0));
+    }
 
-  @Test
-  public void getNumChildren() {
-    assertEquals(1, pe.getNumChildren());
-  }
+    @Test(expected = IndexOutOfBoundsException.class)
+    public void setChildBad() {
+        VariableIdentifierExpr y = new VariableIdentifierExpr("y");
+        pe.setChild(1, y);
+    }
+
+    @Before
+    public void setUp() {
+        vie = new VariableIdentifierExpr("x");
+        pe = new ParenExpr(vie);
+    }
+
+    @Test
+    public void testClone() {
+        ParenExpr pe2 = pe.clone();
+        assertNotSame(pe, pe2);
+        assertNotSame(pe.getExpr(), pe2.getExpr());
+        assertEquals(((VariableIdentifierExpr) pe.getExpr()).getName(),
+                ((VariableIdentifierExpr) pe2.getExpr()).getName());
+    }
 
 }
