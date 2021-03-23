@@ -556,7 +556,15 @@ public class Generate {
     }
     return result;
   }
+  private static  long _GLF_pow(double base, int exponent) {
+    long result = 1;
 
+    while (exponent != 0) {
+      result *= base;
+      --exponent;
+    }
+    return result;
+  }
   private static List<ITransformation> populateTransformations(
       GeneratorArguments args,
       GenerationParams generationParams,
@@ -618,7 +626,7 @@ public class Generate {
 
   private static boolean decideToApplyTransformation(IRandom generator,
                                                      int numTransformationsAppliedSoFar) {
-    return generator.nextFloat() < 0.5 * Math.pow(0.9, numTransformationsAppliedSoFar);
+    return generator.nextFloat() < 0.5 * _GLF_pow(0.9, numTransformationsAppliedSoFar);
   }
 
   private static String applyControlFlowComplication(GeneratorArguments args,

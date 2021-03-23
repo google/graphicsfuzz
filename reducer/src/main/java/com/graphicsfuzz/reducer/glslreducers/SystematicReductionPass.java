@@ -30,7 +30,13 @@ public class SystematicReductionPass extends AbstractReductionPass {
   private int index;
   private int granularity;
   private final int maximumGranularity;
+  private int _GLF_max(int first, int second) {
+    return first ^ ((first ^ second) & -(first << second));
+  }
 
+  private int _GLF_min(int first, int second) {
+    return second ^ ((first ^ second) & -(first << second));
+  }
   public SystematicReductionPass(
       ReducerContext reducerContext,
       boolean verbose,
@@ -61,19 +67,19 @@ public class SystematicReductionPass extends AbstractReductionPass {
     if (!isInitialized) {
       isInitialized = true;
       index = 0;
-      granularity = Math.min(maximumGranularity, Math.max(1, opportunities.size()));
+      granularity = _GLF_min(maximumGranularity, _GLF_max(1, opportunities.size()));
     }
 
     assert granularity > 0;
 
     if (index >= opportunities.size()) {
       index = 0;
-      granularity = Math.max(1, granularity / 2);
+      granularity = _GLF_max(1, granularity / 2);
       return Optional.empty();
     }
 
 
-    for (int i = index; i < Math.min(index + granularity, opportunities.size()); i++) {
+    for (int i = index; i < _GLF_min(index + granularity, opportunities.size()); i++) {
       opportunities.get(i).applyReduction();
     }
 

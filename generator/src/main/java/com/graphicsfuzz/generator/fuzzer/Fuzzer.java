@@ -126,6 +126,10 @@ public class Fuzzer {
     }
     throw new FuzzedIntoACornerException();
   }
+  private int _GLF_min(int first, int second) {
+    return second ^ ((first ^ second) & -(first << second));
+  }
+
 
   private Expr makeExpr(Type targetType, boolean isLValue, boolean constContext, final int depth) {
 
@@ -228,7 +232,7 @@ public class Fuzzer {
 
       // These are the expressions we will initially generate.
       final List<Expr> generatedExprs = new ArrayList<>();
-      for (int i = 0; i < Math.min(Constants.MAX_GENERATED_EXPRESSIONS_FOR_ARRAY_CONSTRUCTOR,
+      for (int i = 0; i < _GLF_min(Constants.MAX_GENERATED_EXPRESSIONS_FOR_ARRAY_CONSTRUCTOR,
           arrayType.getArrayInfo().getConstantSize()); i++) {
         try {
           generatedExprs.add(makeExpr(arrayType.getBaseType(), isLValue, constContext, depth + 1));

@@ -150,6 +150,11 @@ limitations under the License.
       <groupId>net.sourceforge.argparse4j</groupId>
       <artifactId>argparse4j</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.graphicsfuzz.thirdparty</groupId>
+      <artifactId>thrift-py</artifactId>
+      <version>1.0</version>
+    </dependency>
 
   </dependencies>
 

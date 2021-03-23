@@ -292,7 +292,7 @@ public class ExpressionGenerator {
     }
     // A random number that will be added to the variable on each iteration.
     // We use max function here to prevent the division by zero error.
-    int divisor = Math.max(1, generator.nextInt(original));
+    int divisor = _GLF_max(1, generator.nextInt(original));
 
     // TODO(https://github.com/google/graphicsfuzz/issues/659): we should be able to set the max
     //  limit as we don't want to end up having a large number of iterations.
@@ -410,10 +410,10 @@ public class ExpressionGenerator {
         //  temporarily used here, we have to change how the summand is generated.
         summandA = (float) generator.nextInt(21) - 10;
       } else if (value.getType() == BasicType.UINT) {
-        // We pick a random number in a range of numbers [1- expectedValue] so that when 
+        // We pick a random number in a range of numbers [1- expectedValue] so that when
         // subtracting the random summand with the expected value we would get the non-negative
         // result.
-        summandA = generator.nextInt(Math.max(1, expected.intValue()));
+        summandA = generator.nextInt(_GLF_max(1, expected.intValue()));
       } else if (value.getType() == BasicType.INT) {
         summandA = generator.nextInt(INT_MAX);
       }
@@ -544,6 +544,12 @@ public class ExpressionGenerator {
         + parseNameFromValue(value)
         + freshId();
   }
+  private static float _GLF_abs(float a) {
+    return (a <= 0.0F) ? 0.0F - a : a;
+  }
+  private int _GLF_max(int first, int second) {
+    return first ^ ((first ^ second) & -(first << second));
+  }
 
   private String genParamName(Value value) {
     // Provides name for a function arguments based on the given value.
@@ -573,7 +579,7 @@ public class ExpressionGenerator {
       float floatValue = numericValue.getValue().get().floatValue();
       if (String.valueOf(floatValue).contains("-")) {
         name.append(NEGATIVE);
-        floatValue = Math.abs(floatValue);
+        floatValue = _GLF_abs(floatValue);
       }
       name.append("_");
       // Replace dot with underscore, i.e., 0.45 will be converted to 0_45.
@@ -771,7 +777,7 @@ public class ExpressionGenerator {
       }
       if (type == BasicType.UINT) {
         final String intString = String.valueOf(generator.nextInt(INT_MAX - INT_MIN) + INT_MIN);
-        return new NumericValue(BasicType.UINT, Optional.of(Math.abs(Integer.valueOf(intString))));
+        return new NumericValue(BasicType.UINT, Optional.of(_GLF_abs(Integer.valueOf(intString))));
       }
       throw new RuntimeException("Not implemented yet!");
     }

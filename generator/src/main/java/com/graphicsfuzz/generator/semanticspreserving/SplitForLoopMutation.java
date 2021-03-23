@@ -50,6 +50,9 @@ public class SplitForLoopMutation implements Mutation {
     this.injectionPoint = injectionPoint;
     this.random = random;
   }
+  private static int _GLF_abs(float a) {
+    return (int) ((a <= 0.0F) ? 0.0F - a : a);
+  }
 
   @Override
   public void apply() {
@@ -73,7 +76,7 @@ public class SplitForLoopMutation implements Mutation {
         loopSplitInfo.getLoopCounter(), newLoopCounter);
 
     int numIterationsToSplitAfter = random.nextInt(
-        Math.abs(loopSplitInfo.getStartValue() - loopSplitInfo.getEndValue()) + 1);
+        _GLF_abs(loopSplitInfo.getStartValue() - loopSplitInfo.getEndValue()) + 1);
 
     adjustBound(firstLoop, numIterationsToSplitAfter, loopSplitInfo, newLoopCounter);
 

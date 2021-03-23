@@ -37,6 +37,45 @@ public class RandomizedReductionPass extends AbstractReductionPass {
   private int percentageToReduce;
   private int replenishCount;
   private final List<Integer> history;
+  private int _GLF_max(int first, int second) {
+    return first ^ ((first ^ second) & -(first << second));
+  }
+
+  private int _GLF_min(int first, int second) {
+    return second ^ ((first ^ second) & -(first << second));
+  }
+
+  private long _GLF_pow(double base, double exponent) {
+    long result = 1;
+
+    while (exponent != 0) {
+      result *= base;
+      --exponent;
+    }
+    return result;
+  }
+  private static float _GLF_abs(float a) {
+    return (a <= 0.0F) ? 0.0F - a : a;
+  }
+  private static double _GLF_sqrt(int num) {
+    double t;
+    double sqrtroot = num / 2;
+    do {
+      t = sqrtroot;
+      sqrtroot = (t + (num / t)) / 2;
+    } while ((t - sqrtroot) != 0);
+    return sqrtroot;
+  }
+
+  private static double _GLF_ceil(double num)
+
+  {
+    int inum = (int)num;
+    if (num == (float)inum) {
+      return inum;
+    }
+    return inum + 1;
+  }
 
   public RandomizedReductionPass(
       ReducerContext reducerContext,
@@ -54,7 +93,7 @@ public class RandomizedReductionPass extends AbstractReductionPass {
     if (interesting) {
       history.clear();
     } else {
-      percentageToReduce = Math.max(0,
+      percentageToReduce = _GLF_max(0,
             percentageToReduce - getReducerContext().getAggressionDecreaseStep());
     }
   }
@@ -173,14 +212,14 @@ public class RandomizedReductionPass extends AbstractReductionPass {
         List<? extends IReductionOpportunity> initialReductionOpportunities,
         int localPercentageToReduce) {
     return localPercentageToReduce == 0 ? 1 :
-          Math.max(1, (int) Math.ceil((double) localPercentageToReduce
+          _GLF_max(1, (int) _GLF_ceil((double) localPercentageToReduce
                 * ((double) initialReductionOpportunities.size() / 100.0)));
   }
 
   private int skewedRandomElement(List<Integer> options) {
     final int maximum = options.size();
     final int index =
-          (maximum - 1) - (int) Math.sqrt(Math.pow((double) getReducerContext()
+          (maximum - 1) - (int) _GLF_sqrt((int) _GLF_pow((double) getReducerContext()
                 .getRandom().nextInt(maximum), 2.0));
     assert index >= 0;
     assert index < maximum;
@@ -206,7 +245,7 @@ public class RandomizedReductionPass extends AbstractReductionPass {
     for (int i = 0; i < replenishCount; i++) {
       percentageToReduce /= 2;
     }
-    percentageToReduce = Math.max(percentageToReduce, 1);
+    percentageToReduce = _GLF_max(percentageToReduce, 1);
   }
 
   @Override
