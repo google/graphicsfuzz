@@ -75,6 +75,7 @@ public final class OpaqueExpressionGenerator {
     expressionIdentities.add(new IdentityOrFalse());
     expressionIdentities.add(new IdentityLogicalNotNot());
     expressionIdentities.add(new IdentityTernary());
+    expressionIdentities.add(new IdentityVectorComponent());
 
     if (shadingLanguageVersion.supportedBitwiseOperations()) {
       expressionIdentities.add(new IdentityBitwiseNotNot());
@@ -1074,6 +1075,33 @@ public final class OpaqueExpressionGenerator {
           depth, fuzzer);
     }
 
+  }
+
+  private class IdentityVectorComponent extends AbstractIdentityTransformation{
+    private IdentityVectorComponent(){
+      super(Arrays.asList(BasicType.BOOL), false);
+    }
+
+    @Override
+    public Expr apply(Expr expr, BasicType type, boolean constContext, int depth,
+                      Fuzzer fuzzer){
+
+      assert type == BasicType.BOOL;
+      result 
+       return  ArrayIndexExpr(Expr array, Expr index) {
+        // Motivation for this exception:
+        // vec2 v;
+        // v[0]; // fine
+        // v + vec2(0.0)[0]; // not fine - the following was probably intended:
+        // (v + vec2(0.0))[0]; // fine
+        if (array instanceof BinaryExpr) {
+          throw new IllegalArgumentException("Array index into binary expression "
+              + array.getText() + " not allowed.");
+        }
+        this.array = array;
+        this.index = index;
+      }             
+    }
   }
 
   private class IdentityLogicalNotNot extends AbstractIdentityTransformation {
