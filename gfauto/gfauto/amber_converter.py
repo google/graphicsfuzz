@@ -965,7 +965,7 @@ def extract_shaders_amber_script(
         shader_type = parts[1]
         shader_name = parts[2]
         shader_format = parts[3]
-        if shader_format == "PASSTHROUGH":
+        if shader_format in ("PASSTHROUGH", "GLSL"):
             continue
         check(
             shader_format == "SPIRV-ASM",
