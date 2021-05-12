@@ -32,6 +32,8 @@ import com.graphicsfuzz.common.util.ShaderKind;
 import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Optional;
 import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
 import org.junit.Test;
@@ -101,15 +103,16 @@ public class TranslationUnitTest {
 
     assertEquals(variablesDecl.getDeclInfos().get(0).getName(), "a");
     assertTrue(variablesDecl.getDeclInfos().get(0).hasArrayInfo());
-    assertEquals(variablesDecl.getDeclInfos().get(0).getArrayInfo().getConstantSize(),
+    assertEquals(variablesDecl.getDeclInfos().get(0).getArrayInfo().getConstantSize(0),
         Integer.valueOf(2));
     assertEquals(((IntConstantExpr)variablesDecl.getDeclInfos().get(0).getArrayInfo()
-            .getSizeExpr()).getNumericValue(), 2);
+            .getSizeExpr(0)).getNumericValue(), 2);
 
     // Increases the size of the array by one and checks that the new size was recorded
     // correctly.
-    final ArrayInfo arrayInfo = new ArrayInfo(new IntConstantExpr("3"));
-    arrayInfo.setConstantSizeExpr(3);
+    final ArrayInfo arrayInfo =
+        new ArrayInfo(Collections.singletonList(Optional.of(new IntConstantExpr("3"))));
+    arrayInfo.setConstantSizeExpr(0, 3);
     final VariableDeclInfo variableDeclInfo = new VariableDeclInfo("a",
           arrayInfo, null);
     final VariablesDeclaration newVariablesDeclaration = new VariablesDeclaration(
@@ -123,10 +126,10 @@ public class TranslationUnitTest {
 
     assertEquals(variablesDecl2.getDeclInfos().get(0).getName(), "a");
     assertTrue(variablesDecl2.getDeclInfos().get(0).hasArrayInfo());
-    assertEquals(variablesDecl2.getDeclInfos().get(0).getArrayInfo().getConstantSize(),
+    assertEquals(variablesDecl2.getDeclInfos().get(0).getArrayInfo().getConstantSize(0),
         Integer.valueOf(3));
     assertEquals(((IntConstantExpr)variablesDecl2.getDeclInfos().get(0).getArrayInfo()
-        .getSizeExpr()).getNumericValue(), 3);
+        .getSizeExpr(0)).getNumericValue(), 3);
   }
 
   @Test

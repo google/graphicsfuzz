@@ -27,6 +27,7 @@ public class AbortVisitationException extends RuntimeException {
 
   /**
    * Provide a message to explain why visitation was aborted.
+   *
    * @param message A message providing details of the abort.
    */
   public AbortVisitationException(String message) {

@@ -31,7 +31,7 @@ public class BlockStmtTest {
     assertEquals(1, b.getNumStmts());
     b.insertStmt(0, new ExprStmt(new BoolConstantExpr(true)));
     assertEquals(2, b.getNumStmts());
-    assertTrue(((BoolConstantExpr) ((ExprStmt)b.getStmt(0)).getExpr()).getIsTrue());
+    assertTrue(((BoolConstantExpr) ((ExprStmt) b.getStmt(0)).getExpr()).getIsTrue());
     assertTrue(b.getStmt(1) instanceof NullStmt);
   }
 

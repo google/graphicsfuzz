@@ -31,6 +31,10 @@ public class ArrayType extends UnqualifiedType {
   private ArrayInfo arrayInfo;
 
   public ArrayType(Type baseType, ArrayInfo arrayInfo) {
+    if (arrayInfo.getDimensionality() != 1) {
+      throw new IllegalArgumentException("Array types should be 1-dimensional: multi-dimensional "
+          + "arrays are typed via arrays with arrays as their base type.");
+    }
     if (baseType instanceof QualifiedType) {
       throw new IllegalArgumentException("Qualifiers should be applied to an array type, not to "
           + "the array's base type.");
@@ -64,19 +68,24 @@ public class ArrayType extends UnqualifiedType {
     if (!this.baseType.equals(thatArrayType.baseType)) {
       return false;
     }
-    if (this.arrayInfo.hasConstantSize()) {
-      return thatArrayType.arrayInfo.hasConstantSize()
-          && this.arrayInfo.getConstantSize().equals(thatArrayType.arrayInfo.getConstantSize());
-    } else {
-      return !thatArrayType.arrayInfo.hasConstantSize();
+    assert this.arrayInfo.getDimensionality() == 1;
+    assert thatArrayType.arrayInfo.getDimensionality() == 1;
+    if (this.arrayInfo.hasConstantSize(0) != thatArrayType.arrayInfo.hasConstantSize(0)) {
+      return false;
     }
+    if (this.arrayInfo.hasConstantSize(0)
+        && !this.arrayInfo.getConstantSize(0)
+        .equals(thatArrayType.arrayInfo.getConstantSize(0))) {
+      return false;
+    }
+    return true;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(baseType, arrayInfo.hasConstantSize()
-        ? arrayInfo.getConstantSize()
-        : arrayInfo.hasConstantSize());
+    return Objects.hash(baseType, arrayInfo.hasConstantSize(0)
+          ? arrayInfo.getConstantSize(0)
+          : arrayInfo.hasConstantSize(0));
   }
 
   @Override
@@ -86,17 +95,17 @@ public class ArrayType extends UnqualifiedType {
 
   @Override
   public boolean hasCanonicalConstant(Scope scope) {
-    return baseType.hasCanonicalConstant(scope) && arrayInfo.hasConstantSize();
+    return baseType.hasCanonicalConstant(scope) && arrayInfo.hasConstantSize(0);
   }
 
   @Override
   public Expr getCanonicalConstant(Scope scope) {
-    final Expr canonicalConstantForBaseType = baseType.getCanonicalConstant(scope);
-    final List<Expr> componentConstants = new ArrayList<>();
-    for (int i = 0; i < arrayInfo.getConstantSize(); i++) {
-      componentConstants.add(canonicalConstantForBaseType.clone());
+    final Expr baseTypeCanonicalConstant = baseType.getCanonicalConstant(scope);
+    final List<Expr> components = new ArrayList<>();
+    for (int i = 0; i < arrayInfo.getConstantSize(0); i++) {
+      components.add(baseTypeCanonicalConstant.clone());
     }
-    return new ArrayConstructorExpr(this.clone(), componentConstants);
+    return new ArrayConstructorExpr(this.clone(), components);
   }
 
 }

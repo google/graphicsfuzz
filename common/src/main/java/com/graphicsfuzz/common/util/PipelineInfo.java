@@ -179,7 +179,10 @@ public final class PipelineInfo {
           }
           int arrayLength;
           if (vdi.hasArrayInfo()) {
-            arrayLength = vdi.getArrayInfo().getConstantSize();
+            if (vdi.getArrayInfo().getDimensionality() != 1) {
+              throw new RuntimeException("Unsupported: multi-dimensional array uniforms.");
+            }
+            arrayLength = vdi.getArrayInfo().getConstantSize(0);
           } else {
             arrayLength = 1;
           }
@@ -222,7 +225,10 @@ public final class PipelineInfo {
 
   private Optional<Integer> maybeGetArrayCount(VariableDeclInfo vdi) {
     if (vdi.hasArrayInfo()) {
-      return Optional.of(vdi.getArrayInfo().getConstantSize());
+      if (vdi.getArrayInfo().getDimensionality() != 1) {
+        throw new RuntimeException("Unsupported: multi-dimensional array uniforms.");
+      }
+      return Optional.of(vdi.getArrayInfo().getConstantSize(0));
     }
     return Optional.empty();
   }

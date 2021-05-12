@@ -35,6 +35,7 @@ import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -94,8 +95,10 @@ public class LiteralToUniformReductionOpportunity
     }
 
     final int arraySize = shaderJob.getPipelineInfo().getArgs(arrayName).size();
-    final ArrayInfo arrayInfo = new ArrayInfo(new IntConstantExpr(String.valueOf(arraySize)));
-    arrayInfo.setConstantSizeExpr(arraySize);
+    final ArrayInfo arrayInfo =
+        new ArrayInfo(Collections.singletonList(
+            Optional.of(new IntConstantExpr(String.valueOf(arraySize)))));
+    arrayInfo.setConstantSizeExpr(0, arraySize);
     final VariableDeclInfo variableDeclInfo = new VariableDeclInfo(arrayName,
         arrayInfo, null);
     final VariablesDeclaration arrayDecl = new VariablesDeclaration(
@@ -109,7 +112,7 @@ public class LiteralToUniformReductionOpportunity
 
     // Goes through each translation unit in the shader job and updates its existing uniform array
     // to refer this new uniform array.
-    for (TranslationUnit tu: shaderJob.getShaders()) {
+    for (TranslationUnit tu : shaderJob.getShaders()) {
       if (tu.hasUniformDeclaration(arrayName)) {
         tu.updateTopLevelDeclaration(arrayDecl, tu.getUniformDeclaration(arrayName));
       }

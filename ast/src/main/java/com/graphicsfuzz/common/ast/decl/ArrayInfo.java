@@ -21,104 +21,138 @@ import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 import com.graphicsfuzz.common.ast.visitors.UnsupportedLanguageFeatureException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class ArrayInfo implements IAstNode {
 
   /**
-   * Size, set after folding.
+   * Size per dimension, set after folding.
    */
-  private Optional<Integer> constantSize;
+  private List<Optional<Integer>> constantSizes;
   /**
-   * Original size expression before folding, for pretty printing.
+   * Original size expression per dimension before folding, for pretty printing.
    */
-  private Optional<Expr> sizeExpr;
+  private List<Optional<Expr>> sizeExprs;
 
   /**
-   * "originalSize" is the expression in the original shader representing the array size,
-   * and is empty if no size was given. If "originalSize" is present, constant folding can
-   * be used to turn the expression into an integer value, which can be stored in
-   * "constantSize". It is useful to keep "originalSize" around to allow the shader to
-   * be pretty-printed in its original form.
-   * @param originalSize Array size expression
+   * "sizeExprs" are the expressions in the original shader representing the array size, per
+   * dimension. The outermost dimension can be empty if no size is given. If an original size
+   * is present, constant folding can be used to turn the expression into an integer value, which
+   * can be stored in "constantSize". It is useful to keep "originalSize" around to allow the shader
+   * to be pretty-printed in its original form.
+   *
+   * @param sizeExprs Array size expressions
    */
-  public ArrayInfo(Expr originalSize) {
-    this.constantSize = Optional.empty();
-    this.sizeExpr = Optional.of(originalSize);
+  public ArrayInfo(List<Optional<Expr>> sizeExprs) {
+    this.constantSizes = new ArrayList<>();
+    for (int i = 0; i < sizeExprs.size(); i++) {
+      if (i > 0 && !sizeExprs.get(i).isPresent()) {
+        throw new IllegalArgumentException("Only the outer-most dimension of an array type can be"
+            + " absent");
+      }
+      this.constantSizes.add(Optional.empty());
+    }
+    this.sizeExprs = new ArrayList<>(sizeExprs);
+  }
+
+  // Private constructor to support cloning.
+  private ArrayInfo(List<Optional<Integer>> constantSizes, List<Optional<Expr>> sizeExprs) {
+    this.constantSizes = new ArrayList<>(constantSizes);
+    this.sizeExprs = new ArrayList<>(sizeExprs);
   }
 
   /**
-   * Private constructor for cloning, needed since the constant size expression may have been
-   * folded by the time the expression is cloned.
-   * @param constantSize Possible constant-folded size
-   * @param originalSize Original size, for pretty printing
+   * Query the dimensionality of the array.
+   *
+   * @return The dimensionality of the array
    */
-  private ArrayInfo(Optional<Integer> constantSize, Optional<Expr> originalSize) {
-    this.constantSize = constantSize;
-    this.sizeExpr = originalSize;
+  public int getDimensionality() {
+    assert sizeExprs.size() == constantSizes.size();
+    return sizeExprs.size();
   }
 
   /**
-   * Default constructor, for arrays with no size definition.
-   */
-  public ArrayInfo() {
-    this.constantSize = Optional.empty();
-    this.sizeExpr = Optional.empty();
-  }
-
-  /**
-   * Query for whether this array has a size definition.
+   * Query for whether this array has a known constant size in the given dimension.
+   *
+   * @param dimension The dimension to be queried
    * @return true if size definition is available
    */
-  public boolean hasConstantSize() {
-    return constantSize.isPresent();
+  public boolean hasConstantSize(int dimension) {
+    return constantSizes.get(dimension).isPresent();
   }
 
   /**
-   * Query whether this array has a size expression.
+   * Query whether this array has a size expression in the given dimension.
+   *
+   * @param dimension The dimension to be queried
    * @return Size expression
    */
-  public boolean hasSizeExpr() {
-    return sizeExpr.isPresent();
+  public boolean hasSizeExpr(int dimension) {
+    return sizeExprs.get(dimension).isPresent();
   }
 
   /**
-   * Get the constant size.
-   * If constant folding was not performed yet (for example, the AST is stil being built) or if
+   * Get the constant size in the given dimension.
+   * If constant folding was not performed yet (for example, the AST is still being built) or if
    * the array has no size declaration, calling this function will throw an exception.
+   *
+   * @param dimension The dimension to be queried
    * @return Integer value of the array size
    * @throws UnsupportedLanguageFeatureException if folding was not done
    */
-  public Integer getConstantSize() throws UnsupportedLanguageFeatureException {
-    if (hasConstantSize()) {
-      return constantSize.get();
+  public Integer getConstantSize(int dimension) {
+    if (hasConstantSize(dimension)) {
+      return constantSizes.get(dimension).get();
     }
-    throw new UnsupportedLanguageFeatureException("Not a constant expression");
+    throw new UnsupportedOperationException("Not a constant expression");
   }
 
   /**
-   * Set constant expression after folding.
+   * Set constant expression after folding, in the given dimension.
+   *
+   * @param dimension The dimension for which a constant size is to be set
    * @param foldedSize Completely folded size
    */
-  public void setConstantSizeExpr(int foldedSize) {
-    constantSize = Optional.of(foldedSize);
+  public void setConstantSizeExpr(int dimension, int foldedSize) {
+    constantSizes.set(dimension, Optional.of(foldedSize));
   }
 
   /**
-   * Get the original expression for pretty printing.
+   * Get the original size expression in a given dimension, typically for pretty printing.
+   *
+   * @param dimension The dimension to be queried
    * @return Original, non-folded size expression
    */
-  public Expr getSizeExpr() {
-    return sizeExpr.get();
+  public Expr getSizeExpr(int dimension) {
+    return sizeExprs.get(dimension).get();
   }
 
   /**
    * Requires that there is a constant size, and sets the size expression to a constant expression
    * of exactly this size.
+   *
+   * @param dimension The dimension to be reset
    */
-  public void resetSizeExprToConstant() {
-    assert hasConstantSize();
-    this.sizeExpr = Optional.of(new IntConstantExpr(Integer.toString(getConstantSize())));
+  public void resetSizeExprToConstant(int dimension) {
+    assert hasConstantSize(dimension);
+    sizeExprs.set(dimension,
+        Optional.of(new IntConstantExpr(Integer.toString(getConstantSize(dimension)))));
+  }
+
+  /**
+   * Yields an ArrayInfo object for the requested dimension.
+   *
+   * @param dimension The dimension for which an ArrayInfo object is required
+   * @return An ArrayInfo object for the given dimension
+   */
+  public ArrayInfo getArrayInfoForDimension(int dimension) {
+    return new ArrayInfo(Collections.singletonList(constantSizes.get(dimension)),
+        Collections.singletonList(sizeExprs.get(dimension)
+            .flatMap(expr -> Optional.of(expr.clone()))));
   }
 
   @Override
@@ -128,7 +162,9 @@ public class ArrayInfo implements IAstNode {
 
   @Override
   public ArrayInfo clone() {
-    return new ArrayInfo(constantSize, sizeExpr.flatMap(item -> Optional.of(item.clone())));
+    return new ArrayInfo(constantSizes, sizeExprs
+        .stream()
+        .map(item -> item.flatMap(expr -> Optional.of(expr.clone()))).collect(Collectors.toList()));
   }
 
 }

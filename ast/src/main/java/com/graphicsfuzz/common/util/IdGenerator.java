@@ -34,6 +34,7 @@ public class IdGenerator {
 
   /**
    * Creates an IdGenerator, recording that a given set of ids has already been used.
+   *
    * @param initiallyUsedIds A set of ids that have already been used and are thus unavailable.
    */
   public IdGenerator(Set<Integer> initiallyUsedIds) {
@@ -45,6 +46,7 @@ public class IdGenerator {
   /**
    * Find the next id that (a) has not been returned by this IdGenerator, and (b) is not one of
    * the initially used ids that was specified when the IdGenerator was created.
+   *
    * @return A fresh id.
    */
   public int freshId() {

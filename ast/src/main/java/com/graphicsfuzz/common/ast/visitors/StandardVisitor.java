@@ -293,8 +293,10 @@ public abstract class StandardVisitor implements IAstVisitor {
 
   @Override
   public void visitArrayInfo(ArrayInfo arrayInfo) {
-    if (arrayInfo.hasSizeExpr()) {
-      visitChildFromParent(arrayInfo.getSizeExpr(), arrayInfo);
+    for (int i = 0; i < arrayInfo.getDimensionality(); i++) {
+      if (arrayInfo.hasSizeExpr(i)) {
+        visitChildFromParent(arrayInfo.getSizeExpr(i), arrayInfo);
+      }
     }
   }
 

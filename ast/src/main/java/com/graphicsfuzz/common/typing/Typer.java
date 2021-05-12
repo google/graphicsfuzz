@@ -624,7 +624,7 @@ public class Typer extends ScopeTrackingVisitor {
    *
    * <p>not:
    *
-   * <p>ArrayType(QualifierdType(int, const), 3).
+   * <p>ArrayType(QualifiedType(int, const), 3).
    *
    * @param type A type to be potentially combined with array information.
    * @param arrayInfo Possibly null array information.
@@ -634,7 +634,10 @@ public class Typer extends ScopeTrackingVisitor {
     if (arrayInfo == null) {
       return type;
     }
-    Type result = new ArrayType(type.getWithoutQualifiers(), arrayInfo);
+    Type result = type.getWithoutQualifiers();
+    for (int i = arrayInfo.getDimensionality() - 1; i >= 0; i--) {
+      result = new ArrayType(result, arrayInfo.getArrayInfoForDimension(i));
+    }
     if (type instanceof QualifiedType) {
       result = new QualifiedType(result, ((QualifiedType) type).getQualifiers());
     }

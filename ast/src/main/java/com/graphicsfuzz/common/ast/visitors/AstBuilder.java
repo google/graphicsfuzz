@@ -198,6 +198,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
 
   /**
    * Performs constant folding for array size fields.
+   *
    * @param tu Parsed syntax tree to scan and modify
    * @return Modified syntax tree
    */
@@ -206,6 +207,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     new ScopeTrackingVisitor() {
       /**
        * Attempt to reduce expression, or throw exception if failed.
+       *
        * @param expr Expression to fold
        * @return Folded expression
        */
@@ -224,7 +226,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
           return reduce(newexpr);
         }
         if (expr instanceof ParenExpr) {
-          return reduce(((ParenExpr)expr).getExpr());
+          return reduce(((ParenExpr) expr).getExpr());
         }
         if (expr instanceof BinaryExpr) {
           BinaryExpr bexpr = (BinaryExpr) expr;
@@ -313,10 +315,20 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
       }
 
       private void handleArrayInfo(ArrayInfo arrayInfo) {
-        if (arrayInfo.hasSizeExpr()) {
-          arrayInfo.setConstantSizeExpr(((IntConstantExpr)reduce(arrayInfo.getSizeExpr()))
-              .getNumericValue());
+        for (int i = 0; i < arrayInfo.getDimensionality(); i++) {
+          if (arrayInfo.hasSizeExpr(i)) {
+            arrayInfo.setConstantSizeExpr(i, ((IntConstantExpr) reduce(arrayInfo.getSizeExpr(i)))
+                .getNumericValue());
+          }
         }
+      }
+
+      private void handleArrayType(ArrayType arrayType) {
+        ArrayType temp = arrayType;
+        do {
+          handleArrayInfo(temp.getArrayInfo());
+          temp = temp.getBaseType() instanceof ArrayType ? (ArrayType) temp.getBaseType() : null;
+        } while (temp != null);
       }
 
       @Override
@@ -332,7 +344,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
         super.visitStructDefinitionType(structDefinitionType);
         for (Type fieldType : structDefinitionType.getFieldTypes()) {
           if (fieldType.getWithoutQualifiers() instanceof ArrayType) {
-            handleArrayInfo(((ArrayType) fieldType.getWithoutQualifiers()).getArrayInfo());
+            handleArrayType((ArrayType) fieldType.getWithoutQualifiers());
           }
         }
       }
@@ -350,7 +362,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
         super.visitInterfaceBlock(interfaceBlock);
         for (Type memberType : interfaceBlock.getMemberTypes()) {
           if (memberType.getWithoutQualifiers() instanceof ArrayType) {
-            handleArrayInfo(((ArrayType) memberType.getWithoutQualifiers()).getArrayInfo());
+            handleArrayType((ArrayType) memberType.getWithoutQualifiers());
           }
         }
       }
@@ -358,7 +370,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
       @Override
       public void visitArrayConstructorExpr(ArrayConstructorExpr arrayConstructorExpr) {
         super.visitArrayConstructorExpr(arrayConstructorExpr);
-        handleArrayInfo(arrayConstructorExpr.getArrayType().getArrayInfo());
+        handleArrayType(arrayConstructorExpr.getArrayType());
       }
     }.visit(tu);
     return tu;
@@ -615,15 +627,16 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
   }
 
   private ArrayInfo getArrayInfo(Array_specifierContext arraySpecifierContext) {
-    if (arraySpecifierContext.array_specifier() != null) {
-      throw new UnsupportedLanguageFeatureException("Not yet supporting multi-dimensional arrays");
+    LinkedList<Optional<Expr>> sizeExprs = new LinkedList<>();
+    for (Array_specifierContext temp = arraySpecifierContext; temp != null; temp =
+        temp.array_specifier()) {
+      if (temp.constant_expression() == null) {
+        sizeExprs.addFirst(Optional.empty());
+      } else {
+        sizeExprs.addFirst(Optional.of((Expr) visit(temp.constant_expression())));
+      }
     }
-    if (arraySpecifierContext.constant_expression() == null) {
-      // An array with unspecified length.
-      return new ArrayInfo();
-    }
-    final Expr expr = (Expr) visit(arraySpecifierContext.constant_expression());
-    return new ArrayInfo(expr);
+    return new ArrayInfo(sizeExprs);
   }
 
   private BuiltinType getBuiltinType(Builtin_type_specifier_nonarrayContext ctx) {
@@ -1354,8 +1367,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     if (isBuiltinTypeConstructor(header.function_identifier())) {
       if (header.array_specifier() != null) {
         return new ArrayConstructorExpr(
-            new ArrayType(
-                getBuiltinType(header.function_identifier().builtin_type_specifier_nonarray()),
+            makeArrayType(getBuiltinType(header.function_identifier()
+                    .builtin_type_specifier_nonarray()),
                 getArrayInfo(header.array_specifier())), params);
       }
       return new TypeConstructorExpr(getTypeConstructorName(header.function_identifier()), params);
@@ -1365,7 +1378,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
         final StructNameType structType = new StructNameType(
             header.function_identifier().variable_identifier().getText());
         return new ArrayConstructorExpr(
-            new ArrayType(structType,
+            makeArrayType(structType,
                 getArrayInfo(header.array_specifier())), params);
       }
       return new TypeConstructorExpr(getTypeConstructorName(header.function_identifier()), params);
@@ -1376,6 +1389,15 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     // The above logic is intended to capture all cases, so the following indicates an invalid
     // shader, rather than lack of support.
     throw new RuntimeException("Unsupported function call: " + getOriginalSourceText(ctx));
+  }
+
+  private ArrayType makeArrayType(Type baseType, ArrayInfo arrayInfo) {
+    ArrayType result = new ArrayType(baseType,
+        arrayInfo.getArrayInfoForDimension(arrayInfo.getDimensionality() - 1));
+    for (int i = arrayInfo.getDimensionality() - 2; i >= 0; i--) {
+      result = new ArrayType(result, arrayInfo.getArrayInfoForDimension(i));
+    }
+    return result;
   }
 
   private String getCallee(Function_identifierContext ctx) {

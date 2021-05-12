@@ -809,6 +809,22 @@ public class PrettyPrinterVisitorTest {
   }
 
   @Test
+  public void multiDimensionalArraysTest() throws Exception {
+    final String shader =
+        "#version 320 es\n"
+            + "const int N = 2;\n"
+            + "\n"
+            + "const int M = 3;\n"
+            + "\n"
+            + "void foo(int p[4][4][3])\n"
+            + "{\n"
+            + " int temp[2][M] = int[N][3](int[3](1, 2, 3), p[0][0]);\n"
+            + " temp[0] = int[3](1, 2, 3);\n"
+            + "}\n";
+    assertEquals(shader, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)));
+  }
+
+  @Test
   public void testEmitGraphicsFuzzDefines() throws Exception {
 
     final String expected = "\n"

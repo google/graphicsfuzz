@@ -299,8 +299,9 @@ new MemberLookupExpr(new VariableIdentifierExpr(OpenGlConstants.GL_NUM_WORK_GROU
             new BindingLayoutQualifier(0))),
         TypeQualifier.BUFFER,
         "doesNotMatter",
-        Arrays.asList(COMPUTE_SHADER_DATA),
-        Arrays.asList(new ArrayType(BasicType.VEC4, new ArrayInfo())),
+        Collections.singletonList(COMPUTE_SHADER_DATA),
+        Collections.singletonList(new ArrayType(BasicType.VEC4,
+            new ArrayInfo(Collections.singletonList(Optional.empty())))),
         Optional.empty()));
 
   }

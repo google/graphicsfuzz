@@ -223,16 +223,17 @@ public abstract class DonateCodeTransformation implements ITransformation {
           final ArrayType memberArrayType = ((ArrayType) memberType.getWithoutQualifiers());
           // The array variable we declare with have the array member's base type as its base type.
           plainVariableBaseType = memberArrayType.getBaseType();
-          if (memberArrayType.getArrayInfo().hasSizeExpr()) {
+          if (memberArrayType.getArrayInfo().hasSizeExpr(0)) {
             // The array was already sized; we re-use the size.
             plainVariableArrayInfo = memberArrayType.getArrayInfo();
           } else {
             // The array was unsized, so we give it a made up size.  We set its size expression to
             // be an expression that yields this size, and also make its known-constant size be the
             // same integer value.
-            plainVariableArrayInfo = new ArrayInfo(new IntConstantExpr(
-                Integer.toString(Constants.DUMMY_SIZE_FOR_UNSIZED_ARRAY_DONATION)));
-            plainVariableArrayInfo.setConstantSizeExpr(
+            plainVariableArrayInfo =
+                new ArrayInfo(Collections.singletonList(Optional.of(new IntConstantExpr(
+                Integer.toString(Constants.DUMMY_SIZE_FOR_UNSIZED_ARRAY_DONATION)))));
+            plainVariableArrayInfo.setConstantSizeExpr(0,
                 Constants.DUMMY_SIZE_FOR_UNSIZED_ARRAY_DONATION);
           }
         } else {
@@ -285,9 +286,11 @@ public abstract class DonateCodeTransformation implements ITransformation {
       @Override
       public void visitArrayInfo(ArrayInfo arrayInfo) {
         super.visitArrayInfo(arrayInfo);
-        if (arrayInfo.hasSizeExpr()) {
-          assert arrayInfo.hasConstantSize();
-          arrayInfo.resetSizeExprToConstant();
+        for (int i = 0; i < arrayInfo.getDimensionality(); i++) {
+          if (arrayInfo.hasSizeExpr(i)) {
+            assert arrayInfo.hasConstantSize(i);
+            arrayInfo.resetSizeExprToConstant(i);
+          }
         }
       }
     }.visit(tu);

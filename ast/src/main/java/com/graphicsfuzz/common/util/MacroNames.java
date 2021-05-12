@@ -24,6 +24,7 @@ public class MacroNames {
 
   /**
    * Determines whether the given expression is an invocation of a GraphicsFuzz macro.
+   *
    * @param expr an expression to be tested.
    * @return true if and only if the expression is an invocation of a GraphicsFuzz macro.
    */

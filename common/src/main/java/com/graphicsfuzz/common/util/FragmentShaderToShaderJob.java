@@ -65,7 +65,10 @@ public final class FragmentShaderToShaderJob {
 
   private static Optional<Integer> maybeGetArrayCount(VariableDeclInfo vdi) {
     if (vdi.hasArrayInfo()) {
-      return Optional.of(vdi.getArrayInfo().getConstantSize());
+      if (vdi.getArrayInfo().getDimensionality() != 1) {
+        throw new RuntimeException("Multi-dimensional array uniforms are not supported.");
+      }
+      return Optional.of(vdi.getArrayInfo().getConstantSize(0));
     }
     return Optional.empty();
   }
@@ -90,9 +93,14 @@ public final class FragmentShaderToShaderJob {
     for (VariablesDeclaration vd : tu.getUniformDecls()) {
       if (vd.getBaseType().getWithoutQualifiers() instanceof SamplerType) {
         for (VariableDeclInfo vdi : vd.getDeclInfos()) {
-          if (vdi.hasArrayInfo() && (!vdi.getArrayInfo().hasConstantSize()
-              || vdi.getArrayInfo().getConstantSize() > 1)) {
-            throw new RuntimeException("Sampler arrays not implemented");
+          if (vdi.hasArrayInfo()) {
+            if (vdi.getArrayInfo().getDimensionality() != 1) {
+              throw new RuntimeException("Multi-dimensional sampler arrays are not supported.");
+            }
+            if (!vdi.getArrayInfo().hasConstantSize(0)
+                || vdi.getArrayInfo().getConstantSize(0) > 1) {
+              throw new RuntimeException("Sampler arrays not implemented");
+            }
           }
           pipelineInfo.addSamplerInfo(vdi.getName(),
               vd.getBaseType().getWithoutQualifiers().getText(), BuiltInTexture.DEFAULT.toString());
@@ -105,7 +113,10 @@ public final class FragmentShaderToShaderJob {
         BasicType basicType = (BasicType) vd.getBaseType().getWithoutQualifiers();
         for (VariableDeclInfo vdi : vd.getDeclInfos()) {
           // Non-array uniforms are handled as single-element arrays.
-          final int arrayLength = vdi.hasArrayInfo() ? vdi.getArrayInfo().getConstantSize() : 1;
+          if (vdi.hasArrayInfo() && vdi.getArrayInfo().getDimensionality() != 1) {
+            throw new RuntimeException("Multi-dimensional array uniforms are not supported.");
+          }
+          final int arrayLength = vdi.hasArrayInfo() ? vdi.getArrayInfo().getConstantSize(0) : 1;
           final List<Number> values = new ArrayList<>();
           for (int i = 0; i < basicType.getNumElements() * arrayLength; i++) {
             if (basicType.getElementType() == BasicType.FLOAT) {

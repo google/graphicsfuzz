@@ -32,7 +32,7 @@ import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
 import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,6 +50,7 @@ public class FloatLiteralReplacer extends StandardVisitor {
    * pipelineInfo structure.  The method may also adjust the shader to ensure that const
    * initializers are valid (by removing const and moving initializers), as the replacement of
    * floating-point literals changes whether intializers are compile-time constants.
+   *
    * @param tu Translation unit to be mutated
    * @param pipelineInfo Structure that holds pipeline state, including info about uniforms
    */
@@ -77,9 +78,11 @@ public class FloatLiteralReplacer extends StandardVisitor {
     visit(tu);
     if (uniformIndex > 0) {
       tu.addDeclaration(new VariablesDeclaration(
-          new QualifiedType(BasicType.FLOAT, Arrays.asList(TypeQualifier.UNIFORM)),
+          new QualifiedType(BasicType.FLOAT, Collections.singletonList(TypeQualifier.UNIFORM)),
           new VariableDeclInfo(Constants.FLOAT_CONST,
-              new ArrayInfo(new IntConstantExpr(Integer.toString(uniformIndex))), null)
+              new ArrayInfo(Collections.singletonList(Optional.of(
+                  new IntConstantExpr(Integer.toString(uniformIndex))))),
+              null)
       ));
     }
   }
