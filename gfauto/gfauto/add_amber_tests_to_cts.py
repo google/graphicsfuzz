@@ -31,9 +31,13 @@ from typing import Pattern, TextIO, cast
 SHORT_DESCRIPTION_LINE_PREFIX = "# Short description: "
 
 MUST_PASS_PATHS = [
-    os.path.join("android", "cts", "master", "vk-master.txt"),
-    os.path.join("android", "cts", "master", "vk-master-2020-03-01.txt"),
-    os.path.join("external", "vulkancts", "mustpass", "master", "vk-default.txt"),
+    os.path.join("android", "cts", "master", "vk-master", "graphicsfuzz.txt"),
+    os.path.join(
+        "android", "cts", "master", "vk-master-2021-03-01", "graphicsfuzz.txt"
+    ),
+    os.path.join(
+        "external", "vulkancts", "mustpass", "master", "vk-default", "graphicsfuzz.txt"
+    ),
 ]
 
 TEST_NAME_IN_LINE_PATTERN: Pattern[str] = re.compile(r"\"(.*?)\.amber\"")
