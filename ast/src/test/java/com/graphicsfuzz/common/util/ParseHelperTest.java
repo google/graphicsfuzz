@@ -25,6 +25,7 @@ import static org.junit.Assert.fail;
 
 import com.graphicsfuzz.common.ast.CompareAstsDuplicate;
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
@@ -586,7 +587,7 @@ public class ParseHelperTest {
         .getMainFunction().getBody();
     assertEquals(expectedSize,
         (int) ((DeclarationStmt) block.getStmt(block.getNumStmts() - 1))
-            .getVariablesDeclaration().getDeclInfo(0).getArrayInfo().getConstantSize());
+            .getVariablesDeclaration().getDeclInfo(0).getArrayInfo().getConstantSize(0));
   }
 
   /**
@@ -696,18 +697,19 @@ public class ParseHelperTest {
   }
 
   @Test
-  public void testUnsupportedMultiDimensionalArrays() throws Exception {
-
-    // Change this test to check for support if it is eventually introduced.
-
-    try {
-      ParseHelper.parse("void main() {\n"
-          + "  int A[3][4];\n"
-          + "}\n");
-      fail("Exception was expected");
-    } catch (UnsupportedLanguageFeatureException exception) {
-      assertTrue(exception.getMessage().contains("Not yet supporting multi-dimensional arrays"));
-    }
+  public void testMultiDimensionalArraysSupported() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("void main() {\n"
+        + "  int A[3][4];\n"
+        + "}\n");
+    assertTrue(new CheckPredicateVisitor() {
+      @Override
+      public void visitArrayInfo(ArrayInfo arrayInfo) {
+        if (arrayInfo.getDimensionality() == 2 && arrayInfo.getConstantSize(0) == 3
+            && arrayInfo.getConstantSize(1) == 4) {
+          predicateHolds();
+        }
+      }
+    }.test(tu));
   }
 
   @Test

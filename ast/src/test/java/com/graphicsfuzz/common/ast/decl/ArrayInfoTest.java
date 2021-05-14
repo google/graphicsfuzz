@@ -22,6 +22,8 @@ import static org.junit.Assert.assertSame;
 
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
+import java.util.Collections;
+import java.util.Optional;
 import org.junit.Test;
 
 public class ArrayInfoTest {
@@ -29,12 +31,14 @@ public class ArrayInfoTest {
   @Test
   public void testClone() {
     final Expr sizeExpr = new IntConstantExpr("1");
-    final ArrayInfo arrayInfo1 = new ArrayInfo(sizeExpr);
+    final ArrayInfo arrayInfo1 = new ArrayInfo(Collections.singletonList(Optional.of(sizeExpr)));
     final ArrayInfo arrayInfo2 = arrayInfo1.clone();
     assertNotSame(arrayInfo1, arrayInfo2);
-    assertSame(sizeExpr, arrayInfo1.getSizeExpr());
-    assertNotSame(sizeExpr, arrayInfo2.getSizeExpr());
-    assertEquals(sizeExpr.getText(), arrayInfo2.getSizeExpr().getText());
+    assertEquals(arrayInfo1.getDimensionality(), arrayInfo2.getDimensionality());
+    assertEquals(1, arrayInfo2.getDimensionality());
+    assertSame(sizeExpr, arrayInfo1.getSizeExpr(0));
+    assertNotSame(sizeExpr, arrayInfo2.getSizeExpr(0));
+    assertEquals(sizeExpr.getText(), arrayInfo2.getSizeExpr(0).getText());
   }
 
 }

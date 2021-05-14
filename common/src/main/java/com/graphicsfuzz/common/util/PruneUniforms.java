@@ -178,9 +178,12 @@ public final class PruneUniforms {
                                              ArrayInfo arrayInfo,
                                              List<String> args) {
     if (arrayInfo != null) {
-      assert arrayInfo.getConstantSize() * baseType.getNumElements() == args.size();
+      if (arrayInfo.getDimensionality() != 1) {
+        throw new RuntimeException("Multi-dimensional array uniforms are not supported.");
+      }
+      assert arrayInfo.getConstantSize(0) * baseType.getNumElements() == args.size();
       List<Expr> argExprs = new ArrayList<>();
-      for (int index = 0; index < arrayInfo.getConstantSize(); index++) {
+      for (int index = 0; index < arrayInfo.getConstantSize(0); index++) {
         argExprs.add(getBasicTypeLiteralExpr(baseType,
             args.subList(index * baseType.getNumElements(),
                 (index + 1) * baseType.getNumElements())));

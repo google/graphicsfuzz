@@ -18,6 +18,7 @@ package com.graphicsfuzz.common.tool;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.DefaultLayout;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
@@ -79,6 +80,7 @@ import com.graphicsfuzz.util.Constants;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Consumer;
@@ -250,14 +252,10 @@ public class PrettyPrinterVisitor extends StandardVisitor {
       first = false;
       out.append(vdi.getName());
       if (vdi.hasArrayInfo()) {
-        out.append("[");
-        visit(vdi.getArrayInfo().getSizeExpr());
-        out.append("]");
+        printArrayInfo(vdi.getArrayInfo());
         assert !(baseType instanceof ArrayType);
       } else if (baseType instanceof ArrayType) {
-        out.append("[");
-        visit(((ArrayType) baseType).getArrayInfo().getSizeExpr());
-        out.append("]");
+        printArrayInfo(((ArrayType) baseType).getArrayInfo());
       }
       if (vdi.hasInitializer()) {
         out.append(" = ");
@@ -301,9 +299,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
       out.append(" ").append(parameterDecl.getName());
     }
     if (parameterDecl.hasArrayInfo()) {
-      out.append("[");
-      visit(parameterDecl.getArrayInfo().getSizeExpr());
-      out.append("]");
+      printArrayInfo(parameterDecl.getArrayInfo());
     }
   }
 
@@ -647,10 +643,23 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
   @Override
   public void visitArrayConstructorExpr(ArrayConstructorExpr arrayConstructorExpr) {
-    visit(arrayConstructorExpr.getArrayType());
-    out.append("[");
-    visit(arrayConstructorExpr.getArrayType().getArrayInfo().getSizeExpr());
-    out.append("](");
+    final List<Expr> dimensions = new ArrayList<>();
+    ArrayType arrayType = arrayConstructorExpr.getArrayType();
+    while (true) {
+      assert arrayType.getArrayInfo().getDimensionality() == 1;
+      dimensions.add(arrayType.getArrayInfo().getSizeExpr(0));
+      if (!(arrayType.getBaseType() instanceof ArrayType)) {
+        break;
+      }
+      arrayType = (ArrayType) arrayType.getBaseType();
+    }
+    visit(arrayType.getBaseType());
+    for (Expr dimension : dimensions) {
+      out.append("[");
+      visit(dimension);
+      out.append("]");
+    }
+    out.append("(");
     boolean first = true;
     for (Expr e : arrayConstructorExpr.getArgs()) {
       if (!first) {
@@ -676,31 +685,13 @@ public class PrettyPrinterVisitor extends StandardVisitor {
       indent();
       visit(structDefinitionType.getFieldType(name));
       out.append(" ").append(name);
-      processArrayInfo(structDefinitionType.getFieldType(name));
+      emitArrayInfoAfterType(structDefinitionType.getFieldType(name));
       out.append(";");
       newLine();
     }
     decreaseIndent();
     indent();
     out.append("}");
-  }
-
-  private void processArrayInfo(Type type) {
-    if (!(type.getWithoutQualifiers() instanceof ArrayType)) {
-      return;
-    }
-    ArrayType arrayType = (ArrayType) type.getWithoutQualifiers();
-    while (true) {
-      out.append("[");
-      if (arrayType.getArrayInfo().hasSizeExpr()) {
-        visit(arrayType.getArrayInfo().getSizeExpr());
-      }
-      out.append("]");
-      if (!(arrayType.getBaseType().getWithoutQualifiers() instanceof ArrayType)) {
-        break;
-      }
-      arrayType = (ArrayType) arrayType.getBaseType().getWithoutQualifiers();
-    }
   }
 
   @Override
@@ -778,7 +769,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
       final Type memberType = interfaceBlock.getMemberType(memberName).get();
       visit(memberType);
       out.append(" ").append(memberName);
-      processArrayInfo(memberType);
+      emitArrayInfoAfterType(memberType);
       out.append(";");
       newLine();
     }
@@ -948,6 +939,33 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     out.append("#endif\n");
     out.append("\n");
     out.append(ParseHelper.END_OF_GRAPHICSFUZZ_DEFINES).append("\n");
+  }
+
+  private void printArrayInfo(ArrayInfo arrayInfo) {
+    for (int i = 0; i < arrayInfo.getDimensionality(); i++) {
+      out.append("[");
+      if (arrayInfo.hasSizeExpr(i)) {
+        visit(arrayInfo.getSizeExpr(i));
+      }
+      out.append("]");
+    }
+  }
+
+  private void emitArrayInfoAfterType(Type type) {
+    if (!(type.getWithoutQualifiers() instanceof ArrayType)) {
+      return;
+    }
+    for (ArrayType arrayType = (ArrayType) type.getWithoutQualifiers();
+         arrayType != null; arrayType =
+             arrayType.getBaseType().getWithoutQualifiers() instanceof ArrayType
+                 ? (ArrayType) arrayType.getBaseType().getWithoutQualifiers() : null) {
+      assert (arrayType.getArrayInfo().getDimensionality() == 1);
+      out.append("[");
+      if (arrayType.getArrayInfo().hasSizeExpr(0)) {
+        visit(arrayType.getArrayInfo().getSizeExpr(0));
+      }
+      out.append("]");
+    }
   }
 
 }

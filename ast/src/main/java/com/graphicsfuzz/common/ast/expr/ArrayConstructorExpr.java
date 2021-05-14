@@ -29,6 +29,7 @@ public class ArrayConstructorExpr extends Expr {
   private final List<Expr> args;
 
   public ArrayConstructorExpr(ArrayType arrayType, List<Expr> args) {
+    assert arrayType.getArrayInfo().getDimensionality() == 1;
     this.arrayType = arrayType;
     this.args = args;
   }

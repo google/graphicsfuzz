@@ -98,8 +98,8 @@ public class TyperTest {
           assertTrue(withoutQualifiers instanceof ArrayType);
           final ArrayType arrayType = (ArrayType) withoutQualifiers;
           assertSame(arrayType.getBaseType(), BasicType.INT);
-          assertFalse(arrayType.getArrayInfo().hasSizeExpr());
-          assertFalse(arrayType.getArrayInfo().hasConstantSize());
+          assertFalse(arrayType.getArrayInfo().hasSizeExpr(0));
+          assertFalse(arrayType.getArrayInfo().hasConstantSize(0));
         } else if (variableIdentifierExpr.getName().equals("result")) {
           assertSame(withoutQualifiers, BasicType.INT);
         }
@@ -312,7 +312,7 @@ public class TyperTest {
     };
 
   }
-  
+
   @Test
   public void testSwizzleTyped() throws Exception {
     TranslationUnit tu = ParseHelper.parse("void main() { vec2 v; v.xy = v.yx; }");
@@ -800,7 +800,7 @@ public class TyperTest {
         final ArrayType withoutQualifiers = (ArrayType) type.getWithoutQualifiers();
         assertSame(withoutQualifiers.getBaseType(), BasicType.INT);
         try {
-          assertEquals(2, withoutQualifiers.getArrayInfo().getConstantSize().intValue());
+          assertEquals(2, withoutQualifiers.getArrayInfo().getConstantSize(0).intValue());
         } catch (UnsupportedLanguageFeatureException exception) {
           fail();
         }
@@ -821,7 +821,7 @@ public class TyperTest {
         final Type type = lookupType(arrayConstructorExpr);
         assertTrue(type instanceof ArrayType);
         assertSame(((ArrayType) type).getBaseType(), BasicType.INT);
-        assertEquals(2, (int) ((ArrayType) type).getArrayInfo().getConstantSize());
+        assertEquals(2, (int) ((ArrayType) type).getArrayInfo().getConstantSize(0));
       }
     };
   }

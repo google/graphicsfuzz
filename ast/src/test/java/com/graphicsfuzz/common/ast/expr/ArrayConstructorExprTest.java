@@ -23,6 +23,8 @@ import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.type.ArrayType;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -36,7 +38,7 @@ public class ArrayConstructorExprTest {
         "vec4", new FloatConstantExpr("0.0"));
     arrayConstructor = new ArrayConstructorExpr(new ArrayType(
         BasicType.VEC4,
-        new ArrayInfo(new IntConstantExpr("3"))),
+        new ArrayInfo(Collections.singletonList(Optional.of(new IntConstantExpr("3"))))),
         Arrays.asList(temp.clone(), temp.clone(), temp.clone())
     );
   }

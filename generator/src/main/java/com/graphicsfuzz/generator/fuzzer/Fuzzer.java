@@ -229,7 +229,7 @@ public class Fuzzer {
       // These are the expressions we will initially generate.
       final List<Expr> generatedExprs = new ArrayList<>();
       for (int i = 0; i < Math.min(Constants.MAX_GENERATED_EXPRESSIONS_FOR_ARRAY_CONSTRUCTOR,
-          arrayType.getArrayInfo().getConstantSize()); i++) {
+          arrayType.getArrayInfo().getConstantSize(0)); i++) {
         try {
           generatedExprs.add(makeExpr(arrayType.getBaseType(), isLValue, constContext, depth + 1));
         } catch (FuzzedIntoACornerException exception) {
@@ -250,7 +250,7 @@ public class Fuzzer {
       final List<Expr> args = new ArrayList<>();
       List<Expr> current = generatedExprs;
       List<Expr> next = new ArrayList<>();
-      for (int i = 0; i < arrayType.getArrayInfo().getConstantSize(); i++) {
+      for (int i = 0; i < arrayType.getArrayInfo().getConstantSize(0); i++) {
         assert (!current.isEmpty());
         final Expr expr = current.remove(generator.nextInt(current.size()));
         args.add(expr.clone());
@@ -521,8 +521,9 @@ public class Fuzzer {
       ArrayInfo arrayInfo = null;
       if (generator.nextInt(10) < 3) { // TODO Hack for now, needs thought
         arrayInfo =
-            new ArrayInfo(new IntConstantExpr(Integer.toString(
-                generator.nextPositiveInt(MAX_ARRAY_SIZE))));
+            new ArrayInfo(Collections.singletonList(Optional.of(
+                new IntConstantExpr(Integer.toString(
+                generator.nextPositiveInt(MAX_ARRAY_SIZE))))));
       }
       fuzzingContext.addLocal(name, arrayInfo == null ? baseType : getType(baseType, arrayInfo));
       decls.add(new VariableDeclInfo(name, arrayInfo, null)); // TODO: no initializer for now

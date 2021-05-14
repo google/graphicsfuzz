@@ -23,6 +23,8 @@ import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.generator.mutateapi.Mutation;
+import java.util.Collections;
+import java.util.Optional;
 
 public class AddArrayMutation implements Mutation {
 
@@ -42,7 +44,8 @@ public class AddArrayMutation implements Mutation {
   public void apply() {
     tu.addDeclaration(new VariablesDeclaration(
         baseType, new VariableDeclInfo(name,
-        new ArrayInfo(new IntConstantExpr(Integer.toString(numElements))),
+        new ArrayInfo(Collections.singletonList(
+            Optional.of(new IntConstantExpr(Integer.toString(numElements))))),
         null)));
   }
 

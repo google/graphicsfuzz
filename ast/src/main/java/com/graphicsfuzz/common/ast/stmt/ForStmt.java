@@ -38,6 +38,7 @@ public class ForStmt extends LoopStmt {
 
   /**
    * Reports whether a condition for the loop is present (it is not in e.g. "for(init; cond; )"
+   *
    * @return Whether increment is present.
    */
   public boolean hasIncrement() {

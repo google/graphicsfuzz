@@ -77,6 +77,7 @@ public class ParseHelper {
   /**
    * Parses a shader from a given string.  The shader is assumed to be a fragment shader;
    * typically the shader kind is unimportant when we parse from strings.
+   *
    * @param string The shader text to be parsed.
    * @return The parsed shader.
    * @throws IOException Thrown if parsing leads to an IO exception.

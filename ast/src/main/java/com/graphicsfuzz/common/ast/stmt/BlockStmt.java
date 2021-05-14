@@ -35,6 +35,7 @@ public class BlockStmt extends Stmt {
 
   /**
    * Creates a block statement from the given list of statements.
+   *
    * @param stmts Initial statements for the block
    * @param introducesNewScope Determines whether the block introduces a new lexical scope.  This
    *                           should be false in the case of a function body, as this has the same
@@ -61,6 +62,7 @@ public class BlockStmt extends Stmt {
   /**
    * Requires the block to be non-empty.
    * Yields the final statement in the block.
+   *
    * @return The final statement of the block.
    */
   public Stmt getLastStmt() {
@@ -94,6 +96,7 @@ public class BlockStmt extends Stmt {
 
   /**
    * Removes the given child statement from the block, throwing an exception if not present.
+   *
    * @param child Statement to be removed
    */
   public void removeStmt(Stmt child) {
@@ -166,6 +169,7 @@ public class BlockStmt extends Stmt {
 
   /**
    * Adds the given statement to the end of the block.
+   *
    * @param stmt A statement to be added to the block
    */
   public void addStmt(Stmt stmt) {

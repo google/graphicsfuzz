@@ -17,6 +17,7 @@
 package com.graphicsfuzz.common.util;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
@@ -263,9 +264,13 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
         vdi.setName(newname);
       }
       if (vdi.hasArrayInfo()) {
-        visit(vdi.getArrayInfo().getSizeExpr());
+        for (int i = 0; i < vdi.getArrayInfo().getDimensionality(); i++) {
+          visit(vdi.getArrayInfo().getSizeExpr(i));
+        }
       } else if (baseType instanceof ArrayType) {
-        visit(((ArrayType) baseType).getArrayInfo().getSizeExpr());
+        final ArrayInfo arrayInfo = ((ArrayType) baseType).getArrayInfo();
+        assert arrayInfo.getDimensionality() == 1;
+        visit(arrayInfo.getSizeExpr(0));
       }
       if (vdi.hasInitializer()) {
         visit(vdi.getInitializer());
@@ -327,7 +332,9 @@ public class UpgradeShadingLanguageVersion extends ScopeTrackingVisitor {
       }
     }
     if (parameterDecl.hasArrayInfo()) {
-      visit(parameterDecl.getArrayInfo().getSizeExpr());
+      for (int i = 0; i < parameterDecl.getArrayInfo().getDimensionality(); i++) {
+        visit(parameterDecl.getArrayInfo().getSizeExpr(i));
+      }
     }
   }
 

@@ -18,6 +18,7 @@ package com.graphicsfuzz.common.util;
 
 import com.graphicsfuzz.common.ast.IParentMap;
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.decl.ArrayInfo;
 import com.graphicsfuzz.common.ast.decl.Declaration;
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
@@ -60,13 +61,6 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 public final class FragmentShaderJobToVertexShaderJob {
-
-  private static Optional<Integer> maybeGetArrayCount(VariableDeclInfo vdi) {
-    if (vdi.hasArrayInfo()) {
-      return Optional.of(vdi.getArrayInfo().getConstantSize());
-    }
-    return Optional.empty();
-  }
 
   /**
    * Converts a shader job where the fragment shader does all of the work
@@ -314,9 +308,13 @@ public final class FragmentShaderJobToVertexShaderJob {
             vdi.setName(fragColor);
           }
           if (vdi.hasArrayInfo()) {
-            visit(vdi.getArrayInfo().getSizeExpr());
+            for (int i = 0; i < vdi.getArrayInfo().getDimensionality(); i++) {
+              visit(vdi.getArrayInfo().getSizeExpr(i));
+            }
           } else if (baseType instanceof ArrayType) {
-            visit(((ArrayType) baseType).getArrayInfo().getSizeExpr());
+            final ArrayInfo arrayInfo = ((ArrayType) baseType).getArrayInfo();
+            assert arrayInfo.getDimensionality() == 1;
+            visit(arrayInfo.getSizeExpr(0));
           }
           if (vdi.hasInitializer()) {
             visit(vdi.getInitializer());
