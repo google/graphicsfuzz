@@ -26,7 +26,6 @@ public class GeneratorArguments {
   private final boolean allowLongLoops;
   private final boolean singlePass;
   private final boolean aggressivelyComplicateControlFlow;
-  private final boolean replaceFloatLiterals;
   private final File donorsFolder;
   private final boolean isVulkan;
   private final int maxUniforms;
@@ -40,7 +39,6 @@ public class GeneratorArguments {
         boolean allowLongLoops,
         boolean singlePass,
         boolean aggressivelyComplicateControlFlow,
-        boolean replaceFloatLiterals,
         File donorsFolder,
         boolean isVulkan,
         int maxUniforms,
@@ -52,7 +50,6 @@ public class GeneratorArguments {
     this.allowLongLoops = allowLongLoops;
     this.singlePass = singlePass;
     this.aggressivelyComplicateControlFlow = aggressivelyComplicateControlFlow;
-    this.replaceFloatLiterals = replaceFloatLiterals;
     this.donorsFolder = donorsFolder;
     this.isVulkan = isVulkan;
     this.maxUniforms = maxUniforms;
@@ -80,10 +77,6 @@ public class GeneratorArguments {
 
   public boolean getAggressivelyComplicateControlFlow() {
     return aggressivelyComplicateControlFlow;
-  }
-
-  public boolean getReplaceFloatLiterals() {
-    return replaceFloatLiterals;
   }
 
   public File getDonorsFolder() {
@@ -121,7 +114,6 @@ public class GeneratorArguments {
     sb.append("allowLongLoops: " + allowLongLoops + "\n");
     sb.append("singlePass: " + singlePass + "\n");
     sb.append("aggressivelyComplicateControlFlow: " + aggressivelyComplicateControlFlow + "\n");
-    sb.append("replaceFloatLiterals: " + replaceFloatLiterals + "\n");
     sb.append("donorsFolder: " + donorsFolder.getName() + "\n");
     sb.append("isVulkan: " + isVulkan + "\n");
     sb.append("maxUniforms: " + (limitUniforms() ? "-" : maxUniforms) + "\n");

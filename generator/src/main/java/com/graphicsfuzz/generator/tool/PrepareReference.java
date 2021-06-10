@@ -24,7 +24,6 @@ import com.graphicsfuzz.common.util.ParseTimeoutException;
 import com.graphicsfuzz.common.util.PipelineInfo;
 import com.graphicsfuzz.common.util.PruneUniforms;
 import com.graphicsfuzz.common.util.ShaderJobFileOperations;
-import com.graphicsfuzz.generator.util.FloatLiteralReplacer;
 import java.io.File;
 import java.io.IOException;
 import java.util.Optional;
@@ -49,15 +48,6 @@ public final class PrepareReference {
     parser.addArgument("output")
         .help("Output shader job file (.json).")
         .type(File.class);
-
-    // Optional arguments
-    parser.addArgument("--replace-float-literals")
-        .help("Replace float literals with uniforms.")
-        .action(Arguments.storeTrue());
-
-    parser.addArgument("--webgl")
-        .help("Use WebGL spec.")
-        .action(Arguments.storeTrue());
 
     parser.addArgument("--vulkan")
         .help("Put all uniforms in uniform blocks and generate "
@@ -99,7 +89,6 @@ public final class PrepareReference {
     prepareReference(
         ns.get("reference"),
         ns.get("output"),
-        ns.get("replace_float_literals"),
         ns.get("max_uniforms"),
         ns.get("vulkan"),
         fileOps);
@@ -110,7 +99,6 @@ public final class PrepareReference {
   public static void prepareReference(
       File referenceShaderJobFile,
       File outputShaderJobFile,
-      boolean replaceFloatLiterals,
       int maxUniforms,
       boolean generateUniformBindings,
       ShaderJobFileOperations fileOps) throws IOException, ParseTimeoutException,
@@ -120,7 +108,6 @@ public final class PrepareReference {
 
     prepareReference(
         shaderJob,
-        replaceFloatLiterals,
         maxUniforms,
         generateUniformBindings);
 
@@ -128,14 +115,12 @@ public final class PrepareReference {
   }
 
   public static void prepareReference(ShaderJob shaderJob,
-                                      boolean replaceFloatLiterals,
                                       int maxUniforms,
                                       boolean generateUniformBindings) {
 
     for (TranslationUnit tu : shaderJob.getShaders()) {
       prepareReferenceShader(
           tu,
-          replaceFloatLiterals,
           shaderJob.getPipelineInfo());
     }
 
@@ -152,12 +137,8 @@ public final class PrepareReference {
   }
 
   private static void prepareReferenceShader(TranslationUnit tu,
-                                             boolean replaceFloatLiterals,
                                              PipelineInfo pipelineInfo) {
     pipelineInfo.zeroUnsetUniforms(tu);
-    if (replaceFloatLiterals) {
-      FloatLiteralReplacer.replace(tu, pipelineInfo);
-    }
 
     // Ensure that all if-then-else statements have braces.  This makes the reference easier to
     // compare with a reduced variant.

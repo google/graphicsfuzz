@@ -159,7 +159,6 @@ public class GenerateShaderFamily {
       // Prepare reference shaders.
       PrepareReference.prepareReference(referenceShaderJob,
           preparedReferenceShaderJob,
-          generatorArguments.getReplaceFloatLiterals(),
           // We subtract 1 because we need to be able to add injectionSwitch
           generatorArguments.getMaxUniforms() - 1,
           generatorArguments.getIsVulkan(),
