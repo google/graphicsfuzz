@@ -35,7 +35,6 @@ limitations under the License.
     <module>common</module>
     <module>compare-asts</module>
     <module>fuzzerserver</module>
-    <module>generate-and-run-shaders</module>
     <module>generator</module>
     <module>gles-worker-dependencies</module>
     <module>graphicsfuzz</module>
