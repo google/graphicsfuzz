@@ -52,7 +52,6 @@ import com.graphicsfuzz.generator.transformation.OutlineStatementTransformation;
 import com.graphicsfuzz.generator.transformation.SplitForLoopTransformation;
 import com.graphicsfuzz.generator.transformation.StructificationTransformation;
 import com.graphicsfuzz.generator.transformation.VectorizeTransformation;
-import com.graphicsfuzz.generator.util.FloatLiteralReplacer;
 import com.graphicsfuzz.generator.util.GenerationParams;
 import com.graphicsfuzz.generator.util.TransformationProbabilities;
 import com.graphicsfuzz.util.ArgsUtil;
@@ -130,10 +129,6 @@ public class Generate {
 
     parser.addArgument("--single-pass")
         .help("Do not apply any individual transformation pass more than once.")
-        .action(Arguments.storeTrue());
-
-    parser.addArgument("--replace-float-literals")
-        .help("Replace float literals with uniforms.")
         .action(Arguments.storeTrue());
 
     parser.addArgument("--vulkan")
@@ -310,11 +305,6 @@ public class Generate {
     StringBuilder result = new StringBuilder();
     result.append("======\n").append(shaderKind).append(":\n");
 
-    if (args.getReplaceFloatLiterals()) {
-      FloatLiteralReplacer.replace(
-          shaderToTransform,
-          parentShaderJob.getPipelineInfo());
-    }
     parentShaderJob.getPipelineInfo().zeroUnsetUniforms(shaderToTransform);
 
     final GenerationParams generationParams =
@@ -404,7 +394,6 @@ public class Generate {
         ns.getBoolean("allow_long_loops"),
         ns.getBoolean("single_pass"),
         ns.getBoolean("aggressively_complicate_control_flow"),
-        ns.getBoolean("replace_float_literals"),
         donors,
         ns.get("vulkan"),
         ns.get("max_uniforms"),
