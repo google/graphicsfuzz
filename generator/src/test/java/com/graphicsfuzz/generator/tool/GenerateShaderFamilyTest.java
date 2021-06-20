@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import org.apache.commons.io.FileUtils;
+import org.junit.After;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -41,6 +42,18 @@ public class GenerateShaderFamilyTest {
 
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+  @After
+  public void deleteTemporarySpirvFiles() {
+    // In Vulkan mode, glslangValidator will create SPIR-V files. This cleans them up after each
+    // test.
+    for (String kind : Arrays.asList("vert", "frag", "comp")) {
+      final File tempFile = new File(kind + ".spv");
+      if (tempFile.exists()) {
+        tempFile.delete();
+      }
+    }
+  }
 
   @Test
   public void testGenerateSmall100ShaderFamily() throws Exception {
