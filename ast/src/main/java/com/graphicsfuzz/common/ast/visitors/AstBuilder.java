@@ -88,7 +88,6 @@ import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.typing.ScopeTrackingVisitor;
 import com.graphicsfuzz.common.util.ShaderKind;
 import com.graphicsfuzz.parser.GLSLBaseVisitor;
-import com.graphicsfuzz.parser.GLSLParser;
 import com.graphicsfuzz.parser.GLSLParser.Additive_expressionContext;
 import com.graphicsfuzz.parser.GLSLParser.And_expressionContext;
 import com.graphicsfuzz.parser.GLSLParser.Array_specifierContext;
@@ -96,17 +95,18 @@ import com.graphicsfuzz.parser.GLSLParser.Assignment_expressionContext;
 import com.graphicsfuzz.parser.GLSLParser.Assignment_operatorContext;
 import com.graphicsfuzz.parser.GLSLParser.Auxiliary_storage_qualifierContext;
 import com.graphicsfuzz.parser.GLSLParser.Basic_interface_blockContext;
+import com.graphicsfuzz.parser.GLSLParser.Block_statementContext;
 import com.graphicsfuzz.parser.GLSLParser.Builtin_type_specifier_nonarrayContext;
 import com.graphicsfuzz.parser.GLSLParser.Case_labelContext;
 import com.graphicsfuzz.parser.GLSLParser.Case_label_listContext;
 import com.graphicsfuzz.parser.GLSLParser.Case_statementContext;
 import com.graphicsfuzz.parser.GLSLParser.Case_statement_listContext;
-import com.graphicsfuzz.parser.GLSLParser.Compound_statementContext;
-import com.graphicsfuzz.parser.GLSLParser.Compound_statement_no_new_scopeContext;
 import com.graphicsfuzz.parser.GLSLParser.ConditionContext;
 import com.graphicsfuzz.parser.GLSLParser.Conditional_expressionContext;
 import com.graphicsfuzz.parser.GLSLParser.DeclarationContext;
 import com.graphicsfuzz.parser.GLSLParser.Declaration_statementContext;
+import com.graphicsfuzz.parser.GLSLParser.Do_statementContext;
+import com.graphicsfuzz.parser.GLSLParser.Empty_statementContext;
 import com.graphicsfuzz.parser.GLSLParser.Equality_expressionContext;
 import com.graphicsfuzz.parser.GLSLParser.Exclusive_or_expressionContext;
 import com.graphicsfuzz.parser.GLSLParser.ExpressionContext;
@@ -115,7 +115,8 @@ import com.graphicsfuzz.parser.GLSLParser.Extension_statementContext;
 import com.graphicsfuzz.parser.GLSLParser.Extension_statement_listContext;
 import com.graphicsfuzz.parser.GLSLParser.External_declaration_listContext;
 import com.graphicsfuzz.parser.GLSLParser.For_init_statementContext;
-import com.graphicsfuzz.parser.GLSLParser.For_rest_statementContext;
+import com.graphicsfuzz.parser.GLSLParser.For_statementContext;
+import com.graphicsfuzz.parser.GLSLParser.For_statement_no_short_ifContext;
 import com.graphicsfuzz.parser.GLSLParser.Fully_specified_typeContext;
 import com.graphicsfuzz.parser.GLSLParser.Function_call_genericContext;
 import com.graphicsfuzz.parser.GLSLParser.Function_call_headerContext;
@@ -126,16 +127,19 @@ import com.graphicsfuzz.parser.GLSLParser.Function_headerContext;
 import com.graphicsfuzz.parser.GLSLParser.Function_header_with_parametersContext;
 import com.graphicsfuzz.parser.GLSLParser.Function_identifierContext;
 import com.graphicsfuzz.parser.GLSLParser.Function_prototypeContext;
+import com.graphicsfuzz.parser.GLSLParser.If_then_else_statementContext;
+import com.graphicsfuzz.parser.GLSLParser.If_then_else_statement_no_short_ifContext;
+import com.graphicsfuzz.parser.GLSLParser.If_then_statementContext;
 import com.graphicsfuzz.parser.GLSLParser.Inclusive_or_expressionContext;
 import com.graphicsfuzz.parser.GLSLParser.Init_declarator_listContext;
 import com.graphicsfuzz.parser.GLSLParser.InitializerContext;
 import com.graphicsfuzz.parser.GLSLParser.Interface_blockContext;
 import com.graphicsfuzz.parser.GLSLParser.Interface_qualifierContext;
 import com.graphicsfuzz.parser.GLSLParser.Interpolation_qualifierContext;
-import com.graphicsfuzz.parser.GLSLParser.Iteration_statementContext;
 import com.graphicsfuzz.parser.GLSLParser.Jump_statementContext;
 import com.graphicsfuzz.parser.GLSLParser.Layout_defaultsContext;
 import com.graphicsfuzz.parser.GLSLParser.Layout_qualifierContext;
+import com.graphicsfuzz.parser.GLSLParser.Layout_qualifier_idContext;
 import com.graphicsfuzz.parser.GLSLParser.Layout_qualifier_id_listContext;
 import com.graphicsfuzz.parser.GLSLParser.Logical_and_expressionContext;
 import com.graphicsfuzz.parser.GLSLParser.Logical_or_expressionContext;
@@ -149,12 +153,11 @@ import com.graphicsfuzz.parser.GLSLParser.Pragma_statementContext;
 import com.graphicsfuzz.parser.GLSLParser.Precision_qualifierContext;
 import com.graphicsfuzz.parser.GLSLParser.Primary_expressionContext;
 import com.graphicsfuzz.parser.GLSLParser.Relational_expressionContext;
-import com.graphicsfuzz.parser.GLSLParser.Selection_statementContext;
 import com.graphicsfuzz.parser.GLSLParser.Shift_expressionContext;
 import com.graphicsfuzz.parser.GLSLParser.Single_declarationContext;
 import com.graphicsfuzz.parser.GLSLParser.StatementContext;
 import com.graphicsfuzz.parser.GLSLParser.Statement_listContext;
-import com.graphicsfuzz.parser.GLSLParser.Statement_no_new_scopeContext;
+import com.graphicsfuzz.parser.GLSLParser.Statement_no_short_ifContext;
 import com.graphicsfuzz.parser.GLSLParser.Storage_qualifierContext;
 import com.graphicsfuzz.parser.GLSLParser.Struct_declarator_listContext;
 import com.graphicsfuzz.parser.GLSLParser.Struct_specifierContext;
@@ -165,7 +168,10 @@ import com.graphicsfuzz.parser.GLSLParser.Type_qualifierContext;
 import com.graphicsfuzz.parser.GLSLParser.Type_specifierContext;
 import com.graphicsfuzz.parser.GLSLParser.Unary_expressionContext;
 import com.graphicsfuzz.parser.GLSLParser.Unary_operatorContext;
+import com.graphicsfuzz.parser.GLSLParser.While_statementContext;
+import com.graphicsfuzz.parser.GLSLParser.While_statement_no_short_ifContext;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Deque;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -975,27 +981,22 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
   public FunctionDefinition visitFunction_definition(Function_definitionContext ctx) {
     return new FunctionDefinition(
         visitFunction_prototype(ctx.function_prototype()),
-        visitCompound_statement_no_new_scope(ctx.compound_statement_no_new_scope()));
+        handleBlockStatement(ctx.block_statement(), false));
   }
 
-  @Override
-  public BlockStmt visitCompound_statement_no_new_scope(
-      Compound_statement_no_new_scopeContext ctx) {
-    if (ctx.statement_list() == null) {
-      return new BlockStmt(new ArrayList<>(), false);
-    }
-    return new BlockStmt(visitStatement_list(ctx.statement_list()), false);
+  private BlockStmt handleBlockStatement(Block_statementContext ctx,
+                                         boolean introducesNewScope) {
+    return new BlockStmt(ctx.statement_list() == null
+        ? Collections.emptyList()
+        : visitStatement_list(ctx.statement_list()), introducesNewScope);
   }
 
   @Override
   public List<Stmt> visitStatement_list(Statement_listContext ctx) {
-    if (ctx.statement_list() == null) {
-      List<Stmt> result = new ArrayList<>();
-      result.add(visitStatement(ctx.statement()));
-      return result;
+    final List<Stmt> result = new ArrayList<>();
+    for (StatementContext statementContext : ctx.statement()) {
+      result.add(visitStatement(statementContext));
     }
-    List<Stmt> result = visitStatement_list(ctx.statement_list());
-    result.add(visitStatement(ctx.statement()));
     return result;
   }
 
@@ -1047,18 +1048,27 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
 
   @Override
   public Stmt visitExpression_statement(Expression_statementContext ctx) {
-    if (ctx.expression() == null) {
-      return new NullStmt();
-    }
     return new ExprStmt(visitExpression(ctx.expression()));
   }
 
   @Override
-  public IfStmt visitSelection_statement(Selection_statementContext ctx) {
-    Stmt thenStmt = visitStatement(ctx.selection_rest_statement().statement(0));
-    StatementContext maybeElseBranch = ctx.selection_rest_statement().statement(1);
-    Stmt elseStmt = (maybeElseBranch == null ? null : visitStatement(maybeElseBranch));
-    return new IfStmt(visitExpression(ctx.expression()), thenStmt, elseStmt);
+  public IfStmt visitIf_then_statement(If_then_statementContext ctx) {
+    return new IfStmt(visitExpression(ctx.expression()), visitStatement(ctx.statement()), null);
+  }
+
+  @Override
+  public IfStmt visitIf_then_else_statement(If_then_else_statementContext ctx) {
+    return new IfStmt(visitExpression(ctx.expression()),
+        visitStatement_no_short_if(ctx.statement_no_short_if()),
+        visitStatement(ctx.statement()));
+  }
+
+  @Override
+  public IfStmt visitIf_then_else_statement_no_short_if(
+      If_then_else_statement_no_short_ifContext ctx) {
+    return new IfStmt(visitExpression(ctx.expression()),
+        visitStatement_no_short_if(ctx.statement_no_short_if(0)),
+        visitStatement_no_short_if(ctx.statement_no_short_if(1)));
   }
 
   @Override
@@ -1105,8 +1115,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
       }
       temp = temp.case_statement();
     }
-    List<Stmt> stmts = new ArrayList<>();
-    stmts.addAll(visitCase_label_list(temp.case_label_list()));
+    final List<Stmt> stmts = new ArrayList<>(visitCase_label_list(temp.case_label_list()));
     for (StatementContext statementContext : statements) {
       stmts.add(visitStatement(statementContext));
     }
@@ -1147,26 +1156,77 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
   }
 
   @Override
-  public Stmt visitStatement_no_new_scope(Statement_no_new_scopeContext ctx) {
-    return (Stmt) super.visitStatement_no_new_scope(ctx);
+  public Stmt visitStatement_no_short_if(Statement_no_short_ifContext ctx) {
+    return (Stmt) super.visitStatement_no_short_if(ctx);
   }
 
   @Override
-  public Stmt visitIteration_statement(Iteration_statementContext ctx) {
-    if (ctx.DO() != null) {
-      return new DoStmt(visitStatement(ctx.statement()), visitExpression(ctx.expression()));
+  public NullStmt visitEmpty_statement(Empty_statementContext ctx) {
+    return new NullStmt();
+  }
+
+  @Override
+  public ForStmt visitFor_statement(For_statementContext ctx) {
+    final Stmt body;
+    if (ctx.statement().statement_no_trailing_substatement() != null
+        && ctx.statement().statement_no_trailing_substatement().block_statement() != null) {
+      body = handleBlockStatement(ctx.statement().statement_no_trailing_substatement()
+              .block_statement(),
+          false);
+    } else {
+      body = visitStatement(ctx.statement());
     }
-    if (ctx.WHILE() != null) {
-      return new WhileStmt(visitCondition(ctx.condition()),
-          visitStatement_no_new_scope(ctx.statement_no_new_scope()));
-    }
-    assert ctx.FOR() != null;
+    assert body != null;
     return new ForStmt(visitFor_init_statement(ctx.for_init_statement()),
-        ctx.for_rest_statement().condition() == null ? null :
-            visitCondition(ctx.for_rest_statement().condition()),
-        ctx.for_rest_statement().expression() == null ? null :
-            visitExpression(ctx.for_rest_statement().expression()),
-            visitStatement_no_new_scope(ctx.statement_no_new_scope()));
+        ctx.condition() == null ? null : visitCondition(ctx.condition()),
+        ctx.expression() == null ? null : visitExpression(ctx.expression()),
+        body);
+  }
+
+  @Override
+  public ForStmt visitFor_statement_no_short_if(For_statement_no_short_ifContext ctx) {
+    // This is very similar to the code for visitFor_statement, but it is hard to factor out the
+    // commonality due to the different types of the method arguments.
+    final Stmt body;
+    if (ctx.statement_no_short_if().statement_no_trailing_substatement() != null
+        && ctx.statement_no_short_if().statement_no_trailing_substatement().block_statement()
+        != null) {
+      body = handleBlockStatement(ctx.statement_no_short_if().statement_no_trailing_substatement()
+              .block_statement(),
+          false);
+    } else {
+      body = visitStatement_no_short_if(ctx.statement_no_short_if());
+    }
+    assert body != null;
+    return new ForStmt(visitFor_init_statement(ctx.for_init_statement()),
+        ctx.condition() == null ? null : visitCondition(ctx.condition()),
+        ctx.expression() == null ? null : visitExpression(ctx.expression()),
+        body);
+  }
+
+  @Override
+  public WhileStmt visitWhile_statement(While_statementContext ctx) {
+    final Stmt body;
+    if (ctx.statement().statement_no_trailing_substatement() != null
+        && ctx.statement().statement_no_trailing_substatement().block_statement() != null) {
+      body = handleBlockStatement(ctx.statement().statement_no_trailing_substatement()
+              .block_statement(),
+          false);
+    } else {
+      body = visitStatement(ctx.statement());
+    }
+    return new WhileStmt(visitCondition(ctx.condition()), body);
+  }
+
+  @Override
+  public Object visitWhile_statement_no_short_if(While_statement_no_short_ifContext ctx) {
+    return new WhileStmt(visitCondition(ctx.condition()),
+        visitStatement_no_short_if(ctx.statement_no_short_if()));
+  }
+
+  @Override
+  public DoStmt visitDo_statement(Do_statementContext ctx) {
+    return new DoStmt(visitStatement(ctx.statement()), visitExpression(ctx.expression()));
   }
 
   @Override
@@ -1181,14 +1241,12 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
   }
 
   @Override
-  public Stmt visitFor_rest_statement(For_rest_statementContext ctx) {
-    throw new RuntimeException("By construction, this visitor method should never get executed.");
-  }
-
-  @Override
   public Stmt visitFor_init_statement(For_init_statementContext ctx) {
     if (ctx.expression_statement() != null) {
       return visitExpression_statement(ctx.expression_statement());
+    }
+    if (ctx.empty_statement() != null) {
+      return new NullStmt();
     }
     assert ctx.declaration_statement() != null;
     return visitDeclaration_statement(ctx.declaration_statement());
@@ -1213,11 +1271,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
   }
 
   @Override
-  public BlockStmt visitCompound_statement(Compound_statementContext ctx) {
-    if (ctx.statement_list() == null) {
-      return new BlockStmt(new ArrayList<>(), true);
-    }
-    return new BlockStmt(visitStatement_list(ctx.statement_list()), true);
+  public BlockStmt visitBlock_statement(Block_statementContext ctx) {
+    return handleBlockStatement(ctx, true);
   }
 
   private String getOriginalSourceText(ParserRuleContext ctx) {
@@ -1560,7 +1615,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
   }
 
   private LayoutQualifier processLayoutQualifierId(
-      GLSLParser.Layout_qualifier_idContext layoutQualifierId) {
+      Layout_qualifier_idContext layoutQualifierId) {
     if (layoutQualifierId.integer_constant() != null) {
       assert layoutQualifierId.IDENTIFIER() != null;
       final int associatedValue =

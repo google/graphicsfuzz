@@ -547,52 +547,56 @@ declaration_statement:
    ;
 
 statement:
-   compound_statement
-   | simple_statement
+   if_then_statement
+   | if_then_else_statement
+   | for_statement
+   | while_statement
+   | statement_no_trailing_substatement
    ;
 
-simple_statement:
-   expression_statement
+statement_no_short_if:
+   if_then_else_statement_no_short_if
+   | for_statement_no_short_if
+   | while_statement_no_short_if
+   | statement_no_trailing_substatement
+   ;
+
+statement_no_trailing_substatement:
+   block_statement
+   | expression_statement
+   | empty_statement
    | declaration_statement
-   | selection_statement
    | switch_statement
-   | iteration_statement
+   | do_statement
    | jump_statement
    ;
 
-compound_statement:
-   LBRACE RBRACE
-   | LBRACE
-   statement_list RBRACE
-   ;
-
-statement_no_new_scope:
-   compound_statement_no_new_scope
-   | simple_statement
-   ;
-
-compound_statement_no_new_scope:
-   LBRACE RBRACE
-   | LBRACE statement_list RBRACE
+block_statement:
+   LBRACE statement_list? RBRACE
    ;
 
 statement_list:
-   statement
-   | statement_list statement
+   statement+
    ;
 
 expression_statement:
+   expression SEMICOLON
+   ;
+
+empty_statement:
    SEMICOLON
-   | expression SEMICOLON
    ;
 
-selection_statement:
-   IF LPAREN expression RPAREN selection_rest_statement
+if_then_statement:
+   IF LPAREN expression RPAREN statement
    ;
 
-selection_rest_statement:
-   statement ELSE statement
-   | statement
+if_then_else_statement:
+   IF LPAREN expression RPAREN statement_no_short_if ELSE statement
+   ;
+
+if_then_else_statement_no_short_if:
+   IF LPAREN expression RPAREN statement_no_short_if ELSE statement_no_short_if
    ;
 
 condition:
@@ -629,20 +633,30 @@ case_statement_list:
    | case_statement_list case_statement
    ;
 
-iteration_statement:
-   WHILE LPAREN condition RPAREN statement_no_new_scope
-   | DO statement WHILE LPAREN expression RPAREN SEMICOLON
-   | FOR LPAREN for_init_statement for_rest_statement RPAREN statement_no_new_scope
+do_statement:
+   DO statement WHILE LPAREN expression RPAREN SEMICOLON
+   ;
+
+for_statement:
+   FOR LPAREN for_init_statement condition? SEMICOLON expression? RPAREN statement
+   ;
+
+for_statement_no_short_if:
+   FOR LPAREN for_init_statement condition? SEMICOLON expression? RPAREN statement_no_short_if
+   ;
+
+while_statement:
+   WHILE LPAREN condition RPAREN statement
+   ;
+
+while_statement_no_short_if:
+   WHILE LPAREN condition RPAREN statement_no_short_if
    ;
 
 for_init_statement:
-   expression_statement
+   empty_statement
+   | expression_statement
    | declaration_statement
-   ;
-
-for_rest_statement:
-   condition? SEMICOLON
-   | condition? SEMICOLON expression
    ;
 
 jump_statement:
@@ -661,7 +675,7 @@ external_declaration:
    ;
 
 function_definition:
-   function_prototype compound_statement_no_new_scope
+   function_prototype block_statement
    ;
 
 interface_block:
