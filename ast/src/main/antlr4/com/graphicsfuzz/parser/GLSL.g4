@@ -54,7 +54,6 @@ external_declaration_list:
 
 variable_identifier:
    IDENTIFIER
-   | IDENTIFIER
    ;
 
 primary_expression:
