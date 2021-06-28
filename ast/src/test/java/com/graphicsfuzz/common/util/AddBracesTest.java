@@ -34,7 +34,7 @@ public class AddBracesTest {
     TranslationUnit transformed = AddBraces.transform(tu);
     assertNotEquals(tu, transformed);
 
-    String programAfter = "void main() { if (a) { if (b) { s1; } } else { s2; } }";
+    String programAfter = "void main() { if (a) { if (b) { s1; } else { s2; } } }";
 
     assertEquals(PrettyPrinterVisitor.prettyPrintAsString(
         ParseHelper.parse(programAfter)),

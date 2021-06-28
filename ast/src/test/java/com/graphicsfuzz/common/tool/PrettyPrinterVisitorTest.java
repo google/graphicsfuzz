@@ -853,4 +853,58 @@ public class PrettyPrinterVisitorTest {
     assertEquals(expected, new String(bytes.toByteArray(), StandardCharsets.UTF_8));
   }
 
+  @Test
+  public void ifThenElseInShortIf() throws Exception {
+    final String shader =
+        "#version 320 es\n"
+            + "void foo()\n"
+            + "{\n"
+            + " if(true)\n"
+            + "  if(true)\n"
+            + "   ;\n"
+            + "  else\n"
+            + "   ;\n"
+            + " else\n"
+            + "  ;\n"
+            + "}\n";
+    assertEquals(shader, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)));
+  }
+
+  @Test
+  public void whileInShortIf() throws Exception {
+    final String shader =
+        "#version 320 es\n"
+            + "void foo()\n"
+            + "{\n"
+            + " if(true)\n"
+            + "  while(true)\n"
+            + "   if(true)\n"
+            + "    ;\n"
+            + "   else\n"
+            + "    ;\n"
+            + " else\n"
+            + "  ;\n"
+            + "}\n";
+    assertEquals(shader, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)));
+  }
+
+  @Test
+  public void forInShortIf() throws Exception {
+    final String shader =
+        "#version 320 es\n"
+            + "void foo()\n"
+            + "{\n"
+            + " if(true)\n"
+            + "  for(  ;\n"
+            + " ; )\n"
+            + "   if(true)\n"
+            + "    ;\n"
+            + "   else\n"
+            + "    ;\n"
+            + " else\n"
+            + "  ;\n"
+            + "}\n";
+    assertEquals(shader, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)));
+  }
+
 }

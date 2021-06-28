@@ -26,6 +26,9 @@ public abstract class LoopStmt extends Stmt {
   private Stmt body;
 
   LoopStmt(Expr condition, Stmt body) {
+    if (body == null) {
+      throw new RuntimeException("The body of a loop must be present.");
+    }
     this.condition = condition;
     this.body = body;
   }
