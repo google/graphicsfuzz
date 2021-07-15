@@ -920,4 +920,64 @@ public class PrettyPrinterVisitorTest {
     assertEquals(shader, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)));
   }
 
+  @Test
+  public void coherentSsbo() throws Exception {
+    final String shader =
+        "#version 320 es\n"
+            + "layout(std430, binding = 0) buffer coherent buffer_0 {\n"
+            + " int a;\n"
+            + "};\n";
+    assertEquals(shader, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)));
+  }
+
+  @Test
+  public void volatileSsbo() throws Exception {
+    final String shader =
+        "#version 320 es\n"
+            + "layout(std430, binding = 0) volatile buffer buffer_0 {\n"
+            + " int a;\n"
+            + "};\n";
+    assertEquals(shader, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)));
+  }
+
+  @Test
+  public void restrictSsbo() throws Exception {
+    final String shader =
+        "#version 320 es\n"
+            + "layout(std430, binding = 0) restrict buffer buffer_0 {\n"
+            + " int a;\n"
+            + "};\n";
+    assertEquals(shader, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)));
+  }
+
+  @Test
+  public void readonlySsbo() throws Exception {
+    final String shader =
+        "#version 320 es\n"
+            + "layout(std430, binding = 0) buffer readonly buffer_0 {\n"
+            + " int a;\n"
+            + "};\n";
+    assertEquals(shader, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)));
+  }
+
+  @Test
+  public void writeonlySsbo() throws Exception {
+    final String shader =
+        "#version 320 es\n"
+            + "layout(std430, binding = 0) writeonly buffer buffer_0 {\n"
+            + " int a;\n"
+            + "};\n";
+    assertEquals(shader, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)));
+  }
+
+  @Test
+  public void ssboMultipleQualifiers() throws Exception {
+    final String shader =
+        "#version 320 es\n"
+            + "layout(std430, binding = 0) volatile buffer restrict writeonly buffer_0 {\n"
+            + " int a;\n"
+            + "};\n";
+    assertEquals(shader, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)));
+  }
+
 }

@@ -128,6 +128,18 @@ public class InterfaceBlock extends Declaration {
     return interfaceQualifiers.contains(TypeQualifier.UNIFORM);
   }
 
+  public boolean isShaderStorageBlock() {
+    return interfaceQualifiers.contains(TypeQualifier.BUFFER);
+  }
+
+  public boolean isInputBlock() {
+    return interfaceQualifiers.contains(TypeQualifier.SHADER_INPUT);
+  }
+
+  public boolean isOutputBlock() {
+    return interfaceQualifiers.contains(TypeQualifier.SHADER_OUTPUT);
+  }
+
   @Override
   public void accept(IAstVisitor visitor) {
     visitor.visitInterfaceBlock(this);

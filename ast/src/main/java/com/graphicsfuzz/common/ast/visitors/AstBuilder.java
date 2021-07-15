@@ -481,8 +481,10 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
         ? Optional.empty()
         : Optional.of(visitLayout_qualifier(ctx.layout_qualifier()));
     final Basic_interface_blockContext basicCtx = ctx.basic_interface_block();
-    final TypeQualifier interfaceQualifier =
-        visitInterface_qualifier(basicCtx.interface_qualifier());
+    final List<TypeQualifier> interfaceQualifiers = new ArrayList<>();
+    for (Interface_qualifierContext interfaceQualifierContext : basicCtx.interface_qualifier()) {
+      interfaceQualifiers.add(visitInterface_qualifier(interfaceQualifierContext));
+    }
     if (basicCtx.instance_name() != null) {
       throw new UnsupportedLanguageFeatureException("Named interface blocks are not currently "
           + "supported.");
@@ -490,7 +492,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     final Pair<List<String>, List<Type>> members = getMembers(basicCtx.member_list());
     return new InterfaceBlock(
         maybeLayoutQualifier,
-        Collections.singletonList(interfaceQualifier),
+        interfaceQualifiers,
         basicCtx.IDENTIFIER().getText(),
         members.a,
         members.b,
@@ -508,6 +510,16 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
         return TypeQualifier.UNIFORM;
       case "buffer":
         return TypeQualifier.BUFFER;
+      case "coherent":
+        return TypeQualifier.COHERENT;
+      case "volatile":
+        return TypeQualifier.VOLATILE;
+      case "restrict":
+        return TypeQualifier.RESTRICT;
+      case "readonly":
+        return TypeQualifier.READONLY;
+      case "writeonly":
+        return TypeQualifier.WRITEONLY;
       default:
         // The above is supposed to capture all the interface qualifiers, so this
         // indicates that the input is bad (rather than lack of support).
