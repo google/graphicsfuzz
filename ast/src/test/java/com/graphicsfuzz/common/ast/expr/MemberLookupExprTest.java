@@ -17,7 +17,7 @@
 package com.graphicsfuzz.common.ast.expr;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 
 import com.graphicsfuzz.common.ast.visitors.StandardVisitor;
@@ -85,11 +85,11 @@ public class MemberLookupExprTest {
         v,
         "foo");
     MemberLookupExpr mle2 = mle.clone();
-    assertFalse(mle == mle2);
+    assertNotSame(mle, mle2);
     assertEquals(mle.getMember(), mle2.getMember());
     assertEquals(((VariableIdentifierExpr) mle.getStructure()).getName(),
         ((VariableIdentifierExpr) mle2.getStructure()).getName());
-    assertFalse(mle.getStructure() == mle2.getStructure());
+    assertNotSame(mle.getStructure(), mle2.getStructure());
   }
 
   @Test

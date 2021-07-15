@@ -35,6 +35,7 @@ import com.graphicsfuzz.common.ast.expr.BoolConstantExpr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
+import com.graphicsfuzz.common.ast.expr.LengthExpr;
 import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
 import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.expr.TernaryExpr;
@@ -863,6 +864,26 @@ public class TyperTest {
     };
   }
 
+  @Test
+  public void testLengthTyped() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("#version 450\n"
+        + "void main() {\n"
+        + "  int A[5];\n"
+        + "  vec4 v;\n"
+        + "  mat4x4 m;\n"
+        + "  A.length();\n"
+        + "  v.length();\n"
+        + "  m.length();\n"
+        + "}\n");
+    new NullCheckTyper(tu) {
+      @Override
+      public void visitLengthExpr(LengthExpr lengthExpr) {
+        super.visitLengthExpr(lengthExpr);
+        assertSame(lookupType(lengthExpr), BasicType.INT);
+      }
+    }.visit(tu);
+  }
+
   private void checkComputeShaderBuiltin(String builtin, String builtinConstant, BasicType baseType,
       TypeQualifier qualifier) throws IOException, ParseTimeoutException, InterruptedException,
       GlslParserException {
@@ -882,7 +903,7 @@ public class TyperTest {
     }.visit(tu);
   }
 
-  class NullCheckTyper extends Typer {
+  static class NullCheckTyper extends Typer {
 
     NullCheckTyper(TranslationUnit tu) {
       super(tu);

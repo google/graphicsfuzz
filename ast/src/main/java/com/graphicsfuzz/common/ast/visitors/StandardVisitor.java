@@ -37,6 +37,7 @@ import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
+import com.graphicsfuzz.common.ast.expr.LengthExpr;
 import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
 import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.expr.TernaryExpr;
@@ -405,8 +406,9 @@ public abstract class StandardVisitor implements IAstVisitor {
 
   }
 
-  public final void abortVisitation() {
-    throw new AbortVisitationException();
+  @Override
+  public void visitLengthExpr(LengthExpr lengthExpr) {
+    visitChildFromParent(lengthExpr.getReceiver(), lengthExpr);
   }
 
   protected <T extends IAstNode> void visitChildFromParent(Consumer<T> visitorMethod, T child,

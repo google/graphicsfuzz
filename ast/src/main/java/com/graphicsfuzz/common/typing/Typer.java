@@ -30,6 +30,7 @@ import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
+import com.graphicsfuzz.common.ast.expr.LengthExpr;
 import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
 import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.expr.TernaryExpr;
@@ -484,6 +485,16 @@ public class Typer extends ScopeTrackingVisitor {
   }
 
   @Override
+  public void visitLengthExpr(LengthExpr lengthExpr) {
+    super.visitLengthExpr(lengthExpr);
+    final Type receiverType = types.get(lengthExpr.getReceiver()).getWithoutQualifiers();
+    assert BasicType.allVectorTypes().contains(receiverType)
+        || BasicType.allMatrixTypes().contains(receiverType)
+        || receiverType instanceof ArrayType;
+    types.put(lengthExpr, BasicType.INT);
+  }
+
+  @Override
   public void visitArrayConstructorExpr(ArrayConstructorExpr arrayConstructorExpr) {
     super.visitArrayConstructorExpr(arrayConstructorExpr);
     types.put(arrayConstructorExpr, arrayConstructorExpr.getArrayType());
@@ -546,6 +557,7 @@ public class Typer extends ScopeTrackingVisitor {
   /**
    * If the given name corresponds to an OpenGL builtin variable, yields the type of the
    * variable.
+   *
    * @param name The name of a candidate builtin variable.
    * @return The type of the variable if it is indeed a builtin, otherwise empty.
    */
