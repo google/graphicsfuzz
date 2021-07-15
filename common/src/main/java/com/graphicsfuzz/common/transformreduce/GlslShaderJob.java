@@ -169,7 +169,7 @@ public class GlslShaderJob implements ShaderJob {
                 newTopLevelDeclarations.add(
                     new InterfaceBlock(
                         of(new LayoutQualifierSequence(new PushConstantLayoutQualifier())),
-                        TypeQualifier.UNIFORM,
+                        Collections.singletonList(TypeQualifier.UNIFORM),
                         "buf_push",
                         Collections.singletonList(uniformName),
                         Collections.singletonList(memberType),
@@ -182,7 +182,7 @@ public class GlslShaderJob implements ShaderJob {
                     new InterfaceBlock(
                         of(new LayoutQualifierSequence(new SetLayoutQualifier(0),
                             new BindingLayoutQualifier(binding))),
-                        TypeQualifier.UNIFORM,
+                        Collections.singletonList(TypeQualifier.UNIFORM),
                         "buf" + binding,
                         Collections.singletonList(uniformName),
                         Collections.singletonList(memberType),
@@ -246,8 +246,7 @@ public class GlslShaderJob implements ShaderJob {
                       Collections.singletonList(
                           TypeQualifier.UNIFORM
                       )), declInfo));
-        } else if (decl instanceof InterfaceBlock && ((InterfaceBlock) decl).getInterfaceQualifier()
-            .equals(TypeQualifier.UNIFORM)) {
+        } else if (decl instanceof InterfaceBlock && ((InterfaceBlock) decl).isUniformBlock()) {
           final InterfaceBlock interfaceBlock = (InterfaceBlock) decl;
           assert interfaceBlock.getMemberNames().size() == 1 : "We assume that each uniform block"
               + " wraps precisely one uniform.";

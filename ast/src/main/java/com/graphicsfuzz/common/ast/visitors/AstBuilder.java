@@ -490,7 +490,7 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
     final Pair<List<String>, List<Type>> members = getMembers(basicCtx.member_list());
     return new InterfaceBlock(
         maybeLayoutQualifier,
-        interfaceQualifier,
+        Collections.singletonList(interfaceQualifier),
         basicCtx.IDENTIFIER().getText(),
         members.a,
         members.b,

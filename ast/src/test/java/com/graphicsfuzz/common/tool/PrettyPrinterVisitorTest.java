@@ -37,6 +37,7 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.io.FileUtils;
@@ -158,7 +159,7 @@ public class PrettyPrinterVisitorTest {
       if (name.equals("_GLF_uniform_int_values")) {
         return Optional.of(Arrays.asList("0", "1"));
       } else if (name.equals("_GLF_uniform_float_values")) {
-        return Optional.of(Arrays.asList("3.0"));
+        return Optional.of(Collections.singletonList("3.0"));
       }
       return Optional.empty();
     };

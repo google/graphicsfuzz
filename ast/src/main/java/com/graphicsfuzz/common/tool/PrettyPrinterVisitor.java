@@ -734,7 +734,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
     // If a uniform block is being declared and we have a uniform supplier that provides known
     // values for the uniform wrapped in, we emit details of those known values in comments.
-    if (interfaceBlock.getInterfaceQualifier().equals(TypeQualifier.UNIFORM)) {
+    if (interfaceBlock.isUniformBlock()) {
       // It is guaranteed that a block, for which getInterfaceQualifier() returns "uniform",
       // has a single field.
       assert interfaceBlock.getMemberNames().size() == 1;
@@ -763,9 +763,10 @@ public class PrettyPrinterVisitor extends StandardVisitor {
     if (interfaceBlock.hasLayoutQualifierSequence()) {
       out.append(interfaceBlock.getLayoutQualifierSequence().toString()).append(" ");
     }
-    out.append(interfaceBlock.getInterfaceQualifier().toString())
-        .append(" ")
-        .append(interfaceBlock.getStructName())
+    for (TypeQualifier qualifier : interfaceBlock.getInterfaceQualifiers()) {
+      out.append(qualifier.toString()).append(" ");
+    }
+    out.append(interfaceBlock.getStructName())
         .append(" {");
     newLine();
 
