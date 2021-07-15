@@ -37,6 +37,7 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.io.FileUtils;
@@ -158,7 +159,7 @@ public class PrettyPrinterVisitorTest {
       if (name.equals("_GLF_uniform_int_values")) {
         return Optional.of(Arrays.asList("0", "1"));
       } else if (name.equals("_GLF_uniform_float_values")) {
-        return Optional.of(Arrays.asList("3.0"));
+        return Optional.of(Collections.singletonList("3.0"));
       }
       return Optional.empty();
     };
@@ -916,6 +917,66 @@ public class PrettyPrinterVisitorTest {
             + " int A[5];\n"
             + " int x = A.length();\n"
             + "}\n";
+    assertEquals(shader, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)));
+  }
+
+  @Test
+  public void coherentSsbo() throws Exception {
+    final String shader =
+        "#version 320 es\n"
+            + "layout(std430, binding = 0) buffer coherent buffer_0 {\n"
+            + " int a;\n"
+            + "};\n";
+    assertEquals(shader, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)));
+  }
+
+  @Test
+  public void volatileSsbo() throws Exception {
+    final String shader =
+        "#version 320 es\n"
+            + "layout(std430, binding = 0) volatile buffer buffer_0 {\n"
+            + " int a;\n"
+            + "};\n";
+    assertEquals(shader, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)));
+  }
+
+  @Test
+  public void restrictSsbo() throws Exception {
+    final String shader =
+        "#version 320 es\n"
+            + "layout(std430, binding = 0) restrict buffer buffer_0 {\n"
+            + " int a;\n"
+            + "};\n";
+    assertEquals(shader, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)));
+  }
+
+  @Test
+  public void readonlySsbo() throws Exception {
+    final String shader =
+        "#version 320 es\n"
+            + "layout(std430, binding = 0) buffer readonly buffer_0 {\n"
+            + " int a;\n"
+            + "};\n";
+    assertEquals(shader, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)));
+  }
+
+  @Test
+  public void writeonlySsbo() throws Exception {
+    final String shader =
+        "#version 320 es\n"
+            + "layout(std430, binding = 0) writeonly buffer buffer_0 {\n"
+            + " int a;\n"
+            + "};\n";
+    assertEquals(shader, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)));
+  }
+
+  @Test
+  public void ssboMultipleQualifiers() throws Exception {
+    final String shader =
+        "#version 320 es\n"
+            + "layout(std430, binding = 0) volatile buffer restrict writeonly buffer_0 {\n"
+            + " int a;\n"
+            + "};\n";
     assertEquals(shader, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)));
   }
 

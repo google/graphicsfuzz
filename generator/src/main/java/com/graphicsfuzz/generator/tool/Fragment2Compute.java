@@ -297,7 +297,7 @@ new MemberLookupExpr(new VariableIdentifierExpr(OpenGlConstants.GL_NUM_WORK_GROU
     computeTu.addDeclaration(new InterfaceBlock(
         Optional.of(new LayoutQualifierSequence(new Std430LayoutQualifier(),
             new BindingLayoutQualifier(0))),
-        TypeQualifier.BUFFER,
+        Collections.singletonList(TypeQualifier.BUFFER),
         "doesNotMatter",
         Collections.singletonList(COMPUTE_SHADER_DATA),
         Collections.singletonList(new ArrayType(BasicType.VEC4,

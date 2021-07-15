@@ -23,14 +23,16 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 public class InterfaceBlock extends Declaration {
 
   private final Optional<LayoutQualifierSequence> layoutQualifier;
-  private final TypeQualifier interfaceQualifier;
+  private final List<TypeQualifier> interfaceQualifiers;
   private final String structName;
   private final List<String> memberNames;
   private final List<Type> memberTypes;
@@ -38,33 +40,46 @@ public class InterfaceBlock extends Declaration {
 
   public InterfaceBlock(
       Optional<LayoutQualifierSequence> layoutQualifier,
-      TypeQualifier interfaceQualifier,
+      List<TypeQualifier> interfaceQualifiers,
       String structName,
       List<String> memberNames,
       List<Type> memberTypes,
       Optional<String> instanceName) {
+    // Check that there are no repeated qualifiers
+    assert interfaceQualifiers.size() == new HashSet<>(interfaceQualifiers).size() : "Interface "
+        + "block qualifiers must not be repeated";
+
+    // Check that there is only one qualifier specifying the kind of block this is
+    final Set<TypeQualifier> allowedQualifiers =
+        new HashSet<>(Arrays.asList(TypeQualifier.SHADER_INPUT, TypeQualifier.SHADER_OUTPUT,
+            TypeQualifier.UNIFORM, TypeQualifier.BUFFER));
+    allowedQualifiers.retainAll(interfaceQualifiers);
+    assert allowedQualifiers.size() == 1 :
+        "An interface block must have exactly one of the 'in', 'out', 'uniform' or 'buffer' "
+            + "qualifiers";
+
+    // A buffer block is allowed to have memory qualifiers
+    if (allowedQualifiers.contains(TypeQualifier.BUFFER)) {
+      allowedQualifiers.addAll(new HashSet<>(Arrays.asList(
+          TypeQualifier.COHERENT,
+          TypeQualifier.VOLATILE,
+          TypeQualifier.RESTRICT,
+          TypeQualifier.READONLY,
+          TypeQualifier.WRITEONLY)));
+    }
+
+    // Check that there are no unexpected qualifiers
+    assert allowedQualifiers.containsAll(interfaceQualifiers) :
+        "Only certain qualifiers are allowed on an interface block";
+
     this.layoutQualifier = layoutQualifier;
-    this.interfaceQualifier = interfaceQualifier;
-    assert Arrays.asList(TypeQualifier.SHADER_INPUT,
-        TypeQualifier.SHADER_OUTPUT,
-        TypeQualifier.UNIFORM,
-        TypeQualifier.BUFFER)
-        .contains(interfaceQualifier);
+    this.interfaceQualifiers = new ArrayList<>(interfaceQualifiers);
     this.structName = structName;
     this.memberNames = new ArrayList<>();
     this.memberNames.addAll(memberNames);
     this.memberTypes = new ArrayList<>();
     this.memberTypes.addAll(memberTypes);
     this.instanceName = instanceName;
-  }
-
-  public InterfaceBlock(LayoutQualifierSequence layoutQualifierSequence,
-                        TypeQualifier interfaceQualifier, String name,
-                        String memberName,
-                        Type memberType,
-                        String instanceName) {
-    this(Optional.of(layoutQualifierSequence), interfaceQualifier,
-        name, Arrays.asList(memberName), Arrays.asList(memberType), Optional.of(instanceName));
   }
 
   public List<Type> getMemberTypes() {
@@ -84,8 +99,8 @@ public class InterfaceBlock extends Declaration {
     return layoutQualifier.get();
   }
 
-  public TypeQualifier getInterfaceQualifier() {
-    return interfaceQualifier;
+  public List<TypeQualifier> getInterfaceQualifiers() {
+    return Collections.unmodifiableList(interfaceQualifiers);
   }
 
   public String getStructName() {
@@ -109,6 +124,22 @@ public class InterfaceBlock extends Declaration {
     return Optional.empty();
   }
 
+  public boolean isUniformBlock() {
+    return interfaceQualifiers.contains(TypeQualifier.UNIFORM);
+  }
+
+  public boolean isShaderStorageBlock() {
+    return interfaceQualifiers.contains(TypeQualifier.BUFFER);
+  }
+
+  public boolean isInputBlock() {
+    return interfaceQualifiers.contains(TypeQualifier.SHADER_INPUT);
+  }
+
+  public boolean isOutputBlock() {
+    return interfaceQualifiers.contains(TypeQualifier.SHADER_OUTPUT);
+  }
+
   @Override
   public void accept(IAstVisitor visitor) {
     visitor.visitInterfaceBlock(this);
@@ -117,7 +148,7 @@ public class InterfaceBlock extends Declaration {
   @Override
   public InterfaceBlock clone() {
     return new InterfaceBlock(layoutQualifier,
-        interfaceQualifier,
+        interfaceQualifiers,
         structName,
         memberNames,
         memberTypes.stream().map(item -> item.clone()).collect(Collectors.toList()),

@@ -21,7 +21,7 @@ public class TypeQualifier {
   private final String text;
 
   /**
-   * Deliverately package-visible: we do not want arbitrary type qualifiers
+   * Deliberately package-visible: we do not want arbitrary type qualifiers
    * to be created, except via designated subclasses.
    */
   TypeQualifier(String text) {

@@ -683,7 +683,7 @@ interface_block:
    ;
 
 basic_interface_block:
-   interface_qualifier IDENTIFIER LBRACE member_list RBRACE instance_name? SEMICOLON
+   interface_qualifier+ IDENTIFIER LBRACE member_list RBRACE instance_name? SEMICOLON
    ;
 
 interface_qualifier:
@@ -691,6 +691,11 @@ interface_qualifier:
    | OUT_TOK
    | UNIFORM
    | BUFFER
+   | COHERENT
+   | VOLATILE
+   | RESTRICT
+   | READONLY
+   | WRITEONLY
    ;
 
 instance_name:
