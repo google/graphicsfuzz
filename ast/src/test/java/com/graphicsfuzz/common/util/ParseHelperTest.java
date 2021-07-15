@@ -770,7 +770,7 @@ public class ParseHelperTest {
   @Test
   public void testUnsupportedMethodCall1() throws Exception {
 
-    // Change this test to check for support if it is eventually introduced.
+    // GLSL has method call syntax, but this is only used for the length() method.
 
     try {
       ParseHelper.parse("#version 310 es\n"
@@ -778,19 +778,20 @@ public class ParseHelperTest {
           + "void main() {\n"
           + "\n"
           + "  int A[4];\n"
-          + "  A.length();\n"
+          + "  A.foo(1);\n"
           + "\n"
           + "}\n");
       fail("Exception was expected");
     } catch (UnsupportedLanguageFeatureException exception) {
-      assertTrue(exception.getMessage().contains("Method calls are not currently supported"));
+      assertTrue(exception.getMessage().contains("Method calls with parameters are allowed by the "
+          + "GLSL grammar but have no meaning in the language at present"));
     }
   }
 
   @Test
   public void testUnsupportedMethodCall2() throws Exception {
 
-    // Change this test to check for support if it is eventually introduced.
+    // GLSL has method call syntax, but this is only used for the length() method.
 
     try {
       ParseHelper.parse("#version 310 es\n"
@@ -798,36 +799,13 @@ public class ParseHelperTest {
           + "void main() {\n"
           + "\n"
           + "  int A[4];\n"
-          + "  A.length(void);\n"
+          + "  A.foo();\n"
           + "\n"
           + "}\n");
       fail("Exception was expected");
     } catch (UnsupportedLanguageFeatureException exception) {
-      assertTrue(exception.getMessage().contains("Method calls are not currently supported"));
-    }
-  }
-
-  @Test
-  public void testUnsupportedMethodCall3() throws Exception {
-
-    // Change this test to check for support if it is eventually introduced.
-
-    try {
-      ParseHelper.parse("#version 320 es\n"
-          + "\n"
-          + "precision highp float;\n"
-          + "\n"
-          + "struct S { int A[4]; };\n"
-          + "\n"
-          + "void main() {\n"
-          + "\n"
-          + "  S s = S(int[4](1,2,3,4));\n"
-          + "  s.A.length();\n"
-          + "\n"
-          + "}\n");
-      fail("Exception was expected");
-    } catch (UnsupportedLanguageFeatureException exception) {
-      assertTrue(exception.getMessage().contains("Method calls are not currently supported"));
+      assertTrue(exception.getMessage().contains("The only allowed method call in GLSL is to "
+          + "length()"));
     }
   }
 

@@ -907,4 +907,16 @@ public class PrettyPrinterVisitorTest {
     assertEquals(shader, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)));
   }
 
+  @Test
+  public void length() throws Exception {
+    final String shader =
+        "#version 320 es\n"
+            + "void main()\n"
+            + "{\n"
+            + " int A[5];\n"
+            + " int x = A.length();\n"
+            + "}\n";
+    assertEquals(shader, PrettyPrinterVisitor.prettyPrintAsString(ParseHelper.parse(shader)));
+  }
+
 }

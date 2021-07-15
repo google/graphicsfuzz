@@ -35,6 +35,7 @@ import com.graphicsfuzz.common.ast.expr.BoolConstantExpr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
+import com.graphicsfuzz.common.ast.expr.LengthExpr;
 import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
 import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.expr.TernaryExpr;
@@ -174,5 +175,7 @@ public interface IAstVisitor {
   void visitExtensionStatement(ExtensionStatement extensionStatement);
 
   void visitPragmaStatement(PragmaStatement pragmaStatement);
+
+  void visitLengthExpr(LengthExpr lengthExpr);
 
 }

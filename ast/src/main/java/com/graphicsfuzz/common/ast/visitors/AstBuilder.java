@@ -37,6 +37,7 @@ import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.FloatConstantExpr;
 import com.graphicsfuzz.common.ast.expr.FunctionCallExpr;
 import com.graphicsfuzz.common.ast.expr.IntConstantExpr;
+import com.graphicsfuzz.common.ast.expr.LengthExpr;
 import com.graphicsfuzz.common.ast.expr.MemberLookupExpr;
 import com.graphicsfuzz.common.ast.expr.ParenExpr;
 import com.graphicsfuzz.common.ast.expr.TernaryExpr;
@@ -1360,8 +1361,18 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
           visitExpression(ctx.integer_expression().expression()));
     }
     if (ctx.method_call_generic() != null) {
-      throw new UnsupportedLanguageFeatureException("Method calls are not currently supported: "
-          + getOriginalSourceText(ctx));
+      if (ctx.method_call_generic().method_call_header_with_parameters() != null) {
+        throw new UnsupportedLanguageFeatureException("Method calls with parameters are "
+            + "allowed by the GLSL grammar but have no meaning in the language at present: "
+            + getOriginalSourceText(ctx));
+      }
+      if (!ctx.method_call_generic().method_call_header_no_parameters().method_call_header()
+          .variable_identifier().IDENTIFIER().getText().equals("length")) {
+        throw new UnsupportedLanguageFeatureException("The only allowed method call in GLSL is to"
+            + " length(); found: "
+            + getOriginalSourceText(ctx));
+      }
+      return new LengthExpr(visitPostfix_expression(ctx.postfix_expression()));
     }
     if (ctx.IDENTIFIER() != null) {
       return new MemberLookupExpr(visitPostfix_expression(ctx.postfix_expression()),

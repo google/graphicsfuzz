@@ -26,7 +26,6 @@ public class MemberLookupExpr extends Expr {
   private String member;
 
   public MemberLookupExpr(Expr structure, String member) {
-    checkNoTopLevelCommaExpression(Collections.singletonList(structure));
     setStructure(structure);
     this.member = member;
   }
@@ -36,8 +35,9 @@ public class MemberLookupExpr extends Expr {
   }
 
   public void setStructure(Expr structure) {
+    checkNoTopLevelCommaExpression(Collections.singletonList(structure));
     if (structure == null) {
-      throw new IllegalArgumentException("Member lookup expression canno have null structure");
+      throw new IllegalArgumentException("Member lookup expression cannot have null structure");
     }
     this.structure = structure;
   }
