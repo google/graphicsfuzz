@@ -81,8 +81,23 @@ public class Expr2BinaryMutationFinderTest {
       }
 
       @Override
+      public int nextInt(int origin, int bound) {
+        return IRandom.super.nextInt(origin, bound);
+      }
+
+      @Override
+      public long nextLong(long bound) {
+        return 2;
+      }
+
+      @Override
       public Float nextFloat() {
         throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public int nextPositiveInt(int bound) {
+        return IRandom.super.nextPositiveInt(bound);
       }
 
       @Override
