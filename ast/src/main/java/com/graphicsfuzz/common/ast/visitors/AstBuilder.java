@@ -78,6 +78,7 @@ import com.graphicsfuzz.common.ast.type.LocationLayoutQualifier;
 import com.graphicsfuzz.common.ast.type.QualifiedType;
 import com.graphicsfuzz.common.ast.type.SamplerType;
 import com.graphicsfuzz.common.ast.type.SetLayoutQualifier;
+import com.graphicsfuzz.common.ast.type.Std140LayoutQualifier;
 import com.graphicsfuzz.common.ast.type.Std430LayoutQualifier;
 import com.graphicsfuzz.common.ast.type.StructDefinitionType;
 import com.graphicsfuzz.common.ast.type.StructNameType;
@@ -1664,6 +1665,8 @@ public class AstBuilder extends GLSLBaseVisitor<Object> {
       switch (layoutQualifierId.IDENTIFIER().getText()) {
         case "std430":
           return new Std430LayoutQualifier();
+        case "std140":
+          return new Std140LayoutQualifier();
         default:
           return new UnknownLayoutQualifier(layoutQualifierId.getText());
       }
