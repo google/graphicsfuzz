@@ -24,6 +24,16 @@ public class ZeroCannedRandom implements IRandom {
   }
 
   @Override
+  public int nextInt(int origin, int bound) {
+    return 0;
+  }
+
+  @Override
+  public long nextLong(long bound) {
+    return 0L;
+  }
+
+  @Override
   public Float nextFloat() {
     return 0.0f;
   }

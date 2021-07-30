@@ -24,11 +24,18 @@ public interface IRandom {
 
   int nextInt(int bound);
 
+  default int nextInt(int origin, int bound) {
+    return (int) (nextLong(((long)bound - (long) origin)) + (long) origin);
+  }
+
+  long nextLong(long bound);
+
   Float nextFloat();
 
   default int nextPositiveInt(int bound) {
     return nextInt(bound - 1) + 1;
   }
+
 
   boolean nextBoolean();
 

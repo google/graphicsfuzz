@@ -30,12 +30,12 @@ public class CannedRandom implements IRandom {
    * Constructs a canned random instance that will iterate over the given lists of integers
    * and booleans.
    *
-   * @param intsAndBools Ordered sequence of integers and booleans
+   * @param intsAndBools Ordered sequence of integers, long and booleans
    */
   public CannedRandom(Object... intsAndBools) {
     if (Arrays.stream(intsAndBools).anyMatch(item -> !(item instanceof Integer
-        || item instanceof Boolean))) {
-      throw new IllegalArgumentException("Only Integer and Boolean items allowed.");
+        || item instanceof Boolean || item instanceof Long))) {
+      throw new IllegalArgumentException("Only Integer, Long and Boolean items allowed.");
     }
     this.items = Arrays.asList(intsAndBools).iterator();
   }
@@ -48,6 +48,21 @@ public class CannedRandom implements IRandom {
           + next.getClass() + "(" + next + ")");
     }
     return Math.abs((Integer)next) % bound;
+  }
+
+  @Override
+  public int nextInt(int origin, int bound) {
+    return nextInt(bound);
+  }
+
+  @Override
+  public long nextLong(long bound) {
+    Object next = items.next();
+    if (!(next instanceof Long)) {
+      throw new UnsupportedOperationException("nextLong failed because next item was a "
+         + next.getClass() + "(" + next + ")");
+    }
+    return (Long) next;
   }
 
   @Override
