@@ -28,10 +28,6 @@ public class SameValueRandom implements IRandom {
     this.longValue = longValue;
   }
 
-  public SameValueRandom(boolean boolValue, int intValue) {
-    this(boolValue, intValue, 0L);
-  }
-
   @Override
   public int nextInt(int bound) {
     assert intValue < bound;

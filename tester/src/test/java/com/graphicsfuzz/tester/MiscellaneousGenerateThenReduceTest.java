@@ -68,7 +68,7 @@ public class MiscellaneousGenerateThenReduceTest {
     final ShadingLanguageVersion shadingLanguageVersion = ShadingLanguageVersion.GLSL_440;
     new AddWrappingConditionalTransformation().apply(tu,
         TransformationProbabilities.onlyWrap(),
-        new SameValueRandom(false, 0),
+        new SameValueRandom(false, 0, 0L),
         GenerationParams.normal(ShaderKind.FRAGMENT, true));
 
     System.out.println(PrettyPrinterVisitor.prettyPrintAsString(tu));
@@ -78,7 +78,7 @@ public class MiscellaneousGenerateThenReduceTest {
           .getReductionOpportunities(new GlslShaderJob(Optional.empty(),
                   new PipelineInfo(), tu),
                 new ReducerContext(false, shadingLanguageVersion,
-              new SameValueRandom(false, 0), new IdGenerator()), fileOps);
+              new SameValueRandom(false, 0, 0L), new IdGenerator()), fileOps);
       if (ops.isEmpty()) {
         break;
       }
