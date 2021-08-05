@@ -308,6 +308,14 @@ public class BasicType extends BuiltinType {
     return result;
   }
 
+  public static List<BasicType> allSignedTypes() {
+    return new ArrayList<BasicType>(Arrays.asList(
+       INT,
+       IVEC2,
+       IVEC3,
+       IVEC4));
+  }
+
   public static List<BasicType> allUnsignedTypes() {
     return new ArrayList<BasicType>(Arrays.asList(
         UINT,
@@ -356,7 +364,7 @@ public class BasicType extends BuiltinType {
     return result;
   }
 
-  private static List<BasicType> allBoolTypes() {
+  public static List<BasicType> allBoolTypes() {
     return new ArrayList<BasicType>(Arrays.asList(
           BOOL,
           BVEC2,
