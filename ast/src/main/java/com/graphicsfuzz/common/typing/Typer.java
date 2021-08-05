@@ -402,17 +402,13 @@ public class Typer extends ScopeTrackingVisitor {
         types.put(binaryExpr, rhsType);
         return;
       case BAND_ASSIGN:
-        break;
       case BOR_ASSIGN:
-        break;
       case BXOR_ASSIGN:
-        break;
       case MOD_ASSIGN:
-        break;
       case SHL_ASSIGN:
-        break;
       case SHR_ASSIGN:
-        break;
+        types.put(binaryExpr, lhsType);
+        return;
       default:
         break;
 
