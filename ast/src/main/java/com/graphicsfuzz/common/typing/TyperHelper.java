@@ -58,10 +58,12 @@ public final class TyperHelper {
       return lhsType;
     }
 
-    // If one side is scalar and the other side is basic, the result has to be that of the other
-    // side
-    // If both are scalar but of different types (shift operator), the result type is the one
-    // from the left operand, so we check if the right operand is scalar first
+    // If one side is scalar, the other side is either a scalar of different type or a non-scalar
+    // basic type:
+    // - If the two operands are scalar of different types, the operation is a shift and
+    // the result type is the type of the left operand
+    // - If one operand is scalar and the other is basic, the result type is the one of the basic
+    // type
     if (rhsType == BasicType.FLOAT || rhsType == BasicType.INT || rhsType == BasicType.UINT) {
       assert lhsType instanceof BasicType;
       return lhsType;
@@ -71,7 +73,8 @@ public final class TyperHelper {
       return rhsType;
     }
     // Now we are in a position where if we know that one type is vector
-    // or matrix, the other side must be also
+    // or matrix, the other side must be also and the result type is the one from the type on the
+    // left if the two types are different (shift operations)
     for (BasicType t : Arrays.asList(
         BasicType.VEC2,
         BasicType.VEC3,
@@ -91,7 +94,7 @@ public final class TyperHelper {
         BasicType.MAT4X2,
         BasicType.MAT4X3,
         BasicType.MAT4X4)) {
-      if (lhsType == t || rhsType == t) {
+      if (lhsType == t) {
         return t;
       }
     }

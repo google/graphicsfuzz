@@ -884,6 +884,122 @@ public class TyperTest {
     }.visit(tu);
   }
 
+  @Test
+  public void testLeftShiftTyped() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("#version 320 es\n"
+        + "void main() {\n"
+        + "  int a;\n"
+        + "  uint b;\n"
+        + "  ivec2 av;\n"
+        + "  uvec2 bv;\n"
+        + "\n"
+        + "  int x0 = a << a;\n"
+        + "  int x1 = a << b;\n"
+        + "  uint x2 = b << a;\n"
+        + "  uint x3 = b << b;\n"
+        + "  ivec2 x4 = av << a;\n"
+        + "  ivec2 x5 = av << b;\n"
+        + "  ivec2 x6 = av << av;\n"
+        + "  ivec2 x7 = av << bv;\n"
+        + "  uvec2 x8 = bv << a;\n"
+        + "  uvec2 x9 = bv << b;\n"
+        + "  uvec2 x10 = bv << av;\n"
+        + "  uvec2 x11 = bv << bv;\n"
+        + "}\n");
+    new NullCheckTyper(tu) {
+      private int counter = 0;
+      @Override
+      public void visitBinaryExpr(BinaryExpr binaryExpr) {
+        super.visitBinaryExpr(binaryExpr);
+        if (binaryExpr.getOp() == BinOp.SHL) {
+          switch (counter) {
+            case 0:
+            case 1:
+              assertSame(BasicType.INT, lookupType(binaryExpr));
+              break;
+            case 2:
+            case 3:
+              assertSame(BasicType.UINT, lookupType(binaryExpr));
+              break;
+            case 4:
+            case 5:
+            case 6:
+            case 7:
+              assertSame(BasicType.IVEC2, lookupType(binaryExpr));
+              break;
+            case 8:
+            case 9:
+            case 10:
+            case 11:
+              assertSame(BasicType.UVEC2, lookupType(binaryExpr));
+              break;
+            default:
+              fail();
+          }
+          counter++;
+        }
+      }
+    }.visit(tu);
+  }
+
+  @Test
+  public void testRightShiftTyped() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("#version 320 es\n"
+        + "void main() {\n"
+        + "  int a;\n"
+        + "  uint b;\n"
+        + "  ivec2 av;\n"
+        + "  uvec2 bv;\n"
+        + "\n"
+        + "  int x0 = a >> a;\n"
+        + "  int x1 = a >> b;\n"
+        + "  uint x2 = b >> a;\n"
+        + "  uint x3 = b >> b;\n"
+        + "  ivec2 x4 = av >> a;\n"
+        + "  ivec2 x5 = av >> b;\n"
+        + "  ivec2 x6 = av >> av;\n"
+        + "  ivec2 x7 = av >> bv;\n"
+        + "  uvec2 x8 = bv >> a;\n"
+        + "  uvec2 x9 = bv >> b;\n"
+        + "  uvec2 x10 = bv >> av;\n"
+        + "  uvec2 x11 = bv >> bv;\n"
+        + "}\n");
+    new NullCheckTyper(tu) {
+      private int counter = 0;
+      @Override
+      public void visitBinaryExpr(BinaryExpr binaryExpr) {
+        super.visitBinaryExpr(binaryExpr);
+        if (binaryExpr.getOp() == BinOp.SHR) {
+          switch (counter) {
+            case 0:
+            case 1:
+              assertSame(BasicType.INT, lookupType(binaryExpr));
+              break;
+            case 2:
+            case 3:
+              assertSame(BasicType.UINT, lookupType(binaryExpr));
+              break;
+            case 4:
+            case 5:
+            case 6:
+            case 7:
+              assertSame(BasicType.IVEC2, lookupType(binaryExpr));
+              break;
+            case 8:
+            case 9:
+            case 10:
+            case 11:
+              assertSame(BasicType.UVEC2, lookupType(binaryExpr));
+              break;
+            default:
+              fail();
+          }
+          counter++;
+        }
+      }
+    }.visit(tu);
+  }
+
   private void checkComputeShaderBuiltin(String builtin, String builtinConstant, BasicType baseType,
       TypeQualifier qualifier) throws IOException, ParseTimeoutException, InterruptedException,
       GlslParserException {
