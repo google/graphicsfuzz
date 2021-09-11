@@ -81,7 +81,7 @@ public class DonateLiveCodeTransformationTest {
 
   private DonateLiveCodeTransformation getDummyTransformationObject() {
     return new DonateLiveCodeTransformation(IRandom::nextBoolean, testFolder.getRoot(),
-        GenerationParams.normal(ShaderKind.FRAGMENT, true),
+        GenerationParams.normal(ShaderKind.FRAGMENT, false, true),
         false);
   }
 
@@ -386,7 +386,7 @@ public class DonateLiveCodeTransformationTest {
 
       final DonateLiveCodeTransformation donateLiveCode =
           new DonateLiveCodeTransformation(item -> true, testFolder.getRoot(),
-              GenerationParams.normal(ShaderKind.FRAGMENT, true),
+              GenerationParams.normal(ShaderKind.FRAGMENT, false, true),
               false);
 
       final TranslationUnit referenceTu = ParseHelper.parse(reference);
@@ -460,7 +460,7 @@ public class DonateLiveCodeTransformationTest {
 
       identityTransformation.apply(referenceTu, TransformationProbabilities.onlyMutateExpressions(),
           generator,
-          GenerationParams.large(ShaderKind.FRAGMENT, true)
+          GenerationParams.large(ShaderKind.FRAGMENT, false, true)
       );
     }
   }
@@ -523,7 +523,7 @@ public class DonateLiveCodeTransformationTest {
 
     DonateLiveCodeTransformation transformation =
         new DonateLiveCodeTransformation(IRandom::nextBoolean, donors,
-            GenerationParams.normal(ShaderKind.FRAGMENT, true), false);
+            GenerationParams.normal(ShaderKind.FRAGMENT, false, true), false);
 
     assert referenceShaderJob.getFragmentShader().isPresent();
 
@@ -531,7 +531,7 @@ public class DonateLiveCodeTransformationTest {
         referenceShaderJob.getFragmentShader().get(),
         TransformationProbabilities.onlyLiveCodeAlwaysSubstitute(),
         new RandomWrapper(0),
-        GenerationParams.normal(ShaderKind.FRAGMENT, true)
+        GenerationParams.normal(ShaderKind.FRAGMENT, false, true)
     );
 
     Assert.assertTrue(result);
@@ -589,7 +589,7 @@ public class DonateLiveCodeTransformationTest {
 
     DonateLiveCodeTransformation transformation =
         new DonateLiveCodeTransformation(IRandom::nextBoolean, donors,
-            GenerationParams.normal(ShaderKind.FRAGMENT, true), false);
+            GenerationParams.normal(ShaderKind.FRAGMENT, false, true), false);
 
     assert referenceShaderJob.getFragmentShader().isPresent();
 
@@ -597,7 +597,7 @@ public class DonateLiveCodeTransformationTest {
         referenceShaderJob.getFragmentShader().get(),
         TransformationProbabilities.onlyLiveCodeAlwaysSubstitute(),
         new RandomWrapper(0),
-        GenerationParams.normal(ShaderKind.FRAGMENT, true)
+        GenerationParams.normal(ShaderKind.FRAGMENT, false, true)
     );
 
     Assert.assertTrue(result);
@@ -673,7 +673,7 @@ public class DonateLiveCodeTransformationTest {
       // Do live code donation.
       DonateLiveCodeTransformation transformation =
           new DonateLiveCodeTransformation(IRandom::nextBoolean, donors,
-              GenerationParams.normal(ShaderKind.FRAGMENT, true), false);
+              GenerationParams.normal(ShaderKind.FRAGMENT, false, true), false);
 
       assert referenceShaderJob.getFragmentShader().isPresent();
 
@@ -681,7 +681,7 @@ public class DonateLiveCodeTransformationTest {
           referenceShaderJob.getFragmentShader().get(),
           TransformationProbabilities.onlyLiveCodeAlwaysSubstitute(),
           new RandomWrapper(seed),
-          GenerationParams.normal(ShaderKind.FRAGMENT, true)
+          GenerationParams.normal(ShaderKind.FRAGMENT, false, true)
       );
 
       if (!result) {
@@ -760,7 +760,7 @@ public class DonateLiveCodeTransformationTest {
       // Do live code donation.
       final DonateLiveCodeTransformation transformation =
           new DonateLiveCodeTransformation(IRandom::nextBoolean, donors,
-              GenerationParams.normal(ShaderKind.FRAGMENT, true), false);
+              GenerationParams.normal(ShaderKind.FRAGMENT, false, true), false);
 
       assert referenceShaderJob.getFragmentShader().isPresent();
 
@@ -768,7 +768,7 @@ public class DonateLiveCodeTransformationTest {
           referenceShaderJob.getFragmentShader().get(),
           TransformationProbabilities.onlyLiveCodeAlwaysSubstitute(),
           new RandomWrapper(seed),
-          GenerationParams.normal(ShaderKind.FRAGMENT, true)
+          GenerationParams.normal(ShaderKind.FRAGMENT, false, true)
       );
 
       // Check that the resulting shader typechecks.

@@ -63,7 +63,8 @@ public class InterchangeExprMutationFinder extends Expr2ExprMutationFinder {
   private Expr applyInterchange(Expr expr, List<Type> argumentTypes) {
     final Type resultType = typer.lookupType(expr).getWithoutQualifiers();
     List<IExprTemplate> templates = Fuzzer.availableTemplatesFromScope(
-        getTranslationUnit().getShadingLanguageVersion(), getTranslationUnit().getShaderKind(),
+        getTranslationUnit().getShadingLanguageVersion(), false,
+            getTranslationUnit().getShaderKind(),
         getCurrentScope())
         // Ignore templates that require l-values, so that invalidity is not too likely
         .filter(InterchangeExprMutationFinder::doesNotRequireLvalue)

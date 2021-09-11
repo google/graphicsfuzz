@@ -235,7 +235,7 @@ public final class OpaqueExpressionGenerator {
     if (type != BasicType.FLOAT) {
       return Optional.empty();
     }
-    if (!shadingLanguageVersion.supportedDeterminant()) {
+    if (!shadingLanguageVersion.supportedDeterminant() || generationParams.isWgslCompatible()) {
       return Optional.empty();
     }
     // If true, we will make an upper triangular matrix - otherwise it will be lower triangular.

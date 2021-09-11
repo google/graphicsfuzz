@@ -57,7 +57,7 @@ public class StructificationMutationFinderTest {
     // leads to valid shaders.
     for (int i = 0; i < limit; i++) {
       new StructificationMutationFinder(tu, new RandomWrapper(i),
-          GenerationParams.normal(tu.getShaderKind(), true))
+          GenerationParams.normal(tu.getShaderKind(), false, true))
           .findMutations()
           .get(0).apply();
 

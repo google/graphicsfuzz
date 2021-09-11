@@ -33,6 +33,7 @@ public class GeneratorArguments {
   private final boolean addInjectionSwitch;
   private final Optional<ShaderKind> onlyFuzzShaderStage;
   private final float pushConstantProbability;
+  private final boolean isWgslCompatible;
 
   public GeneratorArguments(
         boolean small,
@@ -45,7 +46,8 @@ public class GeneratorArguments {
         EnabledTransformations enabledTransformations,
         boolean addInjectionSwitch,
         Optional<ShaderKind> onlyFuzzShaderStage,
-        float pushConstantProbability) {
+        float pushConstantProbability,
+        boolean isWgslCompatible) {
     this.small = small;
     this.allowLongLoops = allowLongLoops;
     this.singlePass = singlePass;
@@ -57,6 +59,7 @@ public class GeneratorArguments {
     this.addInjectionSwitch = addInjectionSwitch;
     this.onlyFuzzShaderStage = onlyFuzzShaderStage;
     this.pushConstantProbability = pushConstantProbability;
+    this.isWgslCompatible = isWgslCompatible;
   }
 
   public Optional<ShaderKind> getOnlyFuzzShaderStage() {
@@ -107,6 +110,10 @@ public class GeneratorArguments {
     return pushConstantProbability;
   }
 
+  public boolean getIsWgslCompatible() {
+    return isWgslCompatible;
+  }
+
   @Override
   public final String toString() {
     final StringBuilder sb = new StringBuilder();
@@ -120,6 +127,7 @@ public class GeneratorArguments {
     sb.append("enabledTransformations: " + enabledTransformations + "\n");
     sb.append("addInjectionSwitch: " + addInjectionSwitch + "\n");
     sb.append("pushConstantProbability: " + pushConstantProbability + "\n");
+    sb.append("isWgslCompatible: " + isWgslCompatible + "\n");
     return sb.toString();
   }
 

@@ -147,6 +147,7 @@ public class Mutate {
     List<? extends Mutation> mutations;
     int tries = 0;
     final GenerationParams generationParams = GenerationParams.normal(tu.getShaderKind(),
+        false,
         true);
     final List<Supplier<MutationFinder<?>>> mutationFinders = Arrays.asList(
 

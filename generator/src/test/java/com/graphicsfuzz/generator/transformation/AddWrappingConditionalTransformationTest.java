@@ -42,7 +42,7 @@ public class AddWrappingConditionalTransformationTest {
     new AddWrappingConditionalTransformation().apply(tu, TransformationProbabilities.onlyWrap(),
         new CannedRandom(0, 0, 0, 0, 0,
         0, 0, 0, 0, 0, 0, 0, 0, 0),
-        GenerationParams.normal(ShaderKind.FRAGMENT, true));
+        GenerationParams.normal(ShaderKind.FRAGMENT, false, true));
     checkStructuralProperties(tu);
     TranslationUnit tu2 = ParseHelper.parse(PrettyPrinterVisitor.prettyPrintAsString(tu));
     checkStructuralProperties(tu2);

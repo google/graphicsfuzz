@@ -60,6 +60,7 @@ public class CheckDonorVersionMatchesTest {
     fileOperations.writeShaderJobFile(es310ShaderJob, reference);
 
     final GenerationParams normalGenerationParams = GenerationParams.normal(ShaderKind.FRAGMENT,
+        false,
         false);
     final DonateLiveCodeTransformation transformation = new DonateLiveCodeTransformation(
         TransformationProbabilities.ALWAYS::donateLiveCodeAtStmt,

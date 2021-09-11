@@ -143,7 +143,7 @@ public class GeneratorUnitTest {
     testTransformationMultiVersions(() -> new DonateDeadCodeTransformation(
         TransformationProbabilities.likelyDonateDeadCode()::donateDeadCodeAtStmt,
             Util.getDonorsFolder(),
-            GenerationParams.normal(ShaderKind.FRAGMENT, true)),
+            GenerationParams.normal(ShaderKind.FRAGMENT, false, true)),
         TransformationProbabilities.likelyDonateDeadCode(),
         "donatedead",
         Arrays.asList("bubblesort_flag.json", "squares.json", "mandelbrot_zoom.json"),
@@ -156,7 +156,7 @@ public class GeneratorUnitTest {
     testTransformationMultiVersions(() -> new DonateLiveCodeTransformation(
         TransformationProbabilities.likelyDonateLiveCode()::donateLiveCodeAtStmt,
             Util.getDonorsFolder(),
-            GenerationParams.normal(ShaderKind.FRAGMENT, true),
+            GenerationParams.normal(ShaderKind.FRAGMENT, false, true),
         false), TransformationProbabilities.likelyDonateLiveCode(),
         "donatelive",
         Collections.singletonList("squares.json"),
@@ -330,7 +330,7 @@ public class GeneratorUnitTest {
     for (ITransformation transformation : transformations) {
       transformation.apply(tu, probabilities,
           generator,
-          GenerationParams.normal(ShaderKind.FRAGMENT, true));
+          GenerationParams.normal(ShaderKind.FRAGMENT, false, true));
     }
     Generate.addInjectionSwitchIfNotPresent(tu);
     Generate.setInjectionSwitch(shaderJob.getPipelineInfo());
@@ -395,7 +395,7 @@ public class GeneratorUnitTest {
     testTransformation(Collections.singletonList(() -> new DonateDeadCodeTransformation(
             TransformationProbabilities.likelyDonateDeadCode()::donateDeadCodeAtStmt,
             donors,
-            GenerationParams.normal(ShaderKind.FRAGMENT, true))),
+            GenerationParams.normal(ShaderKind.FRAGMENT, false, true))),
         TransformationProbabilities.likelyDonateDeadCode(),
         "donatedead", Collections.emptyList(),
         new File[] { reference });

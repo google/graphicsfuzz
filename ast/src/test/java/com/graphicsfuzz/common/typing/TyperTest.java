@@ -1237,8 +1237,9 @@ public class TyperTest {
     }
     result.append("#endif\n");
     int counter = 0;
-    for (String name : TyperHelper.getBuiltins(shadingLanguageVersion, shaderKind).keySet()) {
-      for (FunctionPrototype fp : TyperHelper.getBuiltins(shadingLanguageVersion, shaderKind)
+    for (String name :
+        TyperHelper.getBuiltins(shadingLanguageVersion, false, shaderKind).keySet()) {
+      for (FunctionPrototype fp : TyperHelper.getBuiltins(shadingLanguageVersion, false, shaderKind)
           .get(name)) {
         counter++;
         result.append(fp.getReturnType() + " test" + counter + "_" + fp.getName() + "(");

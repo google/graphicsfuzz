@@ -58,7 +58,7 @@ public class AddWrappingConditionalMutationFinderTest {
       final List<AddWrappingConditionalMutation> mutations =
           new AddWrappingConditionalMutationFinder(tu,
               new RandomWrapper(i),
-              GenerationParams.normal(tu.getShaderKind(), false))
+              GenerationParams.normal(tu.getShaderKind(), false, false))
           .findMutations();
       mutations.get(0).apply();
       if (mutations.size() > 1) {

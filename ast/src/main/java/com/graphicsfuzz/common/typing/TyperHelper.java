@@ -42,10 +42,10 @@ import java.util.stream.Collectors;
  */
 public final class TyperHelper {
 
-  // Maps a (shading language version, shader kind) pair to a mapping from builtin names to builtin
-  // function prototypes.
-  private static ConcurrentMap<ShadingLanguageVersion,
-      ConcurrentMap<ShaderKind, Map<String, List<FunctionPrototype>>>> builtins =
+  // Maps a shading language version + shader kind (+ WGSL compatibility) to a mapping from
+  // builtin names to builtin function prototypes.
+  private static ConcurrentMap<ShadingLanguageVersionAndKind, Map<String,
+      List<FunctionPrototype>>> builtins =
       new ConcurrentHashMap<>();
 
   private TyperHelper() {
@@ -283,36 +283,40 @@ public final class TyperHelper {
    * Yield the builtins available for the given shading language version and kind of shader.
    *
    * @param shadingLanguageVersion version of GLSL for which relevant builtins should be returned.
+   * @param isWgslCompatible determines whether only builtins that work when targeting WGSL
+   *                         should be included.
    * @param shaderKind kind of shader (e.g. fragment or compute) for which relevant builtins
    *                   should be returned.
    * @return a mapping from name of builtin to sequence of function prototypes.
    */
-  public static Map<String, List<FunctionPrototype>> getBuiltins(ShadingLanguageVersion
-      shadingLanguageVersion, ShaderKind shaderKind) {
+  public static Map<String, List<FunctionPrototype>> getBuiltins(
+      ShadingLanguageVersion shadingLanguageVersion,
+      boolean isWgslCompatible,
+      ShaderKind shaderKind) {
 
     assert shadingLanguageVersion != null;
     assert shaderKind != null;
+    ShadingLanguageVersionAndKind key = new ShadingLanguageVersionAndKind(shadingLanguageVersion,
+        isWgslCompatible, shaderKind);
 
-    if (!builtins.containsKey(shadingLanguageVersion)) {
-      builtins.putIfAbsent(shadingLanguageVersion, new ConcurrentHashMap<>());
+    if (!builtins.containsKey(key)) {
+      builtins.putIfAbsent(key,
+          getBuiltinsForGlslVersion(shadingLanguageVersion, isWgslCompatible, shaderKind));
     }
-    if (!builtins.get(shadingLanguageVersion).containsKey(shaderKind)) {
-      builtins.get(shadingLanguageVersion).putIfAbsent(shaderKind,
-          getBuiltinsForGlslVersion(shadingLanguageVersion, shaderKind));
-    }
-    return Collections.unmodifiableMap(builtins.get(shadingLanguageVersion).get(shaderKind));
+    return Collections.unmodifiableMap(builtins.get(key));
   }
 
   private static Map<String, List<FunctionPrototype>> getBuiltinsForGlslVersion(
-      ShadingLanguageVersion shadingLanguageVersion, ShaderKind shaderKind) {
+      ShadingLanguageVersion shadingLanguageVersion, boolean isWgslCompatible,
+      ShaderKind shaderKind) {
     Map<String, List<FunctionPrototype>> builtinsForVersion = new HashMap<>();
 
     // Section numbers refer to the ESSL 3.2 specification
 
     // 8.1: Angle and Trigonometric Functions
 
-    getBuiltinsForGlslVersionAngleAndTrigonometric(shadingLanguageVersion,
-        builtinsForVersion);
+    getBuiltinsForGlslVersionAngleAndTrigonometric(builtinsForVersion, shadingLanguageVersion,
+        isWgslCompatible);
 
     // 8.2: Exponential Functions
 
@@ -320,7 +324,7 @@ public final class TyperHelper {
 
     // 8.3: Common Functions
 
-    getBuiltinsForGlslVersionCommon(shadingLanguageVersion, builtinsForVersion);
+    getBuiltinsForGlslVersionCommon(builtinsForVersion, shadingLanguageVersion, isWgslCompatible);
 
     // 8.4: Floating-Point Pack and Unpack Functions
 
@@ -332,7 +336,7 @@ public final class TyperHelper {
 
     // 8.6: Matrix Functions
 
-    getBuiltinsForGlslVersionMatrix(builtinsForVersion, shadingLanguageVersion);
+    getBuiltinsForGlslVersionMatrix(builtinsForVersion, shadingLanguageVersion, isWgslCompatible);
 
     // 8.7: Vector Relational Functions
 
@@ -340,7 +344,7 @@ public final class TyperHelper {
 
     // 8.8: Integer Functions
 
-    getBuiltinsForGlslVersionInteger(builtinsForVersion, shadingLanguageVersion);
+    getBuiltinsForGlslVersionInteger(builtinsForVersion, shadingLanguageVersion, isWgslCompatible);
 
     // 8.9. Texture Functions
     getBuiltinsForGlslVersionTexture(builtinsForVersion, shadingLanguageVersion, shaderKind);
@@ -376,10 +380,12 @@ public final class TyperHelper {
    *
    * @param builtinsForVersion the list of builtins to add prototypes to
    * @param shadingLanguageVersion the version of GLSL in use
+   * @param isWgslCompatible determines whether to restrict to builtins that WGSL also supports
    */
   private static void getBuiltinsForGlslVersionAngleAndTrigonometric(
+      Map<String, List<FunctionPrototype>> builtinsForVersion,
       ShadingLanguageVersion shadingLanguageVersion,
-      Map<String, List<FunctionPrototype>> builtinsForVersion) {
+      boolean isWgslCompatible) {
     if (shadingLanguageVersion.supportedAngleAndTrigonometricFunctions()) {
       {
         final String name = "radians";
@@ -461,21 +467,21 @@ public final class TyperHelper {
         }
       }
 
-      {
+      if (!isWgslCompatible) {
         final String name = "asinh";
         for (Type t : genType()) {
           addBuiltin(builtinsForVersion, name, t, t);
         }
       }
 
-      {
+      if (!isWgslCompatible) {
         final String name = "acosh";
         for (Type t : genType()) {
           addBuiltin(builtinsForVersion, name, t, t);
         }
       }
 
-      {
+      if (!isWgslCompatible) {
         final String name = "atanh";
         for (Type t : genType()) {
           addBuiltin(builtinsForVersion, name, t, t);
@@ -674,10 +680,12 @@ public final class TyperHelper {
    *
    * @param builtinsForVersion the list of builtins to add prototypes to
    * @param shadingLanguageVersion the version of GLSL in use
+   * @param isWgslCompatible determines whether to restrict to builtins that WGSL also supports
    */
   private static void getBuiltinsForGlslVersionInteger(
       Map<String, List<FunctionPrototype>> builtinsForVersion,
-      ShadingLanguageVersion shadingLanguageVersion) {
+      ShadingLanguageVersion shadingLanguageVersion,
+      boolean isWgslCompatible) {
     if (shadingLanguageVersion.supportedIntegerFunctions()) {
       {
         final String name = "uaddCarry";
@@ -713,7 +721,7 @@ public final class TyperHelper {
         }
       }
 
-      {
+      if (!isWgslCompatible) {
         final String name = "bitfieldExtract";
         for (Type t : igenType()) {
           addBuiltin(builtinsForVersion, name, t, t, BasicType.INT, BasicType.INT);
@@ -723,7 +731,7 @@ public final class TyperHelper {
         }
       }
 
-      {
+      if (!isWgslCompatible) {
         final String name = "bitfieldInsert";
         for (Type t : igenType()) {
           addBuiltin(builtinsForVersion, name, t, t, t, BasicType.INT, BasicType.INT);
@@ -753,7 +761,7 @@ public final class TyperHelper {
         }
       }
 
-      {
+      if (!isWgslCompatible) {
         final String name = "findLSB";
         for (int i = 0; i < igenType().size(); i++) {
           addBuiltin(builtinsForVersion, name, igenType().get(i), igenType().get(i));
@@ -761,7 +769,7 @@ public final class TyperHelper {
         }
       }
 
-      {
+      if (!isWgslCompatible) {
         final String name = "findMSB";
         for (int i = 0; i < igenType().size(); i++) {
           addBuiltin(builtinsForVersion, name, igenType().get(i), igenType().get(i));
@@ -1028,10 +1036,12 @@ public final class TyperHelper {
    *
    * @param builtinsForVersion the list of builtins to add prototypes to
    * @param shadingLanguageVersion the version of GLSL in use
+   * @param isWgslCompatible determines whether to restrict to builtins that WGSL also supports
    */
   private static void getBuiltinsForGlslVersionMatrix(
       Map<String, List<FunctionPrototype>> builtinsForVersion,
-      ShadingLanguageVersion shadingLanguageVersion) {
+      ShadingLanguageVersion shadingLanguageVersion,
+      boolean isWgslCompatible) {
     {
       final String name = "matrixCompMult";
       for (Type t : BasicType.allMatrixTypes()) {
@@ -1068,14 +1078,14 @@ public final class TyperHelper {
       addBuiltin(builtinsForVersion, name, BasicType.MAT4X4, BasicType.MAT4X4);
     }
 
-    if (shadingLanguageVersion.supportedDeterminant()) {
+    if (shadingLanguageVersion.supportedDeterminant() && !isWgslCompatible) {
       final String name = "determinant";
       addBuiltin(builtinsForVersion, name, BasicType.FLOAT, BasicType.MAT2X2);
       addBuiltin(builtinsForVersion, name, BasicType.FLOAT, BasicType.MAT3X3);
       addBuiltin(builtinsForVersion, name, BasicType.FLOAT, BasicType.MAT4X4);
     }
 
-    if (shadingLanguageVersion.supportedInverse()) {
+    if (shadingLanguageVersion.supportedInverse() && !isWgslCompatible) {
       final String name = "inverse";
       addBuiltin(builtinsForVersion, name, BasicType.MAT2X2, BasicType.MAT2X2);
       addBuiltin(builtinsForVersion, name, BasicType.MAT3X3, BasicType.MAT3X3);
@@ -1214,10 +1224,12 @@ public final class TyperHelper {
    *
    * @param builtinsForVersion the list of builtins to add prototypes to
    * @param shadingLanguageVersion the version of GLSL in use
+   * @param isWgslCompatible determines whether to restrict to builtins that WGSL also supports
    */
   private static void getBuiltinsForGlslVersionCommon(
+      Map<String, List<FunctionPrototype>> builtinsForVersion,
       ShadingLanguageVersion shadingLanguageVersion,
-      Map<String, List<FunctionPrototype>> builtinsForVersion) {
+      boolean isWgslCompatible) {
     {
       final String name = "abs";
       for (Type t : genType()) {
@@ -1230,7 +1242,7 @@ public final class TyperHelper {
       }
     }
 
-    {
+    if (!isWgslCompatible) {
       final String name = "sign";
       for (Type t : genType()) {
         addBuiltin(builtinsForVersion, name, t, t);
@@ -1294,7 +1306,7 @@ public final class TyperHelper {
       }
     }
 
-    if (shadingLanguageVersion.supportedModf()) {
+    if (shadingLanguageVersion.supportedModf() && !isWgslCompatible) {
       {
         final String name = "modf";
         for (Type t : genType()) {
@@ -1506,7 +1518,7 @@ public final class TyperHelper {
       }
     }
 
-    if (shadingLanguageVersion.supportedFrexp()) {
+    if (shadingLanguageVersion.supportedFrexp() && !isWgslCompatible) {
       {
         final String name = "frexp";
         addBuiltin(builtinsForVersion, name, BasicType.FLOAT, BasicType.FLOAT,

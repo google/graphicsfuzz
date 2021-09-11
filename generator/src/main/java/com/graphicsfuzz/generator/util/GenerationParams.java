@@ -23,6 +23,8 @@ public class GenerationParams {
   // What sort of shader are we generating?
   private final ShaderKind shaderKind;
 
+  private final boolean isWgslCompatible;
+
   // Can we rely in 'injectionSwitch' being defined?
   private final boolean injectionSwitchIsAvailable;
 
@@ -41,14 +43,19 @@ public class GenerationParams {
   private int maxInjectedSwitchCasesInOriginalCode = 10;
   private int maxInjectedSwitchCasesAfterOriginalCode = 3;
 
-  private GenerationParams(ShaderKind shaderKind, boolean injectionSwitchIsAvailable) {
+  private GenerationParams(ShaderKind shaderKind, boolean isWgslCompatible,
+                           boolean injectionSwitchIsAvailable) {
     // Prevent external construction
     this.shaderKind = shaderKind;
+    this.isWgslCompatible = isWgslCompatible;
     this.injectionSwitchIsAvailable = injectionSwitchIsAvailable;
   }
 
-  public static GenerationParams normal(ShaderKind shaderKind, boolean injectionSwitchAvailable) {
-    final GenerationParams result = new GenerationParams(shaderKind, injectionSwitchAvailable);
+  public static GenerationParams normal(ShaderKind shaderKind,
+                                        boolean isWgslCompatible,
+                                        boolean injectionSwitchAvailable) {
+    final GenerationParams result = new GenerationParams(shaderKind, isWgslCompatible,
+        injectionSwitchAvailable);
     result.maxDepthForGeneratedExpr = 3;
     result.maxStructNestingDepth = 2;
     result.maxStructFields = 8;
@@ -59,8 +66,11 @@ public class GenerationParams {
     return result;
   }
 
-  public static GenerationParams small(ShaderKind shaderKind, boolean injectionSwitchAvailable) {
-    GenerationParams result = new GenerationParams(shaderKind, injectionSwitchAvailable);
+  public static GenerationParams small(ShaderKind shaderKind,
+                                       boolean isWgslCompatible,
+                                       boolean injectionSwitchAvailable) {
+    GenerationParams result = new GenerationParams(shaderKind, isWgslCompatible,
+        injectionSwitchAvailable);
     result.maxDepthForGeneratedExpr = 2;
     result.maxStructNestingDepth = 1;
     result.maxStructFields = 3;
@@ -71,8 +81,11 @@ public class GenerationParams {
     return result;
   }
 
-  public static GenerationParams large(ShaderKind shaderKind, boolean injectionSwitchAvailable) {
-    GenerationParams result = new GenerationParams(shaderKind, injectionSwitchAvailable);
+  public static GenerationParams large(ShaderKind shaderKind,
+                                       boolean isWgslCompatible,
+                                       boolean injectionSwitchAvailable) {
+    GenerationParams result = new GenerationParams(shaderKind, isWgslCompatible,
+        injectionSwitchAvailable);
     result.maxDepthForGeneratedExpr = 5;
     result.maxStructNestingDepth = 4;
     result.maxStructFields = 7;
@@ -85,6 +98,10 @@ public class GenerationParams {
 
   public ShaderKind getShaderKind() {
     return shaderKind;
+  }
+
+  public boolean isWgslCompatible() {
+    return isWgslCompatible;
   }
 
   public boolean getInjectionSwitchIsAvailable() {

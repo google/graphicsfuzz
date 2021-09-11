@@ -69,7 +69,7 @@ public class MiscellaneousGenerateThenReduceTest {
     new AddWrappingConditionalTransformation().apply(tu,
         TransformationProbabilities.onlyWrap(),
         new SameValueRandom(false, 0, 0L),
-        GenerationParams.normal(ShaderKind.FRAGMENT, true));
+        GenerationParams.normal(ShaderKind.FRAGMENT, false, true));
 
     System.out.println(PrettyPrinterVisitor.prettyPrintAsString(tu));
 

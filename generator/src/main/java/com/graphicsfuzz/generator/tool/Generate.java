@@ -138,6 +138,11 @@ public class Generate {
             + "shader validation as Vulkan target.")
         .action(Arguments.storeTrue());
 
+    parser.addArgument("--wgsl-compatible")
+        .help("Try to avoid generating code that will not be supported by pathways to WGSL (e.g. "
+            + "via naga, or glslang + tint).")
+        .action(Arguments.storeTrue());
+
     parser.addArgument("--max-uniforms")
         .help("Ensure that generated shaders have no more than the given number of uniforms; "
             + "required for Vulkan compatibility.")
@@ -309,8 +314,12 @@ public class Generate {
 
     final GenerationParams generationParams =
         args.getSmall()
-            ? GenerationParams.small(shaderKind, args.getAddInjectionSwitch())
-            : GenerationParams.normal(shaderKind, args.getAddInjectionSwitch());
+            ? GenerationParams.small(shaderKind,
+                args.getIsWgslCompatible(),
+                args.getAddInjectionSwitch())
+            : GenerationParams.normal(shaderKind,
+                args.getIsWgslCompatible(),
+                args.getAddInjectionSwitch());
 
     final TransformationProbabilities probabilities =
         createProbabilities(args, random);
@@ -400,7 +409,8 @@ public class Generate {
         enabledTransformations,
         !ns.getBoolean("no_injection_switch"),
         Optional.ofNullable(shaderStage),
-        ns.getFloat("push_constant_probability")
+        ns.getFloat("push_constant_probability"),
+        ns.getBoolean("wgsl_compatible")
     );
   }
 

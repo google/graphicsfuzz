@@ -43,10 +43,10 @@ public class SideEffectChecker {
 
       @Override
       public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
-        if (TyperHelper.getBuiltins(shadingLanguageVersion, shaderKind)
+        if (TyperHelper.getBuiltins(shadingLanguageVersion, false, shaderKind)
             .containsKey(functionCallExpr.getCallee())) {
           for (FunctionPrototype p :
-              TyperHelper.getBuiltins(shadingLanguageVersion, shaderKind)
+              TyperHelper.getBuiltins(shadingLanguageVersion, false, shaderKind)
                   .get(functionCallExpr.getCallee())) {
             // We check each argument of the built-in's prototypes to see if they require lvalues -
             // if so, they can cause side effects.
