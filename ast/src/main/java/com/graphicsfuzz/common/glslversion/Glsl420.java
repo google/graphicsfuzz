@@ -55,4 +55,8 @@ final class Glsl420 extends CompositeShadingLanguageVersion {
     return true;
   }
 
+  @Override
+  public boolean supportedGlFragColor() {
+    return false;
+  }
 }

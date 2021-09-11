@@ -154,8 +154,20 @@ public class GenerateShaderFamilyTest {
   }
 
   @Test
-  public void testGenerateSmallVulkanShaderFamilyMultiPass() throws Exception {
+  public void testGenerateSmallVulkanShaderFamilyFrom320EsMultiPass() throws Exception {
     final String samplesSubdir = "320es";
+    final String referenceShaderName = "stable_bubblesort_flag";
+    final int numVariants = 3;
+    int seed = 9;
+    checkShaderFamilyGeneration(samplesSubdir, referenceShaderName, numVariants,
+        seed, Arrays.asList("--stop-on-fail", "--max-uniforms",
+            String.valueOf(10),
+            "--vulkan"), ShadingLanguageVersion.ESSL_320);
+  }
+
+  @Test
+  public void testGenerateSmallVulkanShaderFamilyFrom450MultiPass() throws Exception {
+    final String samplesSubdir = "450";
     final String referenceShaderName = "stable_bubblesort_flag";
     final int numVariants = 3;
     int seed = 9;
