@@ -23,8 +23,10 @@ import com.graphicsfuzz.common.ast.visitors.IAstVisitor;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -35,7 +37,7 @@ public class InterfaceBlock extends Declaration {
   private final List<TypeQualifier> interfaceQualifiers;
   private final String structName;
   private final List<String> memberNames;
-  private final List<Type> memberTypes;
+  private final Map<String, Type> memberTypes;
   private final Optional<String> instanceName;
 
   public InterfaceBlock(
@@ -77,13 +79,15 @@ public class InterfaceBlock extends Declaration {
     this.structName = structName;
     this.memberNames = new ArrayList<>();
     this.memberNames.addAll(memberNames);
-    this.memberTypes = new ArrayList<>();
-    this.memberTypes.addAll(memberTypes);
+    this.memberTypes = new HashMap<>();
+    for (int i = 0; i < memberNames.size(); i++) {
+      this.memberTypes.put(memberNames.get(i), memberTypes.get(i));
+    }
     this.instanceName = instanceName;
   }
 
   public List<Type> getMemberTypes() {
-    return Collections.unmodifiableList(memberTypes);
+    return memberNames.stream().map(memberTypes::get).collect(Collectors.toList());
   }
 
   public List<String> getMemberNames() {
@@ -115,13 +119,8 @@ public class InterfaceBlock extends Declaration {
     return instanceName.get();
   }
 
-  public Optional<Type> getMemberType(String name) {
-    for (int i = 0; i < memberNames.size(); i++) {
-      if (memberNames.get(i).equals(name)) {
-        return Optional.of(memberTypes.get(i));
-      }
-    }
-    return Optional.empty();
+  public Type getMemberType(String name) {
+    return memberTypes.get(name);
   }
 
   public boolean isUniformBlock() {
@@ -151,7 +150,7 @@ public class InterfaceBlock extends Declaration {
         interfaceQualifiers,
         structName,
         memberNames,
-        memberTypes.stream().map(item -> item.clone()).collect(Collectors.toList()),
+        memberNames.stream().map(memberTypes::get).map(Type::clone).collect(Collectors.toList()),
         instanceName);
   }
 

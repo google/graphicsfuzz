@@ -51,6 +51,7 @@ public final class ReductionOpportunities {
         IReductionOpportunityFinder.outlinedStatementFinder(),
         IReductionOpportunityFinder.variableDeclFinder(),
         IReductionOpportunityFinder.globalVariablesDeclarationFinder(),
+        IReductionOpportunityFinder.interfaceBlockFinder(),
         IReductionOpportunityFinder.globalPrecisionDeclarationFinder(),
         IReductionOpportunityFinder.unwrapFinder(),
         IReductionOpportunityFinder.unswitchifyFinder(),

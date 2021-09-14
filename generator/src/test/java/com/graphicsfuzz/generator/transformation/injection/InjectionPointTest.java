@@ -22,7 +22,6 @@ import static org.junit.Assert.assertNull;
 import com.graphicsfuzz.common.ast.stmt.Stmt;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.typing.Scope;
-import java.util.Optional;
 import org.junit.Test;
 
 public class InjectionPointTest {
@@ -63,7 +62,7 @@ public class InjectionPointTest {
   @Test
   public void testThatScopeIsCloned() {
     Scope s = new Scope();
-    s.add("v", BasicType.INT, Optional.empty());
+    s.add("v", BasicType.INT);
     IInjectionPoint injectionPoint = new InjectionPoint(null, false, false, s) {
       @Override
       public void inject(Stmt stmt) {
@@ -86,7 +85,7 @@ public class InjectionPointTest {
       }
     };
 
-    s.add("w", BasicType.INT, Optional.empty());
+    s.add("w", BasicType.INT);
 
     assertNull(injectionPoint.scopeAtInjectionPoint().lookupType("w"));
 

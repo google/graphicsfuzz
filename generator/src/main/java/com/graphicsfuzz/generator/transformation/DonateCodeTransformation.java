@@ -212,7 +212,7 @@ public abstract class DonateCodeTransformation implements ITransformation {
         // We will declare a global variable of the member's type with a prefixed version of the
         // member's name.  However, we need to take care regarding array members, in particular
         // because interface blocks can have unsized arrays.
-        final Type memberType = interfaceBlock.getMemberType(memberName).get();
+        final Type memberType = interfaceBlock.getMemberType(memberName);
 
         // This will be the array-free base type of the new global variable.
         Type plainVariableBaseType;

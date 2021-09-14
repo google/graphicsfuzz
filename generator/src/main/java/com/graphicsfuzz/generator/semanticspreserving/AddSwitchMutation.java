@@ -49,7 +49,6 @@ import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class AddSwitchMutation implements Mutation {
@@ -217,7 +216,6 @@ public class AddSwitchMutation implements Mutation {
       scope.add(declInfo.getName(),
           Typer.combineBaseTypeAndArrayInfo(variablesDeclaration.getBaseType(),
               declInfo.getArrayInfo()),
-          Optional.empty(),
           declInfo, variablesDeclaration);
     }
   }

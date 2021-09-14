@@ -774,7 +774,7 @@ public class PrettyPrinterVisitor extends StandardVisitor {
 
     for (String memberName : interfaceBlock.getMemberNames()) {
       indent();
-      final Type memberType = interfaceBlock.getMemberType(memberName).get();
+      final Type memberType = interfaceBlock.getMemberType(memberName);
       visit(memberType);
       out.append(" ").append(memberName);
       emitArrayInfoAfterType(memberType);

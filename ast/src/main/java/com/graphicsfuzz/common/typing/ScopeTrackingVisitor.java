@@ -18,6 +18,7 @@ package com.graphicsfuzz.common.typing;
 
 import com.graphicsfuzz.common.ast.decl.FunctionDefinition;
 import com.graphicsfuzz.common.ast.decl.FunctionPrototype;
+import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
@@ -31,7 +32,6 @@ import java.util.Collections;
 import java.util.Deque;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * This class extends StandardVisitor to track details of what is in scope at each point of
@@ -130,7 +130,16 @@ public abstract class ScopeTrackingVisitor extends StandardVisitor {
       }
       currentScope.add(p.getName(),
           Typer.combineBaseTypeAndArrayInfo(p.getType(), p.getArrayInfo()),
-          Optional.of(p));
+          p);
+    }
+  }
+
+  @Override
+  public void visitInterfaceBlock(InterfaceBlock interfaceBlock) {
+    assert atGlobalScope();
+    super.visitInterfaceBlock(interfaceBlock);
+    for (String member : interfaceBlock.getMemberNames()) {
+      currentScope.add(member, interfaceBlock.getMemberType(member), interfaceBlock);
     }
   }
 
@@ -155,7 +164,6 @@ public abstract class ScopeTrackingVisitor extends StandardVisitor {
       currentScope.add(declInfo.getName(),
           Typer.combineBaseTypeAndArrayInfo(variablesDeclaration.getBaseType(),
               declInfo.getArrayInfo()),
-          Optional.empty(),
           declInfo, variablesDeclaration);
       visitVariableDeclInfoAfterAddedToScope(declInfo);
     }
