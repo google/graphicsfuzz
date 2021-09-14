@@ -34,8 +34,9 @@ from gfauto import (
     binaries_util,
     devices_util,
     download_cts_gf_tests,
-    fuzz_glsl_test,
-    fuzz_spirv_test,
+    fuzz_glsl_amber_test,
+    fuzz_spirv_amber_test,
+    fuzz_test_util,
     gflogging,
     interrupt_util,
     run_cts_gf_tests,
@@ -446,7 +447,7 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
         fuzzing_tool_index = (fuzzing_tool_index + 1) % len(fuzzing_tool_pattern)
 
         if fuzzing_tool == FuzzingTool.SPIRV_FUZZ:
-            fuzz_spirv_test.fuzz_spirv(
+            fuzz_spirv_amber_test.fuzz_spirv(
                 staging_dir,
                 reports_dir,
                 fuzz_failures_dir,
@@ -457,7 +458,7 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
                 binary_manager,
             )
         elif fuzzing_tool == FuzzingTool.GLSL_FUZZ:
-            fuzz_glsl_test.fuzz_glsl(
+            fuzz_glsl_amber_test.fuzz_glsl(
                 staging_dir,
                 reports_dir,
                 fuzz_failures_dir,
@@ -488,7 +489,7 @@ def create_summary_and_reproduce(
 
     # noinspection PyTypeChecker
     if test_metadata.HasField("glsl") or test_metadata.HasField("spirv_fuzz"):
-        fuzz_glsl_test.create_summary_and_reproduce(test_dir, binary_manager, settings)
+        fuzz_test_util.create_summary_and_reproduce(test_dir, binary_manager, settings)
     else:
         raise AssertionError("Unrecognized test type")
 

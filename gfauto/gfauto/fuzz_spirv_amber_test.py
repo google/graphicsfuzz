@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""SPIR-V fuzzing module.
+"""SPIR-V fuzzing module, targeting Amber.
 
 Functions for handling spirv-fuzz generated tests.
 """
@@ -28,7 +28,7 @@ from typing import List, Optional
 from gfauto import (
     binaries_util,
     fuzz,
-    fuzz_glsl_test,
+    fuzz_test_util,
     gflogging,
     interrupt_util,
     result_util,
@@ -42,6 +42,7 @@ from gfauto import (
     util,
 )
 from gfauto.device_pb2 import Device
+from gfauto.fuzz_test_util import ReductionFailedError
 from gfauto.gflogging import log
 from gfauto.settings_pb2 import Settings
 from gfauto.test_pb2 import Test, TestSpirvFuzz
@@ -69,7 +70,7 @@ def make_test(
         common_spirv_args=common_spirv_args,
     )
 
-    fuzz_glsl_test.add_spirv_shader_test_binaries(test, spirv_opt_args, binary_manager)
+    fuzz_test_util.add_spirv_shader_test_binaries(test, spirv_opt_args, binary_manager)
 
     # Write the test metadata.
     test_util.metadata_write(test, subtest_dir)
@@ -99,7 +100,7 @@ def run(
     if not device:
         device = test.device
 
-    result_output_dir = fuzz_glsl_test.run_shader_job(
+    result_output_dir = fuzz_test_util.run_shader_job(
         source_dir=test_util.get_source_dir(test_dir),
         output_dir=test_util.get_results_directory(test_dir, device.name),
         binary_manager=binary_manager,
@@ -241,7 +242,7 @@ def run_reduction_part(
 
     check(
         final_shader_path.exists(),
-        fuzz_glsl_test.ReductionFailedError("Reduction failed.", output_dir),
+        ReductionFailedError("Reduction failed.", output_dir),
     )
 
     # Finally, create the source_dir so the returned directory can be used as a test_dir.
@@ -393,7 +394,7 @@ def run_reduction_on_report(  # pylint: disable=too-many-locals;
             binary_manager=binary_manager,
             settings=settings,
         )
-    except fuzz_glsl_test.ReductionFailedError as ex:
+    except ReductionFailedError as ex:
         # Create a symlink to the failed reduction so it is easy to investigate failed reductions.
         link_to_failed_reduction_path = (
             reports_dir
@@ -440,7 +441,7 @@ def handle_test(
     # For each device that saw a crash, copy the test to reports_dir, adding the signature and device info to the test
     # metadata.
     for device in active_devices:
-        report_dir = fuzz_glsl_test.maybe_add_report(
+        report_dir = fuzz_test_util.maybe_add_report(
             test_dir, reports_dir, device, settings
         )
         if report_dir:
@@ -448,7 +449,7 @@ def handle_test(
 
     # For each report, run a reduction on the target device with the device-specific crash signature.
     for test_dir_in_reports in report_paths:
-        if fuzz_glsl_test.should_reduce_report(settings, test_dir_in_reports):
+        if fuzz_test_util.should_reduce_report(settings, test_dir_in_reports):
             run_reduction_on_report(
                 test_dir_in_reports,
                 reports_dir,
@@ -585,43 +586,3 @@ def fuzz_spirv(  # pylint: disable=too-many-locals;
         if handle_test(test_dir, reports_dir, active_devices, binary_manager, settings):
             # If we generated a report, don't bother trying other optimization combinations.
             break
-
-
-def create_spirv_fuzz_variant_2(
-    source_dir: Path, binary_manager: binaries_util.BinaryManager, settings: Settings,
-) -> Optional[Path]:
-    """
-    Replays all transformations except the last to get variant_2.
-
-    Replays all transformations except the last to get a variant_2 shader job, such that variant <-> variant_2 are
-    likely even more similar than reference <-> variant.
-
-    |source_dir| must be a spirv_fuzz test.
-    """
-    test_metadata: Test = test_util.metadata_read_from_source_dir(source_dir)
-    check(test_metadata.HasField("spirv_fuzz"), AssertionError("Not a spirv_fuzz test"))
-
-    variant_shader_job = source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB
-    variant_2_shader_job = (
-        source_dir / f"{test_util.VARIANT_DIR}_2" / test_util.SHADER_JOB
-    )
-    if not variant_shader_job.is_file():
-        log(
-            f"Skip generating variant_2 for {str(source_dir)} because the variant shader job was not found."
-        )
-        return None
-
-    if variant_2_shader_job.is_file():
-        log(
-            f"Skip generating variant_2 for {str(source_dir)} because variant_2 shader job already exists."
-        )
-        return None
-
-    return spirv_fuzz_util.run_replay_on_shader_job(
-        spirv_fuzz_path=binary_manager.get_binary_path_by_name(
-            binaries_util.SPIRV_FUZZ_NAME
-        ).path,
-        variant_shader_job_json=variant_shader_job,
-        output_shader_job_json=variant_2_shader_job,
-        other_args=list(settings.common_spirv_args),
-    )

@@ -22,7 +22,11 @@ Runs spirv-fuzz to generate a variant SPIR-V shader job.
 from pathlib import Path
 from typing import List, Optional
 
-from gfauto import shader_job_util, subprocess_util, util
+from gfauto import shader_job_util, subprocess_util, test_util, util
+from gfauto.gflogging import log
+from gfauto.settings_pb2 import Settings
+from gfauto.test_pb2 import Test
+from gfauto.util import check
 
 # TODO: Make this 64 bits.
 
@@ -192,3 +196,41 @@ def run_generate_on_shader_job(
         )
 
     return output_shader_json
+
+
+def create_spirv_fuzz_variant_2(
+    spirv_fuzz_path: Path, source_dir: Path, settings: Settings,
+) -> Optional[Path]:
+    """
+    Replays all transformations except the last to get variant_2.
+
+    Replays all transformations except the last to get a variant_2 shader job, such that variant <-> variant_2 are
+    likely even more similar than reference <-> variant.
+
+    |source_dir| must be a spirv_fuzz test.
+    """
+    test_metadata: Test = test_util.metadata_read_from_source_dir(source_dir)
+    check(test_metadata.HasField("spirv_fuzz"), AssertionError("Not a spirv_fuzz test"))
+
+    variant_shader_job = source_dir / test_util.VARIANT_DIR / test_util.SHADER_JOB
+    variant_2_shader_job = (
+        source_dir / f"{test_util.VARIANT_DIR}_2" / test_util.SHADER_JOB
+    )
+    if not variant_shader_job.is_file():
+        log(
+            f"Skip generating variant_2 for {str(source_dir)} because the variant shader job was not found."
+        )
+        return None
+
+    if variant_2_shader_job.is_file():
+        log(
+            f"Skip generating variant_2 for {str(source_dir)} because variant_2 shader job already exists."
+        )
+        return None
+
+    return run_replay_on_shader_job(
+        spirv_fuzz_path=spirv_fuzz_path,
+        variant_shader_job_json=variant_shader_job,
+        output_shader_job_json=variant_2_shader_job,
+        other_args=list(settings.common_spirv_args),
+    )

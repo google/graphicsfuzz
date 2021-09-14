@@ -23,7 +23,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from gfauto import binaries_util, fuzz_glsl_test, test_util
+from gfauto import binaries_util, fuzz_test_util, test_util
 from gfauto.settings_pb2 import Settings
 from gfauto.util import check, check_dir_exists
 
@@ -72,7 +72,7 @@ def main() -> None:
         AssertionError("Only preprocess device tests currently supported"),
     )
 
-    fuzz_glsl_test.tool_crash_summary_bug_report_dir(
+    fuzz_test_util.tool_crash_summary_bug_report_dir(
         source_dir, result_dir, output_dir, binary_manager
     )
 
