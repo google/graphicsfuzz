@@ -20,16 +20,31 @@ public class SameValueRandom implements IRandom {
 
   private final boolean boolValue;
   private final int intValue;
+  private final long longValue;
 
-  public SameValueRandom(boolean boolValue, int intValue) {
+  public SameValueRandom(boolean boolValue, int intValue, long longValue) {
     this.boolValue = boolValue;
     this.intValue = intValue;
+    this.longValue = longValue;
   }
 
   @Override
   public int nextInt(int bound) {
     assert intValue < bound;
     return intValue;
+  }
+
+  @Override
+  public int nextInt(int origin, int bound) {
+    assert intValue < bound;
+    assert intValue >= origin;
+    return intValue;
+  }
+
+  @Override
+  public long nextLong(long bound) {
+    assert longValue < bound;
+    return longValue;
   }
 
   @Override

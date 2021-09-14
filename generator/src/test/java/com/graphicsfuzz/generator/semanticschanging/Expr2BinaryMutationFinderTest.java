@@ -81,6 +81,20 @@ public class Expr2BinaryMutationFinderTest {
       }
 
       @Override
+      public int nextInt(int origin, int bound) {
+        throw new RuntimeException("This method was added to the IRandom interface after this test"
+            + " was written and thus should not be called; if it becomes required the IRandom"
+            + " implementation in the test should be revised.");
+      }
+
+      @Override
+      public long nextLong(long bound) {
+        throw new RuntimeException("This method was added to the IRandom interface after this test"
+            + " was written and thus should not be called; if it becomes required the IRandom"
+            + " implementation in the test should be revised.");
+      }
+
+      @Override
       public Float nextFloat() {
         throw new UnsupportedOperationException();
       }

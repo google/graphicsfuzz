@@ -44,6 +44,11 @@ public class RandomWrapper implements IRandom {
   }
 
   @Override
+  public long nextLong(long bound) {
+    return provider.nextLong(bound);
+  }
+
+  @Override
   public boolean nextBoolean() {
     return provider.nextBoolean();
   }
