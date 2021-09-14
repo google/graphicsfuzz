@@ -59,7 +59,7 @@ public class AddSwitchMutationFinderTest {
       final List<AddSwitchMutation> mutations =
           new AddSwitchMutationFinder(tu,
               new RandomWrapper(i),
-              GenerationParams.normal(tu.getShaderKind(), false))
+              GenerationParams.normal(tu.getShaderKind(), false, false))
               .findMutations();
       mutations.get(0).apply();
       if (mutations.size() > 1) {
@@ -92,7 +92,7 @@ public class AddSwitchMutationFinderTest {
       final List<AddSwitchMutation> mutations =
           new AddSwitchMutationFinder(tu,
               new RandomWrapper(i),
-              GenerationParams.normal(tu.getShaderKind(), false))
+              GenerationParams.normal(tu.getShaderKind(), false, false))
               .findMutations();
       for (AddSwitchMutation mutation : mutations) {
         mutation.apply();
@@ -129,7 +129,8 @@ public class AddSwitchMutationFinderTest {
         + "}\n";
     final TranslationUnit tu = ParseHelper.parse(program);
 
-    final GenerationParams generationParams = GenerationParams.normal(tu.getShaderKind(), false);
+    final GenerationParams generationParams = GenerationParams.normal(tu.getShaderKind(), false,
+        false);
     generationParams.setMaxInjectedSwitchCasesAfterOriginalCode(10);
     for (int i = 0; i < limit; i++) {
       final List<AddSwitchMutation> mutations =

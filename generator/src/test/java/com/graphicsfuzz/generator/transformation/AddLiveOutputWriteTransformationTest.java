@@ -92,7 +92,7 @@ public class AddLiveOutputWriteTransformationTest {
     new AddLiveOutputWriteTransformation().apply(tu,
         TransformationProbabilities.onlyAddLiveFragColorWrites(),
         new RandomWrapper(seed),
-        GenerationParams.normal(shaderKind, true));
+        GenerationParams.normal(shaderKind, false, true));
   }
 
   private String getBackedUpVariableName(TranslationUnit tu) {

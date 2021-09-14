@@ -287,6 +287,7 @@ public class Fuzzer {
 
   private Stream<IExprTemplate> availableTemplatesFromContext() {
     return Stream.concat(availableTemplatesFromScope(shadingLanguageVersion,
+        generationParams.isWgslCompatible(),
         generationParams.getShaderKind(),
         fuzzingContext.getCurrentScope()),
       fuzzingContext.getFunctionPrototypes().stream().map(FunctionCallExprTemplate::new));
@@ -294,10 +295,13 @@ public class Fuzzer {
 
   public static Stream<IExprTemplate> availableTemplatesFromScope(
       ShadingLanguageVersion shadingLanguageVersion,
+      boolean isWgslCompatible,
       ShaderKind shaderKind,
       Scope scope) {
-    return Stream.concat(Templates.get(shadingLanguageVersion, shaderKind).stream(),
-        scope.namesOfAllVariablesInScope()
+    return Stream.concat(Templates.get(shadingLanguageVersion,
+            isWgslCompatible,
+            shaderKind)
+            .stream(), scope.namesOfAllVariablesInScope()
             .stream()
             .map(item -> new VariableIdentifierExprTemplate(item, scope.lookupType(item),
                 scope.lookupScopeEntry(item).hasParameterDecl())));
@@ -606,6 +610,7 @@ public class Fuzzer {
     // Call this from main to produce a list of templates
     List<IExprTemplate> templates = new ArrayList<>();
     templates.addAll(Templates.get(ShadingLanguageVersion.fromVersionString(args[0]),
+        false,
         ShaderKind.fromExtension(args[1])));
     Collections.sort(templates, new Comparator<IExprTemplate>() {
       @Override

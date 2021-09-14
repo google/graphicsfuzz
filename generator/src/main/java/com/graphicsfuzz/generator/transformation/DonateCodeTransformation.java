@@ -327,7 +327,7 @@ public abstract class DonateCodeTransformation implements ITransformation {
       @Override
       public void visitFunctionCallExpr(FunctionCallExpr functionCallExpr) {
         super.visitFunctionCallExpr(functionCallExpr);
-        if (!TyperHelper.getBuiltins(tu.getShadingLanguageVersion(), tu.getShaderKind())
+        if (!TyperHelper.getBuiltins(tu.getShadingLanguageVersion(), false, tu.getShaderKind())
             .containsKey(functionCallExpr.getCallee())) {
           functionCallExpr.setCallee(addPrefix(functionCallExpr.getCallee()));
         }

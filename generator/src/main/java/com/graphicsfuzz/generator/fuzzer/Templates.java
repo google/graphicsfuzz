@@ -21,6 +21,7 @@ import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.UnOp;
 import com.graphicsfuzz.common.ast.type.BasicType;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
+import com.graphicsfuzz.common.typing.ShadingLanguageVersionAndKind;
 import com.graphicsfuzz.common.typing.SupportedTypes;
 import com.graphicsfuzz.common.typing.TyperHelper;
 import com.graphicsfuzz.common.util.ShaderKind;
@@ -45,8 +46,7 @@ import java.util.stream.Collectors;
 
 public class Templates {
 
-  private static ConcurrentMap<ShadingLanguageVersion,
-      ConcurrentMap<ShaderKind, List<IExprTemplate>>> templates
+  private static ConcurrentMap<ShadingLanguageVersionAndKind, List<IExprTemplate>> templates
         = new ConcurrentHashMap<>();
 
   private Templates() {
@@ -54,18 +54,21 @@ public class Templates {
   }
 
   public static List<IExprTemplate> get(ShadingLanguageVersion shadingLanguageVersion,
+                                        boolean isWgslCompatible,
                                         ShaderKind shaderKind) {
-    if (!templates.containsKey(shadingLanguageVersion)) {
-      templates.putIfAbsent(shadingLanguageVersion, new ConcurrentHashMap<>());
+    final ShadingLanguageVersionAndKind key =
+        new ShadingLanguageVersionAndKind(shadingLanguageVersion,
+                                          isWgslCompatible,
+                                          shaderKind);
+    if (!templates.containsKey(key)) {
+      templates.putIfAbsent(key,
+          makeTemplates(shadingLanguageVersion, isWgslCompatible, shaderKind));
     }
-    if (!templates.get(shadingLanguageVersion).containsKey(shaderKind)) {
-      templates.get(shadingLanguageVersion).putIfAbsent(shaderKind,
-          makeTemplates(shadingLanguageVersion, shaderKind));
-    }
-    return Collections.unmodifiableList(templates.get(shadingLanguageVersion).get(shaderKind));
+    return Collections.unmodifiableList(templates.get(key));
   }
 
   private static List<IExprTemplate> makeTemplates(ShadingLanguageVersion shadingLanguageVersion,
+                                                  boolean isWgslCompatible,
                                                   ShaderKind shaderKind) {
 
     // TODO: assignment operators, array, vector and matrix lookups
@@ -75,7 +78,7 @@ public class Templates {
     // Builtins
     {
       Map<String, List<FunctionPrototype>> builtins = TyperHelper.getBuiltins(
-          shadingLanguageVersion, shaderKind);
+          shadingLanguageVersion, isWgslCompatible, shaderKind);
       List<String> keys = builtins.keySet().stream().collect(Collectors.toList());
       keys.sort(String::compareTo);
       for (String key : keys) {

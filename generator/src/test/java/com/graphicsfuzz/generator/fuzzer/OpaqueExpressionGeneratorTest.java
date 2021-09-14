@@ -109,7 +109,8 @@ public class OpaqueExpressionGeneratorTest {
     // We declare only one variable and generate a number of assignments to this variable,
     // instead of making multiple declarations and assignments.
     // numberOfAssignments should be large enough to get high coverage, e.g. 1000.
-    final GenerationParams generationParams = GenerationParams.large(ShaderKind.FRAGMENT, true);
+    final GenerationParams generationParams = GenerationParams.large(ShaderKind.FRAGMENT, false,
+        true);
     final List<Stmt> newStmts = new ArrayList<>();
     newStmts.add(new DeclarationStmt(new VariablesDeclaration(basicType,
         new VariableDeclInfo("x", null,
@@ -134,7 +135,8 @@ public class OpaqueExpressionGeneratorTest {
   public void testWaysToMakeZeroAndOne() throws Exception {
 
     final IRandom generator = new RandomWrapper(0);
-    final GenerationParams generationParams = GenerationParams.large(ShaderKind.FRAGMENT, true);
+    final GenerationParams generationParams = GenerationParams.large(ShaderKind.FRAGMENT, false,
+        true);
 
     // These are the shading language versions we support best, so test them thoroughly.
     for (ShadingLanguageVersion shadingLanguageVersion : Arrays.asList(

@@ -165,6 +165,7 @@ public class RestrictFragmentShaderColors {
         super.visitFunctionCallExpr(functionCallExpr);
         Set<String> acceptableFunctionNames = new HashSet<>();
         acceptableFunctionNames.addAll(TyperHelper.getBuiltins(shadingLanguageVersion,
+            false,
             ShaderKind.FRAGMENT).keySet());
         acceptableFunctionNames.add(Constants.GLF_FUZZED);
         acceptableFunctionNames.add(Constants.GLF_IDENTITY);

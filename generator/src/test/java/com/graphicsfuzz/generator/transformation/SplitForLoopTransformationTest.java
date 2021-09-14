@@ -156,7 +156,7 @@ public class SplitForLoopTransformationTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     assertEquals(1, countForLoops(tu));
     new SplitForLoopTransformation().apply(tu, TransformationProbabilities.onlySplitLoops(),
-        new RandomWrapper(0), GenerationParams.normal(ShaderKind.FRAGMENT, true));
+        new RandomWrapper(0), GenerationParams.normal(ShaderKind.FRAGMENT, false, true));
     assertEquals(2, countForLoops(tu));
   }
 
@@ -167,7 +167,7 @@ public class SplitForLoopTransformationTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     assertEquals(1, countForLoops(tu));
     new SplitForLoopTransformation().apply(tu, TransformationProbabilities.onlySplitLoops(),
-        new RandomWrapper(0), GenerationParams.normal(ShaderKind.FRAGMENT, true));
+        new RandomWrapper(0), GenerationParams.normal(ShaderKind.FRAGMENT, false, true));
     assertEquals(1, countForLoops(tu));
   }
 

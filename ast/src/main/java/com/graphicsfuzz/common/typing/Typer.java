@@ -172,7 +172,7 @@ public class Typer extends ScopeTrackingVisitor {
     // Next, see if there is a builtin with a matching prototype.
     final Optional<Type> maybeMatchingBuiltinFunctionReturn =
         lookForMatchingFunction(functionCallExpr,
-        TyperHelper.getBuiltins(tu.getShadingLanguageVersion(), tu.getShaderKind())
+        TyperHelper.getBuiltins(tu.getShadingLanguageVersion(), false, tu.getShaderKind())
             .get(functionCallExpr.getCallee()));
     if (maybeMatchingBuiltinFunctionReturn.isPresent()) {
       types.put(functionCallExpr, maybeMatchingBuiltinFunctionReturn.get());
@@ -510,7 +510,7 @@ public class Typer extends ScopeTrackingVisitor {
       result.addAll(userDefinedFunctions.get(name));
     }
     final Map<String, List<FunctionPrototype>> builtins =
-        TyperHelper.getBuiltins(tu.getShadingLanguageVersion(), tu.getShaderKind());
+        TyperHelper.getBuiltins(tu.getShadingLanguageVersion(), false, tu.getShaderKind());
     if (builtins.containsKey(name)) {
       result.addAll(builtins.get(name));
     }

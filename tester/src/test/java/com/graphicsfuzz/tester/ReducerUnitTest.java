@@ -161,7 +161,7 @@ public class ReducerUnitTest {
       for (int i = 0; i < 4; i++) {
         getTransformation(transformationsCopy, generator).apply(
             fragmentShader, TransformationProbabilities.DEFAULT_PROBABILITIES,
-            generator, GenerationParams.normal(ShaderKind.FRAGMENT, true));
+            generator, GenerationParams.normal(ShaderKind.FRAGMENT, false, true));
       }
       if (new StatsVisitor(fragmentShader).getNumNodes() <= maxAstNodes) {
         return shaderJob;
@@ -186,11 +186,11 @@ public class ReducerUnitTest {
     result.add(() -> new DonateDeadCodeTransformation(
             TransformationProbabilities.DEFAULT_PROBABILITIES::donateDeadCodeAtStmt,
             Util.getDonorsFolder(),
-            GenerationParams.normal(ShaderKind.FRAGMENT, true)));
+            GenerationParams.normal(ShaderKind.FRAGMENT, false, true)));
     result.add(() -> new DonateLiveCodeTransformation(
             TransformationProbabilities.likelyDonateLiveCode()::donateLiveCodeAtStmt,
             Util.getDonorsFolder(),
-            GenerationParams.normal(ShaderKind.FRAGMENT, true),
+            GenerationParams.normal(ShaderKind.FRAGMENT, false, true),
             false));
     result.add(() -> new AddDeadOutputWriteTransformation());
     result.add(() -> new AddLiveOutputWriteTransformation());

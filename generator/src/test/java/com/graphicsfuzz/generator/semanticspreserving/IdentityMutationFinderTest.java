@@ -69,7 +69,7 @@ public class IdentityMutationFinderTest {
     final IdentityMutationFinder identityMutationFinder = new IdentityMutationFinder(
         tu,
         new CannedRandom(),
-        GenerationParams.normal(ShaderKind.FRAGMENT, true));
+        GenerationParams.normal(ShaderKind.FRAGMENT, false, true));
     final List<Expr2ExprMutation> mutations = identityMutationFinder.findMutations();
     assertEquals(9, mutations.size());
   }
@@ -92,7 +92,7 @@ public class IdentityMutationFinderTest {
     final IdentityMutationFinder identityMutationFinder = new IdentityMutationFinder(
         tu,
         new CannedRandom(),
-        GenerationParams.normal(ShaderKind.FRAGMENT, false));
+        GenerationParams.normal(ShaderKind.FRAGMENT, false, false));
     final List<Expr2ExprMutation> mutations = identityMutationFinder.findMutations();
     // The loop guard is untouchable as this is GLSL 100.
     assertEquals(4, mutations.size());
@@ -111,7 +111,7 @@ public class IdentityMutationFinderTest {
     final IdentityMutationFinder identityMutationFinder = new IdentityMutationFinder(
         tu,
         new CannedRandom(),
-        GenerationParams.normal(ShaderKind.FRAGMENT, true));
+        GenerationParams.normal(ShaderKind.FRAGMENT, false, true));
     final List<Expr2ExprMutation> mutations = identityMutationFinder.findMutations();
     // Loop guard is untouchable as this is GLSL 100.
     // LHS of "j = j + 1" is also untouchable.
@@ -135,7 +135,7 @@ public class IdentityMutationFinderTest {
     final IdentityMutationFinder identityMutationFinder = new IdentityMutationFinder(
         tu,
         new CannedRandom(),
-        GenerationParams.normal(ShaderKind.FRAGMENT, false));
+        GenerationParams.normal(ShaderKind.FRAGMENT, false, false));
     final List<Expr2ExprMutation> mutations = identityMutationFinder.findMutations();
     assertEquals(2, mutations.size());
   }
@@ -205,7 +205,7 @@ public class IdentityMutationFinderTest {
     final IdentityMutationFinder identityMutationFinder = new IdentityMutationFinder(
         tu,
         new RandomWrapper(0),
-        GenerationParams.normal(ShaderKind.FRAGMENT, false));
+        GenerationParams.normal(ShaderKind.FRAGMENT, false, false));
     final List<Expr2ExprMutation> mutations = identityMutationFinder.findMutations();
     mutations.forEach(Mutation::apply);
     assertTrue(shaderIsValid(tu));
@@ -232,7 +232,7 @@ public class IdentityMutationFinderTest {
         + "}");
     final List<Expr2ExprMutation> mutations =
         new IdentityMutationFinder(tu, new RandomWrapper(0),
-            GenerationParams.normal(ShaderKind.FRAGMENT, false))
+            GenerationParams.normal(ShaderKind.FRAGMENT, false, false))
             .findMutations();
     assertEquals(2, mutations.size());
     mutations.get(0).apply();
@@ -254,7 +254,7 @@ public class IdentityMutationFinderTest {
     for (int i = 0; i < 20; i++) {
       final TranslationUnit tu = ParseHelper.parse(program);
       IdentityMutationFinder identityMutationFinder = new IdentityMutationFinder(tu,
-          new RandomWrapper(i), GenerationParams.small(ShaderKind.FRAGMENT, false));
+          new RandomWrapper(i), GenerationParams.small(ShaderKind.FRAGMENT, false, false));
       identityMutationFinder.findMutations().forEach(Expr2ExprMutation::apply);
       new StandardVisitor() {
         @Override
@@ -327,7 +327,7 @@ public class IdentityMutationFinderTest {
     for (int i = 0; i < 20; i++) {
       final TranslationUnit tu = ParseHelper.parse(program);
       new IdentityMutationFinder(tu,
-          new RandomWrapper(i), GenerationParams.normal(ShaderKind.FRAGMENT, true))
+          new RandomWrapper(i), GenerationParams.normal(ShaderKind.FRAGMENT, false, true))
           .findMutations()
           .forEach(Expr2ExprMutation::apply);
       final File shaderJobFile = temporaryFolder.newFile("shader" + i + ".json");
@@ -354,7 +354,7 @@ public class IdentityMutationFinderTest {
     for (int i = 0; i < 20; i++) {
       final TranslationUnit tu = ParseHelper.parse(program);
       new IdentityMutationFinder(tu,
-          new RandomWrapper(i), GenerationParams.normal(ShaderKind.FRAGMENT, false))
+          new RandomWrapper(i), GenerationParams.normal(ShaderKind.FRAGMENT, false, false))
           .findMutations()
           .forEach(Expr2ExprMutation::apply);
       final File shaderJobFile = temporaryFolder.newFile("shader" + i + ".json");

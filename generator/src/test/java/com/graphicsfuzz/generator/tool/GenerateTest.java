@@ -171,11 +171,11 @@ public class GenerateTest {
     final TranslationUnit tu = ParseHelper.parse(reference);
     new DonateLiveCodeTransformation(TransformationProbabilities
         .likelyDonateLiveCode()::donateLiveCodeAtStmt,
-        donorsFolder, GenerationParams.normal(ShaderKind.FRAGMENT, true), false)
+        donorsFolder, GenerationParams.normal(ShaderKind.FRAGMENT, false, true), false)
         .apply(tu,
             TransformationProbabilities.likelyDonateLiveCode(),
             new RandomWrapper(0),
-            GenerationParams.normal(ShaderKind.FRAGMENT, true));
+            GenerationParams.normal(ShaderKind.FRAGMENT, false, true));
   }
 
   @Test

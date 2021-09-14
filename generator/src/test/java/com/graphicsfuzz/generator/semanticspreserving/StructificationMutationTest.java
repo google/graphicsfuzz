@@ -130,7 +130,7 @@ public class StructificationMutationTest {
         tu,
         new IdGenerator(),
         generator,
-        GenerationParams.normal(ShaderKind.FRAGMENT, true))
+        GenerationParams.normal(ShaderKind.FRAGMENT, false, true))
         .apply();
     // The generator should have used up all its values by now.
     assertTrue(generator.isExhausted());
@@ -195,7 +195,7 @@ public class StructificationMutationTest {
         0 /* instead it is FLOAT */);
     List<StructDefinitionType> structs = StructificationMutation.randomStruct(0, generator,
         new IdGenerator(), ShadingLanguageVersion.GLSL_440,
-        GenerationParams.normal(ShaderKind.FRAGMENT, true));
+        GenerationParams.normal(ShaderKind.FRAGMENT, false, true));
     assertEquals(3, structs.size());
     StructDefinitionType enclosingStruct = structs.get(0);
     assertEquals(enclosingStruct.getFieldName(0), "_f0");
@@ -223,7 +223,7 @@ public class StructificationMutationTest {
       List<StructDefinitionType> structs =
           StructificationMutation.randomStruct(0, new RandomWrapper(0),
               new IdGenerator(), ShadingLanguageVersion.ESSL_100,
-              GenerationParams.normal(ShaderKind.FRAGMENT, true));
+              GenerationParams.normal(ShaderKind.FRAGMENT, false, true));
       checkDisjointSubStructs(structs.get(0), structs);
     }
 

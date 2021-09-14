@@ -60,7 +60,10 @@ public class FuzzerTest {
         if (variableIdentifierExpr.getName().equals("doitWhenYouReachMyUse")) {
           Expr expr = new Fuzzer(new FuzzingContext(getCurrentScope()),
               ShadingLanguageVersion.ESSL_100,
-              new ZeroCannedRandom(), GenerationParams.normal(ShaderKind.FRAGMENT, true), "prefix")
+              new ZeroCannedRandom(), GenerationParams.normal(ShaderKind.FRAGMENT,
+              false,
+              true),
+              "prefix")
               .fuzzExpr(new StructNameType("B"), false, false, 0);
           assertTrue(expr instanceof TypeConstructorExpr);
           // Sanity check a few things about the result
