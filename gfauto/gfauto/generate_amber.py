@@ -24,8 +24,9 @@ from typing import List
 
 from gfauto import (
     binaries_util,
-    fuzz_glsl_test,
-    fuzz_spirv_test,
+    fuzz_glsl_amber_test,
+    fuzz_spirv_amber_test,
+    fuzz_test_util,
     gflogging,
     glsl_generate_util,
     settings_util,
@@ -102,7 +103,7 @@ def main() -> None:  # pylint: disable=too-many-locals;
             language_suffix=shader_job_util.SUFFIXES_SPIRV_FUZZ_INPUT,
         )
 
-        fuzz_spirv_test.make_test(
+        fuzz_spirv_amber_test.make_test(
             template_source_dir,
             test_dir,
             spirv_opt_args=spirv_opt_args,
@@ -140,7 +141,7 @@ def main() -> None:  # pylint: disable=too-many-locals;
             finally:
                 gflogging.pop_stream_for_logging()
 
-        fuzz_glsl_test.make_test(
+        fuzz_glsl_amber_test.make_test(
             template_source_dir,
             test_dir,
             spirv_opt_args=spirv_opt_args,
@@ -157,7 +158,7 @@ def main() -> None:  # pylint: disable=too-many-locals;
 
     preprocessor_cache = util.CommandCache()
 
-    fuzz_glsl_test.run_shader_job(
+    fuzz_test_util.run_shader_job(
         source_dir=test_util.get_source_dir(test_dir),
         output_dir=run_output_dir,
         binary_manager=binary_manager,

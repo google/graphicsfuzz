@@ -32,7 +32,7 @@ from typing import List, Match, Optional, Pattern, Tuple
 from gfauto import (
     binaries_util,
     fuzz,
-    fuzz_glsl_test,
+    fuzz_test_util,
     result_util,
     settings_util,
     signature_util,
@@ -165,7 +165,7 @@ def main() -> None:  # pylint: disable=too-many-statements, too-many-locals, too
     # We don't need to read this to run the shader, but we need it afterwards anyway.
     test = test_util.metadata_read_from_path(source_dir / test_util.TEST_METADATA)
 
-    output_dir = fuzz_glsl_test.run_shader_job(
+    output_dir = fuzz_test_util.run_shader_job(
         source_dir=source_dir,
         output_dir=output,
         binary_manager=binary_manager,
@@ -205,8 +205,10 @@ def main() -> None:  # pylint: disable=too-many-statements, too-many-locals, too
         override_pattern: Pattern[str] = re.compile(
             test.crash_regex_override, re.DOTALL
         )
-        match: Optional[Match[str]] = override_pattern.fullmatch(log_contents)
-        if match:
+        override_pattern_match: Optional[Match[str]] = override_pattern.fullmatch(
+            log_contents
+        )
+        if override_pattern_match:
             log("Match!")
             log("Interesting")
             sys.exit(0)

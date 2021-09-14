@@ -22,8 +22,8 @@ from pathlib import Path
 
 from gfauto import (
     binaries_util,
-    fuzz_glsl_test,
-    fuzz_spirv_test,
+    fuzz_glsl_amber_test,
+    fuzz_spirv_amber_test,
     settings_util,
     test_util,
 )
@@ -73,14 +73,14 @@ def main() -> None:
         ):
             settings.extra_graphics_fuzz_reduce_args.append("--literals-to-uniforms")
 
-        fuzz_glsl_test.run_reduction(
+        fuzz_glsl_amber_test.run_reduction(
             source_dir_to_reduce=source_dir,
             reduction_output_dir=output_dir,
             binary_manager=binary_manager,
             settings=settings,
         )
     elif test.HasField("spirv_fuzz"):
-        fuzz_spirv_test.run_reduction(
+        fuzz_spirv_amber_test.run_reduction(
             source_dir_to_reduce=source_dir,
             reduction_output_dir=output_dir,
             binary_manager=binary_manager,
