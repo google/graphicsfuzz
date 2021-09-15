@@ -53,7 +53,7 @@ class ReductionFailedError(Exception):
         self.reduction_work_dir = reduction_work_dir
 
 
-def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branches, too-many-locals, too-many-statements;
+def run_shader_job_amber(  # pylint: disable=too-many-return-statements,too-many-branches, too-many-locals, too-many-statements;
     source_dir: Path,
     output_dir: Path,
     binary_manager: binaries_util.BinaryManager,
@@ -282,6 +282,139 @@ def run_shader_job(  # pylint: disable=too-many-return-statements,too-many-branc
             gflogging.pop_stream_for_logging()
 
 
+def run_shader_job_shadertrap(  # pylint: disable=too-many-return-statements,too-many-branches, too-many-locals, too-many-statements;
+    source_dir: Path,
+    output_dir: Path,
+    binary_manager: binaries_util.BinaryManager,
+    test: Optional[Test] = None,
+    device: Optional[Device] = None,
+    ignore_test_and_device_binaries: bool = False,
+    shader_job_overrides: Iterable[tool.NameAndShaderJob] = (),
+    shader_job_shader_overrides: Optional[
+        tool.ShaderJobNameToShaderOverridesMap
+    ] = None,
+    preprocessor_cache: Optional[util.CommandCache] = None,
+    stop_after_shadertrap: bool = False,
+) -> Path:
+
+    if not shader_job_shader_overrides:
+        shader_job_shader_overrides = {}
+
+    with util.file_open_text(output_dir / "log.txt", "w") as log_file:
+        try:
+            gflogging.push_stream_for_logging(log_file)
+
+            if not test:
+                test = test_util.metadata_read_from_path(
+                    source_dir / test_util.TEST_METADATA
+                )
+
+            if not device:
+                device = test.device
+
+            log(f"Running test on device:\n{device.name}")
+
+            shader_jobs = tool.get_shader_jobs(
+                source_dir, overrides=shader_job_overrides
+            )
+
+            # noinspection PyTypeChecker
+            if device.HasField("preprocess"):
+                # TODO(afd): We probably don't want the preprocess device when targeting ShaderTrap.
+                assert False
+
+            # noinspection PyTypeChecker
+            if device.HasField("shader_compiler"):
+                # TODO(afd): We probably don't want the shader compiler device when targeting ShaderTrap.
+                assert False
+
+            # TODO(afd): This needs some reworking - e.g. perhaps we can just pass the shader job and don't need to pass
+            #  in its name separately.
+            shadertrap_converter_shader_job_files = [
+                shadertrap_converter.ShaderJobFile(
+                    name_prefix=shader_job.name,
+                    glsl_source_json=shader_job,
+                    processing_info="",
+                )
+                for shader_job in shader_jobs
+            ]
+
+            # Check if the first is the reference shader; if so, pull it out into its own variable.
+
+            reference: Optional[shadertrap_converter.ShaderJobFile] = None
+            variants = shadertrap_converter_shader_job_files
+
+            if (
+                shadertrap_converter_shader_job_files[0].name_prefix
+                == test_util.REFERENCE_DIR
+            ):
+                reference = shadertrap_converter_shader_job_files[0]
+                variants = variants[1:]
+            elif len(variants) > 1:
+                raise AssertionError(
+                    "More than one variant, but no reference. This is unexpected."
+                )
+
+            shadertrap_file = shadertrap_converter.glsl_shader_job_to_shadertrap(
+                shader_job_file_shadertrap_test=shadertrap_converter.ShaderJobFileBasedShaderTrapTest(
+                    reference_glsl_job=reference, variants_glsl_job=variants
+                ),
+                output_shadertrap_script_file_path=output_dir / "test.shadertrap",
+            )
+
+            is_compute = bool(
+                shader_job_util.get_related_files(
+                    shader_jobs[0], [shader_job_util.EXT_COMP],
+                )
+            )
+
+            if stop_after_shadertrap:
+                return output_dir
+
+            # noinspection PyTypeChecker
+            if device.HasField("host") or device.HasField("swift_shader"):
+
+                # noinspection PyTypeChecker
+                if device.HasField("swift_shader"):
+                    # Not handling SwiftShader yet.
+                    assert False
+
+                custom_launcher: Optional[List[str]] = None
+
+                if device.HasField("host"):
+                    custom_launcher = list(device.host.custom_launcher)
+
+                # Run the test on the host using Amber.
+                host_device_util.run_shadertrap(
+                    shadertrap_file,
+                    output_dir,
+                    shadertrap_path=binary_manager.get_binary_path_by_name(
+                        binaries_util.SHADERTRAP_NAME
+                    ).path,
+                    dump_image=(not is_compute),
+                    dump_buffer=is_compute,
+                    custom_launcher=custom_launcher,
+                )
+                return output_dir
+
+            # noinspection PyTypeChecker
+            if device.HasField("android"):
+
+                android_device.run_shadertrap_on_device(
+                    shadertrap_file,
+                    output_dir,
+                    dump_image=(not is_compute),
+                    dump_buffer=is_compute,
+                    serial=device.android.serial,
+                )
+                return output_dir
+
+            raise AssertionError(f"Unhandled device type:\n{str(device)}")
+
+        finally:
+            gflogging.pop_stream_for_logging()
+
+
 def maybe_add_report(  # pylint: disable=too-many-locals,too-many-branches;
     test_dir: Path, reports_dir: Path, device: Device, settings: Settings
 ) -> Optional[Path]:
@@ -495,11 +628,14 @@ def create_summary_and_reproduce(  # pylint: disable=too-many-locals;
 
     # Run every source dir that we added to the summary dir.
     for summary_source_dir in summary_source_dirs:
-        run_shader_job(
-            source_dir=summary_source_dir,
-            output_dir=(summary_dir / f"{summary_source_dir.name}_result"),
-            binary_manager=binary_manager,
-        )
+        if test_metadata.glsl_shader_trap:
+            run_shader_job_shadertrap()
+        else:
+            run_shader_job_amber(
+                source_dir=summary_source_dir,
+                output_dir=(summary_dir / f"{summary_source_dir.name}_result"),
+                binary_manager=binary_manager,
+            )
 
 
 def tool_crash_summary_bug_report_dir(  # pylint: disable=too-many-locals;

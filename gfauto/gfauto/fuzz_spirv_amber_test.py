@@ -100,7 +100,7 @@ def run(
     if not device:
         device = test.device
 
-    result_output_dir = fuzz_test_util.run_shader_job(
+    result_output_dir = fuzz_test_util.run_shader_job_amber(
         source_dir=test_util.get_source_dir(test_dir),
         output_dir=test_util.get_results_directory(test_dir, device.name),
         binary_manager=binary_manager,

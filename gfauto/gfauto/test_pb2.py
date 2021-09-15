@@ -20,7 +20,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   package='gfauto',
   syntax='proto3',
   serialized_options=None,
-  serialized_pb=b'\n\x11gfauto/test.proto\x12\x06gfauto\x1a\x13gfauto/common.proto\x1a\x13gfauto/device.proto\"\xb9\x02\n\x04Test\x12 \n\x04glsl\x18\x01 \x01(\x0b\x32\x10.gfauto.TestGlslH\x00\x12+\n\nspirv_fuzz\x18\x05 \x01(\x0b\x32\x15.gfauto.TestSpirvFuzzH\x00\x12\x17\n\x0f\x63rash_signature\x18\x02 \x01(\t\x12\x1e\n\x06\x64\x65vice\x18\x03 \x01(\x0b\x32\x0e.gfauto.Device\x12 \n\x08\x62inaries\x18\x04 \x03(\x0b\x32\x0e.gfauto.Binary\x12\x17\n\x0f\x65xpected_status\x18\x06 \x01(\t\x12\x1c\n\x14\x63rash_regex_override\x18\x07 \x01(\t\x12\x17\n\x0fskip_validation\x18\x08 \x01(\x08\x12\x14\n\x0c\x64\x65rived_from\x18\t \x01(\t\x12\x19\n\x11\x63ommon_spirv_args\x18\n \x03(\tB\x06\n\x04test\"\"\n\x08TestGlsl\x12\x16\n\x0espirv_opt_args\x18\x01 \x03(\t\"\'\n\rTestSpirvFuzz\x12\x16\n\x0espirv_opt_args\x18\x01 \x03(\tb\x06proto3'
+  serialized_pb=b'\n\x11gfauto/test.proto\x12\x06gfauto\x1a\x13gfauto/common.proto\x1a\x13gfauto/device.proto\"\xf1\x02\n\x04Test\x12 \n\x04glsl\x18\x01 \x01(\x0b\x32\x10.gfauto.TestGlslH\x00\x12+\n\nspirv_fuzz\x18\x05 \x01(\x0b\x32\x15.gfauto.TestSpirvFuzzH\x00\x12\x36\n\x10glsl_shader_trap\x18\x0b \x01(\x0b\x32\x1a.gfauto.TestGlslShaderTrapH\x00\x12\x17\n\x0f\x63rash_signature\x18\x02 \x01(\t\x12\x1e\n\x06\x64\x65vice\x18\x03 \x01(\x0b\x32\x0e.gfauto.Device\x12 \n\x08\x62inaries\x18\x04 \x03(\x0b\x32\x0e.gfauto.Binary\x12\x17\n\x0f\x65xpected_status\x18\x06 \x01(\t\x12\x1c\n\x14\x63rash_regex_override\x18\x07 \x01(\t\x12\x17\n\x0fskip_validation\x18\x08 \x01(\x08\x12\x14\n\x0c\x64\x65rived_from\x18\t \x01(\t\x12\x19\n\x11\x63ommon_spirv_args\x18\n \x03(\tB\x06\n\x04test\"\"\n\x08TestGlsl\x12\x16\n\x0espirv_opt_args\x18\x01 \x03(\t\"\'\n\rTestSpirvFuzz\x12\x16\n\x0espirv_opt_args\x18\x01 \x03(\t\",\n\x12TestGlslShaderTrap\x12\x16\n\x0espirv_opt_args\x18\x01 \x03(\tb\x06proto3'
   ,
   dependencies=[gfauto_dot_common__pb2.DESCRIPTOR,gfauto_dot_device__pb2.DESCRIPTOR,])
 
@@ -49,56 +49,63 @@ _TEST = _descriptor.Descriptor(
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='crash_signature', full_name='gfauto.Test.crash_signature', index=2,
+      name='glsl_shader_trap', full_name='gfauto.Test.glsl_shader_trap', index=2,
+      number=11, type=11, cpp_type=10, label=1,
+      has_default_value=False, default_value=None,
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='crash_signature', full_name='gfauto.Test.crash_signature', index=3,
       number=2, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='device', full_name='gfauto.Test.device', index=3,
+      name='device', full_name='gfauto.Test.device', index=4,
       number=3, type=11, cpp_type=10, label=1,
       has_default_value=False, default_value=None,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='binaries', full_name='gfauto.Test.binaries', index=4,
+      name='binaries', full_name='gfauto.Test.binaries', index=5,
       number=4, type=11, cpp_type=10, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='expected_status', full_name='gfauto.Test.expected_status', index=5,
+      name='expected_status', full_name='gfauto.Test.expected_status', index=6,
       number=6, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='crash_regex_override', full_name='gfauto.Test.crash_regex_override', index=6,
+      name='crash_regex_override', full_name='gfauto.Test.crash_regex_override', index=7,
       number=7, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='skip_validation', full_name='gfauto.Test.skip_validation', index=7,
+      name='skip_validation', full_name='gfauto.Test.skip_validation', index=8,
       number=8, type=8, cpp_type=7, label=1,
       has_default_value=False, default_value=False,
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='derived_from', full_name='gfauto.Test.derived_from', index=8,
+      name='derived_from', full_name='gfauto.Test.derived_from', index=9,
       number=9, type=9, cpp_type=9, label=1,
       has_default_value=False, default_value=b"".decode('utf-8'),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       serialized_options=None, file=DESCRIPTOR),
     _descriptor.FieldDescriptor(
-      name='common_spirv_args', full_name='gfauto.Test.common_spirv_args', index=9,
+      name='common_spirv_args', full_name='gfauto.Test.common_spirv_args', index=10,
       number=10, type=9, cpp_type=9, label=3,
       has_default_value=False, default_value=[],
       message_type=None, enum_type=None, containing_type=None,
@@ -120,7 +127,7 @@ _TEST = _descriptor.Descriptor(
       index=0, containing_type=None, fields=[]),
   ],
   serialized_start=72,
-  serialized_end=385,
+  serialized_end=441,
 )
 
 
@@ -150,8 +157,8 @@ _TESTGLSL = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=387,
-  serialized_end=421,
+  serialized_start=443,
+  serialized_end=477,
 )
 
 
@@ -181,12 +188,44 @@ _TESTSPIRVFUZZ = _descriptor.Descriptor(
   extension_ranges=[],
   oneofs=[
   ],
-  serialized_start=423,
-  serialized_end=462,
+  serialized_start=479,
+  serialized_end=518,
+)
+
+
+_TESTGLSLSHADERTRAP = _descriptor.Descriptor(
+  name='TestGlslShaderTrap',
+  full_name='gfauto.TestGlslShaderTrap',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='spirv_opt_args', full_name='gfauto.TestGlslShaderTrap.spirv_opt_args', index=0,
+      number=1, type=9, cpp_type=9, label=3,
+      has_default_value=False, default_value=[],
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      serialized_options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  serialized_options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=520,
+  serialized_end=564,
 )
 
 _TEST.fields_by_name['glsl'].message_type = _TESTGLSL
 _TEST.fields_by_name['spirv_fuzz'].message_type = _TESTSPIRVFUZZ
+_TEST.fields_by_name['glsl_shader_trap'].message_type = _TESTGLSLSHADERTRAP
 _TEST.fields_by_name['device'].message_type = gfauto_dot_device__pb2._DEVICE
 _TEST.fields_by_name['binaries'].message_type = gfauto_dot_common__pb2._BINARY
 _TEST.oneofs_by_name['test'].fields.append(
@@ -195,9 +234,13 @@ _TEST.fields_by_name['glsl'].containing_oneof = _TEST.oneofs_by_name['test']
 _TEST.oneofs_by_name['test'].fields.append(
   _TEST.fields_by_name['spirv_fuzz'])
 _TEST.fields_by_name['spirv_fuzz'].containing_oneof = _TEST.oneofs_by_name['test']
+_TEST.oneofs_by_name['test'].fields.append(
+  _TEST.fields_by_name['glsl_shader_trap'])
+_TEST.fields_by_name['glsl_shader_trap'].containing_oneof = _TEST.oneofs_by_name['test']
 DESCRIPTOR.message_types_by_name['Test'] = _TEST
 DESCRIPTOR.message_types_by_name['TestGlsl'] = _TESTGLSL
 DESCRIPTOR.message_types_by_name['TestSpirvFuzz'] = _TESTSPIRVFUZZ
+DESCRIPTOR.message_types_by_name['TestGlslShaderTrap'] = _TESTGLSLSHADERTRAP
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 Test = _reflection.GeneratedProtocolMessageType('Test', (_message.Message,), {
@@ -220,6 +263,13 @@ TestSpirvFuzz = _reflection.GeneratedProtocolMessageType('TestSpirvFuzz', (_mess
   # @@protoc_insertion_point(class_scope:gfauto.TestSpirvFuzz)
   })
 _sym_db.RegisterMessage(TestSpirvFuzz)
+
+TestGlslShaderTrap = _reflection.GeneratedProtocolMessageType('TestGlslShaderTrap', (_message.Message,), {
+  'DESCRIPTOR' : _TESTGLSLSHADERTRAP,
+  '__module__' : 'gfauto.test_pb2'
+  # @@protoc_insertion_point(class_scope:gfauto.TestGlslShaderTrap)
+  })
+_sym_db.RegisterMessage(TestGlslShaderTrap)
 
 
 # @@protoc_insertion_point(module_scope)

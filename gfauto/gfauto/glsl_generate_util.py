@@ -62,6 +62,7 @@ def run_generate(
     seed: Optional[str] = None,
     other_args: Optional[List[str]] = None,
     legacy_graphics_fuzz_vulkan_arg: bool = False,
+    target_vulkan: bool = True,
 ) -> pathlib.Path:
     util.file_mkdirs_parent(output_shader_json)
     cmd = [
@@ -70,14 +71,20 @@ def run_generate(
         str(reference_shader_json),
         str(donors_path),
         str(output_shader_json),
-        (
-            "--generate-uniform-bindings"
-            if legacy_graphics_fuzz_vulkan_arg
-            else "--vulkan"
-        ),
-        "--max-uniforms",
-        "10",
     ]
+
+    if target_vulkan:
+        cmd.extend(
+            [
+                (
+                    "--generate-uniform-bindings"
+                    if legacy_graphics_fuzz_vulkan_arg
+                    else "--vulkan"
+                ),
+                "--max-uniforms",
+                "10",
+            ]
+        )
 
     if seed:
         cmd.append(f"--seed={seed}")

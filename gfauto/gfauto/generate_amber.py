@@ -158,7 +158,7 @@ def main() -> None:  # pylint: disable=too-many-locals;
 
     preprocessor_cache = util.CommandCache()
 
-    fuzz_test_util.run_shader_job(
+    fuzz_test_util.run_shader_job_amber(
         source_dir=test_util.get_source_dir(test_dir),
         output_dir=run_output_dir,
         binary_manager=binary_manager,

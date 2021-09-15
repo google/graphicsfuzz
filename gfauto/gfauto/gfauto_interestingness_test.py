@@ -162,17 +162,20 @@ def main() -> None:  # pylint: disable=too-many-statements, too-many-locals, too
         #   }
         # }
 
-    # We don't need to read this to run the shader, but we need it afterwards anyway.
     test = test_util.metadata_read_from_path(source_dir / test_util.TEST_METADATA)
 
-    output_dir = fuzz_test_util.run_shader_job(
-        source_dir=source_dir,
-        output_dir=output,
-        binary_manager=binary_manager,
-        test=test,
-        ignore_test_and_device_binaries=use_default_binaries,
-        shader_job_overrides=shader_job_overrides,
-        shader_job_shader_overrides=shader_overrides,
+    output_dir = (
+        fuzz_test_util.run_shader_job_shadertrap()
+        if test.glsl_shader_trap
+        else fuzz_test_util.run_shader_job_amber(
+            source_dir=source_dir,
+            output_dir=output,
+            binary_manager=binary_manager,
+            test=test,
+            ignore_test_and_device_binaries=use_default_binaries,
+            shader_job_overrides=shader_job_overrides,
+            shader_job_shader_overrides=shader_overrides,
+        )
     )
 
     log(

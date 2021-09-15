@@ -240,6 +240,12 @@ def main() -> None:
         action="store_true",
     )
 
+    parser.add_argument(
+        "--gl",
+        help="Target OpenGL (ES) drivers via ShaderTrap when fuzzing with glsl-fuzz.",
+        action="store_true",
+    )
+
     parsed_args = parser.parse_args(sys.argv[1:])
 
     settings_path = Path(parsed_args.settings)
@@ -248,6 +254,7 @@ def main() -> None:
     )
     glsl_fuzz_iterations: int = parsed_args.glsl_fuzz_iterations
     spirv_fuzz_iterations: int = parsed_args.spirv_fuzz_iterations
+    target_gl: bool = parsed_args.gl
     allow_no_stack_traces: bool = parsed_args.allow_no_stack_traces
     active_device_names: Optional[List[str]] = parsed_args.active_device
     update_ignored_crash_signatures_gerrit_cookie: Optional[str] = (
@@ -274,6 +281,7 @@ def main() -> None:
                 update_ignored_crash_signatures_gerrit_cookie=update_ignored_crash_signatures_gerrit_cookie,
                 iteration_limit=iteration_limit,
                 keep_temp=keep_temp,
+                target_gl=target_gl,
             )
         except settings_util.NoSettingsFile as exception:
             log(str(exception))
@@ -303,6 +311,7 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
     update_ignored_crash_signatures_gerrit_cookie: Optional[str] = None,
     iteration_limit: Optional[int] = None,
     keep_temp: bool = False,
+    target_gl: bool = False,
 ) -> None:
 
     if not fuzzing_tool_pattern:
@@ -447,6 +456,7 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
         fuzzing_tool_index = (fuzzing_tool_index + 1) % len(fuzzing_tool_pattern)
 
         if fuzzing_tool == FuzzingTool.SPIRV_FUZZ:
+            # Fuzz Vulkan drivers via Amber test cases, using spirv-fuzz.
             fuzz_spirv_amber_test.fuzz_spirv(
                 staging_dir,
                 reports_dir,
@@ -457,8 +467,22 @@ def main_helper(  # pylint: disable=too-many-locals, too-many-branches, too-many
                 settings,
                 binary_manager,
             )
-        elif fuzzing_tool == FuzzingTool.GLSL_FUZZ:
+        elif fuzzing_tool == FuzzingTool.GLSL_FUZZ and not target_gl:
+            # Fuzz Vulkan drivers via Amber test cases, using glsl-fuzz to generate GLSL tests that are then converted
+            # to SPIR-V.
             fuzz_glsl_amber_test.fuzz_glsl(
+                staging_dir,
+                reports_dir,
+                fuzz_failures_dir,
+                active_devices,
+                references,
+                donors_dir,
+                settings,
+                binary_manager,
+            )
+        elif fuzzing_tool == FuzzingTool.GLSL_FUZZ and target_gl:
+            # Fuzz Open GL (ES) drivers via ShaderTrap test cases, using glsl-fuzz
+            fuzz_glsl_shadertrap_test.fuzz_glsl(
                 staging_dir,
                 reports_dir,
                 fuzz_failures_dir,

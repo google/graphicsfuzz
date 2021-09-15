@@ -26,6 +26,7 @@ message Test {
   oneof test {
     TestGlsl glsl = 1;
     TestSpirvFuzz spirv_fuzz = 5;
+    TestGlslShaderTrap glsl_shader_trap = 11;
   }
   string crash_signature = 2;
   Device device = 3;
@@ -53,11 +54,17 @@ message Test {
   repeated string common_spirv_args = 10;
 }
 
+// Glsl-fuzz generated GLSL test to converted to SPIR-V and run using Amber.
 message TestGlsl {
   repeated string spirv_opt_args = 1;
 }
 
-// Spirv-fuzz generated spirv test.
+// Spirv-fuzz generated SPIR-V test to be run using Amber.
 message TestSpirvFuzz {
+  repeated string spirv_opt_args = 1;
+}
+
+// Glsl-fuzz generated GLSL test to be run using ShaderTrap.
+message TestGlslShaderTrap {
   repeated string spirv_opt_args = 1;
 }
