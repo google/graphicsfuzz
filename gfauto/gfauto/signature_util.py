@@ -225,13 +225,14 @@ def get_signature_from_log_contents(  # pylint: disable=too-many-return-statemen
     # noinspection PyUnusedLocal
     group: Optional[str]
 
-    # mali error.
+    # Mali error.
     # Find the last match.
-    match = None
+    last_match = None
     for match in re.finditer(PATTERN_MALI_ERROR, log_contents):
-        pass
-    if match:
-        group = "mali_" + match.group(1)
+        # Assign each time to avoid linter warning B007.
+        last_match = match
+    if last_match:
+        group = "mali_" + last_match.group(1)
         group = clean_up(group, remove_numbers=False)
         group = reduce_length(group)
         return group
