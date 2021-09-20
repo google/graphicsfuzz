@@ -66,7 +66,9 @@ PATTERN_CDB_CALL_SITE = re.compile(
     fr"\n{HEX_LIKE}+`{HEX_LIKE}+ {HEX_LIKE}+`{HEX_LIKE}+ (.*)"
 )
 
-PATTERN_ANDROID_BACKTRACE_CATCHALL = re.compile(r"\n.*#00 pc " + HEX_LIKE + r"+ (.*)")
+# E.g.
+# 01-23 11:51:21.141  1814  1811 F DEBUG   :       #00 pc 00000000012313ec  /vendor/lib64/egl/libGLES.so (BuildId: 123b5800abef5fc4b86c0032ddd223d5)
+PATTERN_ANDROID_BACKTRACE_CATCHALL = re.compile(fr"\n.*#00 pc ({HEX_LIKE}+ .*)")
 
 # E.g. ERROR: temp/.../variant/shader.frag:549: 'variable indexing fragment shader output array' : not supported with this profile: es
 #                                                variable indexing fragment shader output array   <-- group 1
@@ -141,6 +143,8 @@ PATTERN_MESA_SPIRV_PARSE_ERROR = re.compile(
 PATTERN_AMBER_TOLERANCE_ERROR = re.compile(
     r"is greater th[ae]n tolerance|Buffers have different values"
 )
+
+PATTERN_MALI_ERROR = re.compile(r"E mali [\w.]+:(.*)")
 
 BAD_IMAGE_SIGNATURE = "bad_image"
 
@@ -220,6 +224,18 @@ def get_signature_from_log_contents(  # pylint: disable=too-many-return-statemen
     match: Optional[Match[str]]
     # noinspection PyUnusedLocal
     group: Optional[str]
+
+    # Mali error.
+    # Find the last match.
+    last_match = None
+    for match in re.finditer(PATTERN_MALI_ERROR, log_contents):
+        # Assign each time to avoid linter warning B007.
+        last_match = match
+    if last_match:
+        group = "mali_" + last_match.group(1)
+        group = clean_up(group, remove_numbers=False)
+        group = reduce_length(group)
+        return group
 
     # LLVM FATAL ERROR (special override).
     group = basic_match(PATTERN_LLVM_FATAL_ERROR, log_contents)

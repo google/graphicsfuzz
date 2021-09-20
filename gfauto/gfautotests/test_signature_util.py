@@ -327,3 +327,45 @@ SPIR-V parsing FAILED:
 """
     signature = signature_util.get_signature_from_log_contents(log)
     assert signature == "glsl_type_is_struct_or_ifctype"
+
+
+def test_mali_error() -> None:
+    log = """
+--------- beginning of kernel
+11-23 12:48:29.723  2507  2507 E mali 1e1000.mali: Unhandled Page fault
+11-23 12:48:29.723     0     0 W         : [    C0] mali 1e1000.mali: error detected from slot 0, job status 0x00000004 (TERMINATED)
+11-23 12:48:29.724   321   321 E mali 1e1000.mali: t1xx: GPU fault 0x04 from job slot 0
+11-23 12:48:29.724     0     0 W         : [    C0] mali 1e1000.mali: error detected from slot 0, job status 0x00000042 (JOB_READ_FAULT)
+11-23 12:48:29.724   321   321 E mali 1e1000.mali: t1xx: GPU fault 0x42 from job slot 0
+"""
+    signature = signature_util.get_signature_from_log_contents(log)
+    assert signature == "mali_t1xx_GPU_fault_0x42_from_job_slot_0"
+
+
+def test_android_hex_backtrace() -> None:
+    log = """
+05-23 16:56:20.744  5884  5884 F DEBUG   : backtrace:
+05-23 16:56:20.745  5884  5884 F DEBUG   :   NOTE: Function names and BuildId information is missing for some frames due
+05-23 16:56:20.745  5884  5884 F DEBUG   :   NOTE: to unreadable libraries. For unwinds of apps, only shared libraries
+05-23 16:56:20.745  5884  5884 F DEBUG   :   NOTE: found under the lib/ directory are readable.
+05-23 16:56:20.745  5884  5884 F DEBUG   :   NOTE: On this device, run setenforce 0 to make the libraries readable.
+05-23 16:56:20.745  5884  5884 F DEBUG   :       #00 pc 00000000018213fc  /vendor/lib64/egl/libGLES_mali.so (BuildId: d4fb5800abef5fc4b86c0032cae223d5)
+05-23 16:56:20.745  5884  5884 F DEBUG   :       #01 pc 0000000001821584  /vendor/lib64/egl/libGLES_mali.so (BuildId: d4fb5800abef5fc4b86c0032cae223d5)
+05-23 16:56:20.745  5884  5884 F DEBUG   :       #02 pc 000000000182456c  /vendor/lib64/egl/libGLES_mali.so (BuildId: d4fb5800abef5fc4b86c0032cae223d5)
+05-23 16:56:20.745  5884  5884 F DEBUG   :       #03 pc 0000000001821b2c  /vendor/lib64/egl/libGLES_mali.so (BuildId: d4fb5800abef5fc4b86c0032cae223d5)
+05-23 16:56:20.745  5884  5884 F DEBUG   :       #04 pc 0000000000a08cac  /vendor/lib64/egl/libGLES_mali.so (BuildId: d4fb5800abef5fc4b86c0032cae223d5)
+05-23 16:56:20.745  5884  5884 F DEBUG   :       #05 pc 00000000016d6ce0  /vendor/lib64/egl/libGLES_mali.so (BuildId: d4fb5800abef5fc4b86c0032cae223d5)
+05-23 16:56:20.746  5884  5884 F DEBUG   :       #06 pc 00000000007de018  /vendor/lib64/egl/libGLES_mali.so (BuildId: d4fb5800abef5fc4b86c0032cae223d5)
+05-23 16:56:20.746  5884  5884 F DEBUG   :       #07 pc 00000000007dcbc0  /vendor/lib64/egl/libGLES_mali.so (BuildId: d4fb5800abef5fc4b86c0032cae223d5)
+05-23 16:56:20.746  5884  5884 F DEBUG   :       #08 pc 00000000000fdb4c  /data/local/tmp/amber_ndk
+05-23 16:56:20.746  5884  5884 F DEBUG   :       #09 pc 00000000000d0ca0  /data/local/tmp/amber_ndk
+05-23 16:56:20.746  5884  5884 F DEBUG   :       #10 pc 00000000000d1b5c  /data/local/tmp/amber_ndk
+05-23 16:56:20.746  5884  5884 F DEBUG   :       #11 pc 00000000000cd8bc  /data/local/tmp/amber_ndk
+05-23 16:56:20.746  5884  5884 F DEBUG   :       #12 pc 00000000000aedf0  /data/local/tmp/amber_ndk
+05-23 16:56:20.746  5884  5884 F DEBUG   :       #13 pc 00000000000aeb7c  /data/local/tmp/amber_ndk
+05-23 16:56:20.746  5884  5884 F DEBUG   :       #14 pc 0000000000083554  /data/local/tmp/amber_ndk
+05-23 16:56:20.746  5884  5884 F DEBUG   :       #15 pc 0000000000083464  /data/local/tmp/amber_ndk
+05-23 16:56:20.746  5884  5884 F DEBUG   :       #16 pc 00000000000765a8  /data/local/tmp/amber_ndk
+"""
+    signature = signature_util.get_signature_from_log_contents(log)
+    assert signature == "00000000018213fc_egllibGLES_maliso"
