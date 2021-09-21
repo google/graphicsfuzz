@@ -254,6 +254,12 @@ def handle_test(
 
     # Run on all devices.
     for device in active_devices:
+
+        if device.HasField("preprocess") or device.HasField("shader_compiler"):
+            # With ShaderTrap, no preprocessing is required, and we currently don't have any stand-alone shader
+            # compilers.
+            continue
+
         status = run(
             test_dir, binary_manager, device, preprocessor_cache=preprocessor_cache
         )

@@ -34,6 +34,7 @@ from gfauto import (
     result_util,
     shader_compiler_util,
     shader_job_util,
+    shadertrap_converter,
     signature_util,
     spirv_fuzz_util,
     test_util,
@@ -318,23 +319,16 @@ def run_shader_job_shadertrap(  # pylint: disable=too-many-return-statements,too
                 source_dir, overrides=shader_job_overrides
             )
 
-            # noinspection PyTypeChecker
-            if device.HasField("preprocess"):
-                # TODO(afd): We probably don't want the preprocess device when targeting ShaderTrap.
-                assert False
-
-            # noinspection PyTypeChecker
-            if device.HasField("shader_compiler"):
-                # TODO(afd): We probably don't want the shader compiler device when targeting ShaderTrap.
-                assert False
+            # We should not get here if the device is preprocessor or a stand-alone shader compiler.
+            assert not device.HasField("preprocess")
+            assert not device.HasField("shader_compiler")
 
             # TODO(afd): This needs some reworking - e.g. perhaps we can just pass the shader job and don't need to pass
             #  in its name separately.
             shadertrap_converter_shader_job_files = [
                 shadertrap_converter.ShaderJobFile(
                     name_prefix=shader_job.name,
-                    glsl_source_json=shader_job,
-                    processing_info="",
+                    glsl_shader_job_json=shader_job.shader_job,
                 )
                 for shader_job in shader_jobs
             ]
@@ -355,16 +349,17 @@ def run_shader_job_shadertrap(  # pylint: disable=too-many-return-statements,too
                     "More than one variant, but no reference. This is unexpected."
                 )
 
-            shadertrap_file = shadertrap_converter.glsl_shader_job_to_shadertrap(
+            shadertrap_file = shadertrap_converter.glsl_shader_job_to_shadertrap_script(
                 shader_job_file_shadertrap_test=shadertrap_converter.ShaderJobFileBasedShaderTrapTest(
                     reference_glsl_job=reference, variants_glsl_job=variants
                 ),
                 output_shadertrap_script_file_path=output_dir / "test.shadertrap",
+                shadertrapify_settings=shadertrap_converter.ShaderTrapifySettings(),
             )
 
             is_compute = bool(
                 shader_job_util.get_related_files(
-                    shader_jobs[0], [shader_job_util.EXT_COMP],
+                    shader_jobs[0].shader_job, [shader_job_util.EXT_COMP],
                 )
             )
 

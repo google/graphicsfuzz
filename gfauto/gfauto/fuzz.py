@@ -35,6 +35,7 @@ from gfauto import (
     devices_util,
     download_cts_gf_tests,
     fuzz_glsl_amber_test,
+    fuzz_glsl_shadertrap_test,
     fuzz_spirv_amber_test,
     fuzz_test_util,
     gflogging,

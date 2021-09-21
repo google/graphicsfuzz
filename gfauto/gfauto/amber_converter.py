@@ -357,7 +357,7 @@ def amberscript_uniform_buffer_def(uniform_json_contents: str, prefix: str) -> s
         "glUniform2iv": "vec2<int32>[]",
         "glUniform3iv": "vec3<int32>[]",
         "glUniform4iv": "vec4<int32>[]",
-        "glUniform1uiv": "int32[]",
+        "glUniform1uiv": "unt32[]",
         "glUniform2uiv": "vec2<uint32>[]",
         "glUniform3uiv": "vec3<uint32>[]",
         "glUniform4uiv": "vec4<uint32>[]",
@@ -1049,11 +1049,13 @@ def extract_shaders_vkscript(
     while i < len(lines) - 1:
         i += 1
         line = lines[i]
-        match: Optional[Match[str]] = re.match(VK_SCRIPT_SHADER_REGEX, line.strip())
-        if not match:
+        vk_script_regex_match: Optional[Match[str]] = re.match(
+            VK_SCRIPT_SHADER_REGEX, line.strip()
+        )
+        if not vk_script_regex_match:
             continue
-        shader_type = match.group(1)
-        shader_language = match.group(2)
+        shader_type = vk_script_regex_match.group(1)
+        shader_language = vk_script_regex_match.group(2)
         if shader_language == "passthrough":
             continue
         check(
