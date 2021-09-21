@@ -24,14 +24,33 @@ import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeEntry;
 import com.graphicsfuzz.common.util.ListConcat;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Finds opportunities to remove unused interface blocks from a shader. That is, interface blocks
+ * that are not referenced from anywhere inside the shader.
+ *
+ * In the following example, the buffer interface block could be removed:
+ *
+ * layout(binding = 1) buffer SomeName {
+ *   int x;
+ *   int y;
+ * }
+ *
+ * void main() {
+ *   // Code that neither references 'x' nor 'y'
+ * }
+ *
+ */
 public class InterfaceBlockReductionOpportunities
     extends ReductionOpportunitiesBase<InterfaceBlockReductionOpportunity> {
 
-  private Set<InterfaceBlock> referencedInterfaceBlocks;
+  // Used to find all interface blocks that are referenced from somewhere in the shader. Blocks that
+  // are never referenced can then be removed.
+  private final Set<InterfaceBlock> referencedInterfaceBlocks;
 
   private InterfaceBlockReductionOpportunities(TranslationUnit tu,
                                                ReducerContext context) {
@@ -41,7 +60,12 @@ public class InterfaceBlockReductionOpportunities
 
   @Override
   public void visitTranslationUnit(TranslationUnit translationUnit) {
+    // Finding reduction opportunities follows a "mark and sweep" approach. First, all referenced
+    // interface blocks are found. This is achieved by visiting the shader.
     super.visitTranslationUnit(translationUnit);
+
+    // Now that all referenced interface blocks are known, the un-referenced blocks can be
+    // identified and recorded as candidates for removal.
     for (Declaration declaration : translationUnit.getTopLevelDeclarations()) {
       if (!(declaration instanceof InterfaceBlock)) {
         continue;
@@ -56,6 +80,8 @@ public class InterfaceBlockReductionOpportunities
 
   @Override
   public void visitVariableIdentifierExpr(VariableIdentifierExpr variableIdentifierExpr) {
+    // Check whether this variable identifier expression refers to a field of an interface block.
+    // If it does, that interface blok cannot be removed.
     super.visitVariableIdentifierExpr(variableIdentifierExpr);
     final ScopeEntry scopeEntry =
         getCurrentScope().lookupScopeEntry(variableIdentifierExpr.getName());
@@ -79,7 +105,7 @@ public class InterfaceBlockReductionOpportunities
     return shaderJob.getShaders()
         .stream()
         .map(item -> findOpportunitiesForShader(item, context))
-        .reduce(Arrays.asList(), ListConcat::concatenate);
+        .reduce(Collections.emptyList(), ListConcat::concatenate);
   }
 
 }
