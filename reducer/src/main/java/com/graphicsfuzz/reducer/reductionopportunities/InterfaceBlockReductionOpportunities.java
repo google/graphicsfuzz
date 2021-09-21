@@ -23,7 +23,6 @@ import com.graphicsfuzz.common.ast.expr.VariableIdentifierExpr;
 import com.graphicsfuzz.common.transformreduce.ShaderJob;
 import com.graphicsfuzz.common.typing.ScopeEntry;
 import com.graphicsfuzz.common.util.ListConcat;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -31,19 +30,19 @@ import java.util.Set;
 
 /**
  * Finds opportunities to remove unused interface blocks from a shader. That is, interface blocks
- * that are not referenced from anywhere inside the shader.
+ * that are not referenced from anywhere inside the shader. In the following example, the buffer
+ * interface block could be removed:
  *
- * In the following example, the buffer interface block could be removed:
+ * {@code
+ *   layout(binding = 1) buffer SomeName {
+ *     int x;
+ *     int y;
+ *   }
  *
- * layout(binding = 1) buffer SomeName {
- *   int x;
- *   int y;
+ *   void main() {
+ *     // Code that neither references 'x' nor 'y'
+ *   }
  * }
- *
- * void main() {
- *   // Code that neither references 'x' nor 'y'
- * }
- *
  */
 public class InterfaceBlockReductionOpportunities
     extends ReductionOpportunitiesBase<InterfaceBlockReductionOpportunity> {
