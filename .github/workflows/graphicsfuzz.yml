@@ -52,8 +52,8 @@ jobs:
       - name: setup_java
         uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: ${{ matrix.java-version }}
-          java-package: jdk
           architecture: x64
 
       - name: build_step_nix
