@@ -29,7 +29,7 @@ jobs:
       fail-fast: false
       matrix:
         os:
-          - ubuntu-16.04
+          - ubuntu-18.04
           - windows-latest
           - macOS-latest
         python-version:
@@ -40,41 +40,21 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
 
-      - name: get_actions
-        run: |
-          mkdir -p ./../.github/actions/
-          pushd ./../.github/actions/
-            git clone https://github.com/actions/setup-python.git
-            pushd setup-python/
-              git checkout v2
-            popd
-            git clone https://github.com/actions/checkout.git
-            pushd checkout/
-              git checkout v2
-            popd
-            git clone https://github.com/actions/setup-java.git
-            pushd setup-java/
-              git checkout v1
-            popd
-          popd
-        shell: bash
-
       - name: checkout
-        uses: ./../.github/actions/checkout
+        uses: actions/checkout@v2
 
       - name: setup_python
-        uses: ./../.github/actions/setup-python
+        uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
           architecture: x64
 
       - name: setup_java
-        uses: ./../.github/actions/setup-java
+        uses: actions/setup-java@v2
         with:
+          distribution: temurin
           java-version: ${{ matrix.java-version }}
-          java-package: jdk
           architecture: x64
-
 
       - name: build_step_nix
         run: |
