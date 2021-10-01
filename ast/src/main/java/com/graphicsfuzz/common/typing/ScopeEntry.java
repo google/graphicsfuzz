@@ -16,6 +16,7 @@
 
 package com.graphicsfuzz.common.typing;
 
+import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
@@ -24,9 +25,11 @@ import java.util.Optional;
 
 public class ScopeEntry {
 
-  private final Optional<ParameterDecl> parameterDecl;
-
   private final Type type;
+
+  // Represents the ParameterDecl that this variable came from, if one exists. If there is no such
+  // object, the optional is empty.
+  private final Optional<ParameterDecl> parameterDecl;
 
   // Represents the VariableDeclInfo that this variable came from, if one exists.  If there is no
   // such object (e.g. because the variable came from a parameter, or was made up for purposes of
@@ -37,26 +40,38 @@ public class ScopeEntry {
   // If there is no such object, the optional is empty.
   private final Optional<VariablesDeclaration> variablesDeclaration;
 
+  // Represents the interface block that this variable is part of, if one exists. If there is no
+  // such object, the optional is empty.
+  private final Optional<InterfaceBlock> interfaceBlock;
+
   private ScopeEntry(Type type, Optional<ParameterDecl> parameterDecl,
-        Optional<VariableDeclInfo> variableDeclInfo,
-        Optional<VariablesDeclaration> variablesDecl) {
+                     Optional<VariableDeclInfo> variableDeclInfo,
+                     Optional<VariablesDeclaration> variablesDecl,
+                     Optional<InterfaceBlock> interfaceBlock) {
     this.type = type;
     this.parameterDecl = parameterDecl;
     this.variableDeclInfo = variableDeclInfo;
     this.variablesDeclaration = variablesDecl;
+    this.interfaceBlock = interfaceBlock;
   }
 
   public ScopeEntry(Type type,
-      Optional<ParameterDecl> parameterDecl,
       VariableDeclInfo variableDeclInfo,
       VariablesDeclaration variablesDecl) {
-    this(type, parameterDecl, Optional.of(variableDeclInfo), Optional.of(variablesDecl));
-    assert variableDeclInfo != null;
-    assert variablesDecl != null;
+    this(type, Optional.empty(), Optional.of(variableDeclInfo), Optional.of(variablesDecl),
+        Optional.empty());
   }
 
-  public ScopeEntry(Type type, Optional<ParameterDecl> parameterDecl) {
-    this(type, parameterDecl, Optional.empty(), Optional.empty());
+  public ScopeEntry(Type type) {
+    this(type, Optional.empty(), Optional.empty(), Optional.empty(), Optional.empty());
+  }
+
+  public ScopeEntry(Type type, ParameterDecl parameterDecl) {
+    this(type, Optional.of(parameterDecl), Optional.empty(), Optional.empty(), Optional.empty());
+  }
+
+  public ScopeEntry(Type type, InterfaceBlock interfaceBlock) {
+    this(type, Optional.empty(), Optional.empty(), Optional.empty(), Optional.of(interfaceBlock));
   }
 
   public Type getType() {
@@ -85,6 +100,14 @@ public class ScopeEntry {
 
   public boolean hasParameterDecl() {
     return parameterDecl.isPresent();
+  }
+
+  public InterfaceBlock getInterfaceBlock() {
+    return interfaceBlock.get();
+  }
+
+  public boolean hasInterfaceBlock() {
+    return interfaceBlock.isPresent();
   }
 
 }

@@ -235,15 +235,6 @@ public class Typer extends ScopeTrackingVisitor {
       types.put(variableIdentifierExpr, type);
       return;
     }
-    for (InterfaceBlock interfaceBlock : interfaceBlocks) {
-      final Optional<Type> memberType =
-          interfaceBlock.getMemberType(variableIdentifierExpr.getName());
-      if (memberType.isPresent()) {
-        types.put(variableIdentifierExpr, memberType.get());
-        return;
-      }
-    }
-
     maybeGetTypeOfBuiltinVariable(variableIdentifierExpr.getName())
         .ifPresent(item -> types.put(variableIdentifierExpr, item));
   }

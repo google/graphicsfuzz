@@ -92,6 +92,24 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     };
   }
 
+  static IReductionOpportunityFinder<InterfaceBlockReductionOpportunity>
+      interfaceBlockFinder() {
+    return new IReductionOpportunityFinder<InterfaceBlockReductionOpportunity>() {
+      @Override
+      public List<InterfaceBlockReductionOpportunity> findOpportunities(
+          ShaderJob shaderJob,
+          ReducerContext context) {
+        return InterfaceBlockReductionOpportunities
+            .findOpportunities(shaderJob, context);
+      }
+
+      @Override
+      public String getName() {
+        return "interfaceBlock";
+      }
+    };
+  }
+
   static IReductionOpportunityFinder<GlobalPrecisionDeclarationReductionOpportunity>
       globalPrecisionDeclarationFinder() {
     return new IReductionOpportunityFinder<GlobalPrecisionDeclarationReductionOpportunity>() {

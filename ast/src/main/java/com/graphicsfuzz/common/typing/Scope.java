@@ -16,6 +16,7 @@
 
 package com.graphicsfuzz.common.typing;
 
+import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
 import com.graphicsfuzz.common.ast.decl.ParameterDecl;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
 import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
@@ -47,16 +48,26 @@ public class Scope {
     this.parent = parent;
   }
 
-  public void add(String name, Type type, Optional<ParameterDecl> parameterDecl,
-        VariableDeclInfo declInfo,
-        VariablesDeclaration variablesDecl) {
-    checkNameTypeAndParam(name, type, parameterDecl);
-    variableMapping.put(name, new ScopeEntry(type, parameterDecl, declInfo, variablesDecl));
+  public void add(String name, Type type) {
+    checkNameTypeAndParam(name, type, Optional.empty());
+    variableMapping.put(name, new ScopeEntry(type));
   }
 
-  public void add(String name, Type type, Optional<ParameterDecl> parameterDecl) {
-    checkNameTypeAndParam(name, type, parameterDecl);
+  public void add(String name, Type type,
+                  VariableDeclInfo declInfo,
+                  VariablesDeclaration variablesDecl) {
+    checkNameTypeAndParam(name, type, Optional.empty());
+    variableMapping.put(name, new ScopeEntry(type, declInfo, variablesDecl));
+  }
+
+  public void add(String name, Type type, ParameterDecl parameterDecl) {
+    checkNameTypeAndParam(name, type, Optional.of(parameterDecl));
     variableMapping.put(name, new ScopeEntry(type, parameterDecl));
+  }
+
+  public void add(String name, Type type, InterfaceBlock interfaceBlock) {
+    checkNameTypeAndParam(name, type, Optional.empty());
+    variableMapping.put(name, new ScopeEntry(type, interfaceBlock));
   }
 
   public void addStructDefinition(StructDefinitionType sdt) {

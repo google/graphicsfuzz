@@ -24,7 +24,6 @@ import com.graphicsfuzz.common.typing.Scope;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Optional;
 
 public class FuzzingContext {
 
@@ -50,7 +49,7 @@ public class FuzzingContext {
   }
 
   public void addGlobal(String name, Type type) {
-    findRootScope().add(name, type, Optional.empty());
+    findRootScope().add(name, type);
   }
 
   private Scope findRootScope() {
@@ -63,12 +62,12 @@ public class FuzzingContext {
 
   public void addLocal(String name, Type type) {
     assert currentScope.hasParent();
-    currentScope.add(name, type, Optional.empty());
+    currentScope.add(name, type);
   }
 
   public void addParameter(ParameterDecl parameterDecl) {
     assert currentScope.hasParent();
-    currentScope.add(parameterDecl.getName(), parameterDecl.getType(), Optional.of(parameterDecl));
+    currentScope.add(parameterDecl.getName(), parameterDecl.getType(), parameterDecl);
   }
 
   public void addFunction(FunctionPrototype prototype) {

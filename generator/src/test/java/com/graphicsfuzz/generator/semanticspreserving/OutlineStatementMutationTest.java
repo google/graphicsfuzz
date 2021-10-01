@@ -38,7 +38,6 @@ import com.graphicsfuzz.util.Constants;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -65,9 +64,9 @@ public class OutlineStatementMutationTest {
             BinOp.ADD), BinOp.ASSIGN));
 
     final Scope fakeScope = new Scope();
-    fakeScope.add("x", BasicType.VEC2, Optional.empty());
-    fakeScope.add("y", BasicType.FLOAT, Optional.empty());
-    fakeScope.add("z", BasicType.VEC2, Optional.empty());
+    fakeScope.add("x", BasicType.VEC2);
+    fakeScope.add("y", BasicType.FLOAT);
+    fakeScope.add("z", BasicType.VEC2);
 
     new OutlineStatementMutation(toOutline, fakeScope, tu, fakeFunction, new IdGenerator()).apply();
     final String expectedDecl = "vec2 " + Constants.OUTLINED_FUNCTION_PREFIX
@@ -91,9 +90,9 @@ public class OutlineStatementMutationTest {
         BinOp.ASSIGN));
 
     Scope fakeScope = new Scope();
-    fakeScope.add("x", BasicType.VEC2, Optional.empty());
+    fakeScope.add("x", BasicType.VEC2);
     fakeScope.add("y", new QualifiedType(BasicType.VEC2,
-        Collections.singletonList(TypeQualifier.UNIFORM)), Optional.empty());
+        Collections.singletonList(TypeQualifier.UNIFORM)));
 
     new OutlineStatementMutation(toOutline, fakeScope, tu, fakeFunction, new IdGenerator()).apply();
 
@@ -119,7 +118,7 @@ public class OutlineStatementMutationTest {
         BinOp.ASSIGN));
 
     Scope fakeScope = new Scope();
-    fakeScope.add("x", BasicType.VEC2, Optional.empty());
+    fakeScope.add("x", BasicType.VEC2);
 
     new OutlineStatementMutation(toOutline, fakeScope, tu, fakeFunction, new IdGenerator()).apply();
 
@@ -146,7 +145,7 @@ public class OutlineStatementMutationTest {
 
     Scope fakeScope = new Scope();
     fakeScope.add("x", new QualifiedType(BasicType.VEC2,
-        Collections.singletonList(TypeQualifier.OUT_PARAM)), Optional.empty());
+        Collections.singletonList(TypeQualifier.OUT_PARAM)));
 
     new OutlineStatementMutation(toOutline, fakeScope, tu, fakeFunction, new IdGenerator()).apply();
 
@@ -172,7 +171,7 @@ public class OutlineStatementMutationTest {
         BinOp.ASSIGN));
 
     Scope fakeScope = new Scope();
-    fakeScope.add("x", BasicType.FLOAT, Optional.empty());
+    fakeScope.add("x", BasicType.FLOAT);
 
     new OutlineStatementMutation(toOutline, fakeScope, tu, fakeFunction, new IdGenerator()).apply();
 

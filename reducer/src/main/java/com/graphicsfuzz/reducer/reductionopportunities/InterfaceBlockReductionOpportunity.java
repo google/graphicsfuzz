@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 The GraphicsFuzz Project Authors
+ * Copyright 2021 The GraphicsFuzz Project Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,30 +17,29 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
-import com.graphicsfuzz.common.ast.decl.VariablesDeclaration;
+import com.graphicsfuzz.common.ast.decl.InterfaceBlock;
 import com.graphicsfuzz.common.ast.visitors.VisitationDepth;
 
-public class GlobalVariablesDeclarationReductionOpportunity extends AbstractReductionOpportunity {
+public class InterfaceBlockReductionOpportunity extends AbstractReductionOpportunity {
 
   private final TranslationUnit translationUnit;
-  private final VariablesDeclaration variablesDeclaration;
+  private final InterfaceBlock interfaceBlock;
 
-  public GlobalVariablesDeclarationReductionOpportunity(TranslationUnit translationUnit,
-                                                        VariablesDeclaration variablesDeclaration,
-                                                        VisitationDepth depth) {
+  public InterfaceBlockReductionOpportunity(TranslationUnit translationUnit,
+                                            InterfaceBlock interfaceBlock,
+                                            VisitationDepth depth) {
     super(depth);
     this.translationUnit = translationUnit;
-    this.variablesDeclaration = variablesDeclaration;
+    this.interfaceBlock = interfaceBlock;
   }
 
   @Override
   void applyReductionImpl() {
-    translationUnit.removeTopLevelDeclaration(variablesDeclaration);
+    translationUnit.removeTopLevelDeclaration(interfaceBlock);
   }
 
   @Override
   public boolean preconditionHolds() {
-    return translationUnit.getTopLevelDeclarations().contains(variablesDeclaration);
+    return translationUnit.getTopLevelDeclarations().contains(interfaceBlock);
   }
-
 }
