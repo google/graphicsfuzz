@@ -161,7 +161,7 @@ public class IdentityMutationReductionOpportunitiesTest {
 
   private ReducerContext getReducerContext() {
     return new ReducerContext(false,
-        ShadingLanguageVersion.ESSL_310,
+        true, ShadingLanguageVersion.ESSL_310,
         new RandomWrapper(0),
         new IdGenerator());
   }

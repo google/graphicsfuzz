@@ -35,7 +35,7 @@ public class UnswitchifyReductionOpportunitiesTest {
     List<UnswitchifyReductionOpportunity> ops = UnswitchifyReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
               new ReducerContext(false,
-              ShadingLanguageVersion.GLSL_130,
+              true, ShadingLanguageVersion.GLSL_130,
                     new RandomWrapper(0),
                     new IdGenerator()));
     assertEquals(0, ops.size());

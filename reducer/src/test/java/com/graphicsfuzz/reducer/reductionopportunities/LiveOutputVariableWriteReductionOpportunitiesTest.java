@@ -51,7 +51,8 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
     List<LiveOutputVariableWriteReductionOpportunity> ops =
           LiveOutputVariableWriteReductionOpportunities
               .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                  new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+                  new ReducerContext(false, true,
+                      ShadingLanguageVersion.ESSL_100,
                       new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -74,7 +75,7 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
     List<LiveOutputVariableWriteReductionOpportunity> ops =
         LiveOutputVariableWriteReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(
-                    false, ShadingLanguageVersion.ESSL_100,
+                    false, true, ShadingLanguageVersion.ESSL_100,
                 new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -101,7 +102,8 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
     final List<LiveOutputVariableWriteReductionOpportunity> ops =
         LiveOutputVariableWriteReductionOpportunities
           .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-            new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+            new ReducerContext(false, true,
+                ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                 new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -124,7 +126,8 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
     List<LiveOutputVariableWriteReductionOpportunity> ops =
           LiveOutputVariableWriteReductionOpportunities
               .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new ReducerContext(false, true,
+                    ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                     new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -148,8 +151,9 @@ public class LiveOutputVariableWriteReductionOpportunitiesTest {
     List<LiveOutputVariableWriteReductionOpportunity> ops =
           LiveOutputVariableWriteReductionOpportunities
               .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                new ReducerContext(false,
-                    ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+                new ReducerContext(false, true,
+                    ShadingLanguageVersion.ESSL_100,
+                    new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
     CompareAsts.assertEqualAsts(expected, tu);

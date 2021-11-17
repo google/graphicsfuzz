@@ -37,7 +37,7 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
     final List<GlobalVariableDeclToExprReductionOpportunity> ops =
         GlobalVariableDeclToExprReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
-                ShadingLanguageVersion.ESSL_100,
+                true, ShadingLanguageVersion.ESSL_100,
                 new RandomWrapper(0), new IdGenerator()));
     // There should be no opportunities as the preserve semantics is enabled.
     assertTrue(ops.isEmpty());
@@ -50,7 +50,7 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
     final List<GlobalVariableDeclToExprReductionOpportunity> ops =
         GlobalVariableDeclToExprReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
-                ShadingLanguageVersion.ESSL_100,
+                true, ShadingLanguageVersion.ESSL_100,
                 new RandomWrapper(0), new IdGenerator()));
     // Since the new assignment statement must be only inserted as the first statement of
     // the main function, thus we have to ensure that main function exists.
@@ -65,7 +65,7 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
     final List<GlobalVariableDeclToExprReductionOpportunity> ops =
         GlobalVariableDeclToExprReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
-                ShadingLanguageVersion.ESSL_100,
+                true, ShadingLanguageVersion.ESSL_100,
                 new RandomWrapper(0), new IdGenerator()));
     // Since the new assignment statement must be only inserted as the first statement of
     // the main function, thus we have to ensure that main function exists.
@@ -93,7 +93,7 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
     final List<GlobalVariableDeclToExprReductionOpportunity> ops =
         GlobalVariableDeclToExprReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
-            ShadingLanguageVersion.ESSL_100,
+            true, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.forEach(GlobalVariableDeclToExprReductionOpportunity::applyReductionImpl);
@@ -119,7 +119,7 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
     final List<GlobalVariableDeclToExprReductionOpportunity> ops =
         GlobalVariableDeclToExprReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
-            ShadingLanguageVersion.ESSL_100,
+            true, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), new IdGenerator()));
     // Only variable declarations a and b have the initializer.
     // Thus, we expect the reducer to find only 2 opportunities.
@@ -135,7 +135,7 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
     final List<GlobalVariableDeclToExprReductionOpportunity> ops =
         GlobalVariableDeclToExprReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
-                ShadingLanguageVersion.ESSL_100,
+                true, ShadingLanguageVersion.ESSL_100,
                 new RandomWrapper(0), new IdGenerator()));
     // There should be no opportunities as it is invalid to declare constant variable
     // without an initial value.
@@ -160,7 +160,7 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
     final List<GlobalVariableDeclToExprReductionOpportunity> ops =
         GlobalVariableDeclToExprReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
-            ShadingLanguageVersion.ESSL_100,
+            true, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), new IdGenerator()));
     assertEquals(3, ops.size());
     ops.forEach(GlobalVariableDeclToExprReductionOpportunity::applyReductionImpl);
@@ -189,7 +189,7 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
     final List<GlobalVariableDeclToExprReductionOpportunity> ops =
         GlobalVariableDeclToExprReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
-            ShadingLanguageVersion.ESSL_100,
+            true, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), new IdGenerator()));
     assertEquals(4, ops.size());
     ops.forEach(GlobalVariableDeclToExprReductionOpportunity::applyReductionImpl);
@@ -204,7 +204,7 @@ public class GlobalVariableDeclToExprReductionOpportunitiesTest {
     final List<GlobalVariableDeclToExprReductionOpportunity> ops =
         GlobalVariableDeclToExprReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
-                ShadingLanguageVersion.ESSL_100,
+                true, ShadingLanguageVersion.ESSL_100,
                 new RandomWrapper(0), new IdGenerator()));
     assertTrue(ops.isEmpty());
   }

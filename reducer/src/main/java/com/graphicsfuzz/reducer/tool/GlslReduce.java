@@ -220,6 +220,11 @@ public class GlslReduce {
               + "numbers with uniforms.")
           .action(Arguments.storeTrue());
 
+    parser.addArgument("--no-ub-guards")
+        .help("Do not emit guards against undefined behaviour (such as loop limiters and array "
+            + "bounds clamping).")
+        .action(Arguments.storeTrue());
+
     return parser;
 
   }
@@ -295,6 +300,7 @@ public class GlslReduce {
       final IRandom random = new RandomWrapper(ArgsUtil.getSeedArgument(ns));
       final String errorString = ns.get("error_string");
       final boolean reduceEverywhere = !ns.getBoolean("preserve_semantics");
+      final boolean addUbGuards = !ns.getBoolean("no_ub_guards");
       final boolean stopOnError = ns.get("stop_on_error");
 
       final String server = ns.get("server");
@@ -465,6 +471,7 @@ public class GlslReduce {
           workDir,
           maxSteps,
           reduceEverywhere,
+          addUbGuards,
           continuePreviousReduction,
           literalsToUniforms,
           verbose,
@@ -492,6 +499,7 @@ public class GlslReduce {
       File workDir,
       int stepLimit,
       boolean reduceEverywhere,
+      boolean addUbGuards,
       boolean continuePreviousReduction,
       boolean literalsToUniforms,
       boolean verbose,
@@ -526,6 +534,7 @@ public class GlslReduce {
     new ReductionDriver(
         new ReducerContext(
             reduceEverywhere,
+            addUbGuards,
             shadingLanguageVersion,
             random,
             idGenerator),

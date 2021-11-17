@@ -36,7 +36,7 @@ public class ExprToConstantReductionOpportunitiesTest {
     TranslationUnit tu = ParseHelper.parse(prog);
     List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(true, ShadingLanguageVersion.ESSL_100,
+          new ReducerContext(true, true, ShadingLanguageVersion.ESSL_100,
         new RandomWrapper(0), new IdGenerator()));
     for (SimplifyExprReductionOpportunity op : ops) {
       op.applyReduction();
@@ -51,7 +51,7 @@ public class ExprToConstantReductionOpportunitiesTest {
     TranslationUnit tu = ParseHelper.parse(prog);
     List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(true, ShadingLanguageVersion.ESSL_100,
+          new ReducerContext(true, true, ShadingLanguageVersion.ESSL_100,
         new RandomWrapper(0), new IdGenerator()));
     for (SimplifyExprReductionOpportunity op : ops) {
       op.applyReduction();
@@ -67,7 +67,7 @@ public class ExprToConstantReductionOpportunitiesTest {
     TranslationUnit tu = ParseHelper.parse(prog);
     List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(true, ShadingLanguageVersion.ESSL_100,
+          new ReducerContext(true, true, ShadingLanguageVersion.ESSL_100,
         new RandomWrapper(0), new IdGenerator()));
     for (SimplifyExprReductionOpportunity op : ops) {
       op.applyReduction();
@@ -82,7 +82,7 @@ public class ExprToConstantReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+          new ReducerContext(false, true, ShadingLanguageVersion.ESSL_100,
               new RandomWrapper(0),
               new IdGenerator()));
     assertEquals(1, ops.size());
@@ -102,7 +102,7 @@ public class ExprToConstantReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-        new ReducerContext(true, ShadingLanguageVersion.ESSL_310,
+        new ReducerContext(true, true, ShadingLanguageVersion.ESSL_310,
             new RandomWrapper(0),
             new IdGenerator()));
     assertEquals(0, ops.size());
@@ -124,7 +124,7 @@ public class ExprToConstantReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-        new ReducerContext(true, ShadingLanguageVersion.ESSL_310,
+        new ReducerContext(true, true, ShadingLanguageVersion.ESSL_310,
             new RandomWrapper(0),
             new IdGenerator()));
     assertEquals(0, ops.size());
@@ -202,7 +202,7 @@ public class ExprToConstantReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<SimplifyExprReductionOpportunity> ops = ExprToConstantReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-        new ReducerContext(true, ShadingLanguageVersion.ESSL_100,
+        new ReducerContext(true, true, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0),
             new IdGenerator()));
     for (SimplifyExprReductionOpportunity op : ops) {

@@ -52,7 +52,8 @@ public class RemoveRedundantUniformMetadataReductionOpportunitiesTest {
     List<RemoveRedundantUniformMetadataReductionOpportunity> ops =
         RemoveRedundantUniformMetadataReductionOpportunities
         .findOpportunities(shaderJob,
-            new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+            new ReducerContext(false, true,
+                ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                 new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -82,7 +83,7 @@ public class RemoveRedundantUniformMetadataReductionOpportunitiesTest {
     List<RemoveRedundantUniformMetadataReductionOpportunity> ops =
         RemoveRedundantUniformMetadataReductionOpportunities
             .findOpportunities(shaderJob,
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+                new ReducerContext(false, true, ShadingLanguageVersion.ESSL_100,
                     new RandomWrapper(0),
                 new IdGenerator()));
     assertEquals(1, ops.size());
@@ -112,7 +113,8 @@ public class RemoveRedundantUniformMetadataReductionOpportunitiesTest {
     List<RemoveRedundantUniformMetadataReductionOpportunity> ops =
         RemoveRedundantUniformMetadataReductionOpportunities
         .findOpportunities(shaderJob,
-            new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+            new ReducerContext(false, true,
+                ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                 new IdGenerator()));
     assertEquals(0, ops.size());
   }
@@ -142,7 +144,8 @@ public class RemoveRedundantUniformMetadataReductionOpportunitiesTest {
     List<RemoveRedundantUniformMetadataReductionOpportunity> ops =
         RemoveRedundantUniformMetadataReductionOpportunities
             .findOpportunities(shaderJob,
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new ReducerContext(false, true,
+                    ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                 new IdGenerator()));
     assertEquals(0, ops.size());
   }

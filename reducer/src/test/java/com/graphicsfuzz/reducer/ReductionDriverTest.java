@@ -112,13 +112,14 @@ public class ReductionDriverTest {
 
     List<IReductionOpportunity> ops = ReductionOpportunities.getReductionOpportunities(
                 MakeShaderJobFromFragmentShader.make(tu),
-                new ReducerContext(false, version, generator, new IdGenerator()),
+                new ReducerContext(false, true, version, generator, new IdGenerator()),
                 fileOps);
     assertEquals(3, ops.size());
 
     new ReductionDriver(
         new ReducerContext(
             false,
+            true,
             version,
             generator,
             new IdGenerator()),
@@ -230,7 +231,7 @@ public class ReductionDriverTest {
         Optional.empty(), new PipelineInfo(tempJsonFile),
         translationUnits);
 
-    return new ReductionDriver(new ReducerContext(reduceEverywhere, version,
+    return new ReductionDriver(new ReducerContext(reduceEverywhere, true, version,
         generator, new IdGenerator()), false, fileOps,
         judge, testFolder.getRoot())
         .doReduction(state, getPrefix(tempFragmentShaderFile), 0, stepLimit);
@@ -283,7 +284,7 @@ public class ReductionDriverTest {
     };
 
     final String reducedFilesPrefix = new ReductionDriver(
-        new ReducerContext(false, version, generator, new IdGenerator()),
+        new ReducerContext(false, true, version, generator, new IdGenerator()),
         false, fileOps,
         referencesSinCosAnd3, testFolder.getRoot())
         .doReduction(state, getPrefix(tempFile), 0, -1);
@@ -548,6 +549,7 @@ public class ReductionDriverTest {
     fileOps.writeShaderJobFile(shaderJob, tempShaderJobFile);
 
     final String resultsPrefix = new ReductionDriver(new ReducerContext(true,
+        true,
         ShadingLanguageVersion.ESSL_300,
         new RandomWrapper(0),
         new IdGenerator()),
@@ -602,6 +604,7 @@ public class ReductionDriverTest {
     fileOps.writeShaderJobFile(shaderJob, tempShaderJobFile);
 
     final String resultsPrefix = new ReductionDriver(new ReducerContext(false,
+        true,
         ShadingLanguageVersion.ESSL_300,
         new RandomWrapper(0),
         new IdGenerator()),
@@ -636,6 +639,7 @@ public class ReductionDriverTest {
     fileOps.writeShaderJobFile(shaderJob, tempShaderJobFile);
 
     final String resultsPrefix = new ReductionDriver(new ReducerContext(true,
+        true,
         ShadingLanguageVersion.ESSL_100,
         new RandomWrapper(0),
         new IdGenerator()),
@@ -693,6 +697,7 @@ public class ReductionDriverTest {
             fileOps);
 
     final String resultsPrefix = new ReductionDriver(new ReducerContext(true,
+        true,
         ShadingLanguageVersion.ESSL_310,
         new RandomWrapper(0),
         new IdGenerator()),
@@ -767,6 +772,7 @@ public class ReductionDriverTest {
             fileOps);
 
     final String resultsPrefix = new ReductionDriver(new ReducerContext(true,
+        true,
         ShadingLanguageVersion.ESSL_310,
         new RandomWrapper(0),
         new IdGenerator()),
@@ -840,6 +846,7 @@ public class ReductionDriverTest {
       fileOps.writeShaderJobFile(shaderJob, tempShaderJobFile);
 
       final String resultsPrefix = new ReductionDriver(new ReducerContext(true,
+          true,
           ShadingLanguageVersion.ESSL_310,
           new RandomWrapper(0),
           new IdGenerator()),
@@ -894,6 +901,7 @@ public class ReductionDriverTest {
     fileOps.writeShaderJobFile(shaderJob, tempShaderJobFile);
 
     final String resultsPrefix = new ReductionDriver(new ReducerContext(true,
+        true,
         ShadingLanguageVersion.ESSL_310,
         new RandomWrapper(0),
         new IdGenerator()),
@@ -951,6 +959,7 @@ public class ReductionDriverTest {
     fileOps.writeShaderJobFile(shaderJob, tempShaderJobFile);
 
     new ReductionDriver(new ReducerContext(true,
+        true,
         ShadingLanguageVersion.ESSL_310,
         new RandomWrapper(0),
         new IdGenerator()),
@@ -1040,6 +1049,7 @@ public class ReductionDriverTest {
     fileOps.writeShaderJobFile(shaderJob, tempShaderJobFile);
 
     final String resultsPrefix = new ReductionDriver(new ReducerContext(false,
+        true,
         ShadingLanguageVersion.ESSL_310,
         new RandomWrapper(0),
         new IdGenerator()),

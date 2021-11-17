@@ -71,7 +71,8 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final List<LiteralToUniformReductionOpportunity> ops =
         LiteralToUniformReductionOpportunities
         .findOpportunities(shaderJob,
-            new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+            new ReducerContext(false, true,
+                ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                 new IdGenerator()));
 
     assertEquals("There should be two opportunities", 2, ops.size());
@@ -89,7 +90,8 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final List<LiteralToUniformReductionOpportunity> ops2 =
         LiteralToUniformReductionOpportunities
             .findOpportunities(shaderJob,
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new ReducerContext(false, true,
+                    ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                     new IdGenerator()));
 
     assertEquals("There should be no opportunities", 0, ops2.size());
@@ -130,7 +132,8 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final List<LiteralToUniformReductionOpportunity> ops =
         LiteralToUniformReductionOpportunities
             .findOpportunities(shaderJob,
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new ReducerContext(false, true,
+                    ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                     new IdGenerator()));
 
     assertEquals("There should be two opportunities", 2, ops.size());
@@ -148,7 +151,8 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final List<LiteralToUniformReductionOpportunity> ops2 =
         LiteralToUniformReductionOpportunities
             .findOpportunities(shaderJob,
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new ReducerContext(false, true,
+                    ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                     new IdGenerator()));
 
     assertEquals("There should be no opportunities", 0, ops2.size());
@@ -187,7 +191,8 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final List<LiteralToUniformReductionOpportunity> ops =
         LiteralToUniformReductionOpportunities
             .findOpportunities(shaderJob,
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new ReducerContext(false, true,
+                    ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                     new IdGenerator()));
 
     assertEquals("There should be two opportunities", 2, ops.size());
@@ -204,7 +209,8 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final List<LiteralToUniformReductionOpportunity> ops2 =
         LiteralToUniformReductionOpportunities
             .findOpportunities(shaderJob,
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new ReducerContext(false, true,
+                    ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                     new IdGenerator()));
 
     assertEquals("There should be no opportunities", 0, ops2.size());
@@ -243,7 +249,8 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final List<LiteralToUniformReductionOpportunity> ops =
         LiteralToUniformReductionOpportunities
             .findOpportunities(shaderJob,
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new ReducerContext(false, true,
+                    ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                     new IdGenerator()));
 
     assertEquals("There should be two opportunities", 2, ops.size());
@@ -260,7 +267,8 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final List<LiteralToUniformReductionOpportunity> ops2 =
         LiteralToUniformReductionOpportunities
             .findOpportunities(shaderJob,
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new ReducerContext(false, true,
+                    ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                     new IdGenerator()));
 
     assertEquals("There should be no opportunities", 0, ops2.size());
@@ -299,7 +307,8 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final List<LiteralToUniformReductionOpportunity> ops =
         LiteralToUniformReductionOpportunities
             .findOpportunities(shaderJob,
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new ReducerContext(false, true,
+                    ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                     new IdGenerator()));
 
     assertEquals("There should be two opportunities", 2, ops.size());
@@ -316,7 +325,8 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final List<LiteralToUniformReductionOpportunity> ops2 =
         LiteralToUniformReductionOpportunities
             .findOpportunities(shaderJob,
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new ReducerContext(false, true,
+                    ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                     new IdGenerator()));
 
     assertEquals("There should be no opportunities", 0, ops2.size());
@@ -384,7 +394,8 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final List<LiteralToUniformReductionOpportunity> ops =
         LiteralToUniformReductionOpportunities
             .findOpportunities(shaderJob,
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new ReducerContext(false, true,
+                    ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                     new IdGenerator()));
 
     assertEquals("There should be three opportunities", 3, ops.size());
@@ -409,7 +420,8 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final List<LiteralToUniformReductionOpportunity> ops2 =
         LiteralToUniformReductionOpportunities
             .findOpportunities(shaderJob,
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new ReducerContext(false, true,
+                    ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                     new IdGenerator()));
 
     assertEquals("There should be no opportunities", 0, ops2.size());
@@ -470,7 +482,8 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final List<LiteralToUniformReductionOpportunity> ops =
         LiteralToUniformReductionOpportunities
             .findOpportunities(shaderJob,
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new ReducerContext(false, true,
+                    ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                     new IdGenerator()));
 
     assertEquals("There should be 10 opportunities", 10, ops.size());
@@ -490,7 +503,8 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final List<LiteralToUniformReductionOpportunity> ops2 =
         LiteralToUniformReductionOpportunities
             .findOpportunities(shaderJob,
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new ReducerContext(false, true,
+                    ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                     new IdGenerator()));
 
     assertEquals("There should be no opportunities", 0, ops2.size());
@@ -527,7 +541,8 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final List<LiteralToUniformReductionOpportunity> ops =
         LiteralToUniformReductionOpportunities
             .findOpportunities(shaderJob,
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new ReducerContext(false, true,
+                    ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                     new IdGenerator()));
 
     assertEquals("There should be three opportunities", 3, ops.size());
@@ -539,7 +554,8 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final List<LiteralToUniformReductionOpportunity> ops2 =
         LiteralToUniformReductionOpportunities
             .findOpportunities(shaderJob,
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new ReducerContext(false, true,
+                    ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                     new IdGenerator()));
 
     assertEquals("There should be no opportunities", 0, ops2.size());
@@ -578,7 +594,8 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final List<LiteralToUniformReductionOpportunity> ops =
         LiteralToUniformReductionOpportunities
             .findOpportunities(shaderJob,
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new ReducerContext(false, true,
+                    ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                     new IdGenerator()));
 
     assertEquals("There should be seven opportunities", 7, ops.size());
@@ -590,7 +607,8 @@ public class LiteralToUniformReductionOpportunitiesTest {
     final List<LiteralToUniformReductionOpportunity> ops2 =
         LiteralToUniformReductionOpportunities
             .findOpportunities(shaderJob,
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
+                new ReducerContext(false, true,
+                    ShadingLanguageVersion.ESSL_100, new RandomWrapper(0),
                     new IdGenerator()));
 
     assertEquals("There should be no opportunities", 0, ops2.size());

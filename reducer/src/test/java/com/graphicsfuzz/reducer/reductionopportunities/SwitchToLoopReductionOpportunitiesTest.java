@@ -45,7 +45,7 @@ public class SwitchToLoopReductionOpportunitiesTest {
     final List<VariableDeclToExprReductionOpportunity> ops =
         VariableDeclToExprReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
-                ShadingLanguageVersion.ESSL_320,
+                true, ShadingLanguageVersion.ESSL_320,
                 new RandomWrapper(0), new IdGenerator()));
     // There should be no opportunities as the preserve semantics is enabled.
     assertTrue(ops.isEmpty());
@@ -73,7 +73,7 @@ public class SwitchToLoopReductionOpportunitiesTest {
     final List<SwitchToLoopReductionOpportunity> ops =
         SwitchToLoopReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(false,
-                ShadingLanguageVersion.ESSL_320,
+                true, ShadingLanguageVersion.ESSL_320,
                 new RandomWrapper(0), new IdGenerator()));
     // There should be an opportunity, as the switch statement is in a dead code block.
     assertEquals(1, ops.size());
@@ -116,7 +116,7 @@ public class SwitchToLoopReductionOpportunitiesTest {
     final List<SwitchToLoopReductionOpportunity> ops =
         SwitchToLoopReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
-                ShadingLanguageVersion.ESSL_320,
+                true, ShadingLanguageVersion.ESSL_320,
                 new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -164,7 +164,7 @@ public class SwitchToLoopReductionOpportunitiesTest {
     final List<SwitchToLoopReductionOpportunity> ops =
         SwitchToLoopReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
-                ShadingLanguageVersion.ESSL_320,
+                true, ShadingLanguageVersion.ESSL_320,
                 new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -199,7 +199,7 @@ public class SwitchToLoopReductionOpportunitiesTest {
     final List<SwitchToLoopReductionOpportunity> ops =
         SwitchToLoopReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu), new ReducerContext(true,
-                ShadingLanguageVersion.ESSL_320,
+                true, ShadingLanguageVersion.ESSL_320,
                 new RandomWrapper(0), new IdGenerator()));
     assertEquals(2, ops.size());
     ops.get(0).applyReduction();
