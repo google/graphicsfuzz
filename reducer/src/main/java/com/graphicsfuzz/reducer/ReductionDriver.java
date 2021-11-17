@@ -233,7 +233,7 @@ public class ReductionDriver {
       boolean makeArrayAccessesInBounds = false;
       boolean addInitializers = false;
 
-      if (context.reduceEverywhere()) {
+      if (context.addUbGuards() && context.reduceEverywhere()) {
         LOGGER.info("We are not preserving semantics, so see whether adding guards against "
             + "undefined behaviour preserves interestingness.");
 

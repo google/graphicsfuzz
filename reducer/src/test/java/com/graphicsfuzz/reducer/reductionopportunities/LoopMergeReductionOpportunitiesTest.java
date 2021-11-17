@@ -66,7 +66,7 @@ public class LoopMergeReductionOpportunitiesTest {
 
     List<LoopMergeReductionOpportunity> opportunities =
         LoopMergeReductionOpportunities.findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-            new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+            new ReducerContext(false, true, ShadingLanguageVersion.ESSL_100,
                 new RandomWrapper(0), new IdGenerator()));
 
     assertEquals(1, opportunities.size());

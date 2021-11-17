@@ -53,7 +53,7 @@ public class InlineFunctionReductionOpportunitiesTest {
     final List<InlineFunctionReductionOpportunity> ops =
         InlineFunctionReductionOpportunities.findOpportunities(shaderJob,
         new ReducerContext(true,
-            ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+            true, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
 
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -77,7 +77,7 @@ public class InlineFunctionReductionOpportunitiesTest {
     final List<InlineFunctionReductionOpportunity> ops =
         InlineFunctionReductionOpportunities.findOpportunities(shaderJob,
             new ReducerContext(true,
-                ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
+                true, ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), new IdGenerator()));
 
     assertEquals(0, ops.size());
   }

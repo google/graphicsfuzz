@@ -978,7 +978,7 @@ public class FlattenControlFlowReductionOpportunitiesTest {
                                                     boolean reduceEverywhere) {
     return FlattenControlFlowReductionOpportunities.findOpportunities(
         MakeShaderJobFromFragmentShader.make(tu),
-        new ReducerContext(reduceEverywhere,
+        new ReducerContext(reduceEverywhere, true,
             tu.getShadingLanguageVersion(), new RandomWrapper(0),
             new IdGenerator()));
   }

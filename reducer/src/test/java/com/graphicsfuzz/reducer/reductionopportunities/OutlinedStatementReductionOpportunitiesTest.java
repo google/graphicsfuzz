@@ -41,7 +41,7 @@ public class OutlinedStatementReductionOpportunitiesTest {
 
     List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-        new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+        new ReducerContext(false, true, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
 
@@ -64,7 +64,7 @@ public class OutlinedStatementReductionOpportunitiesTest {
 
     List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-        new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+        new ReducerContext(false, true, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
 
@@ -89,7 +89,7 @@ public class OutlinedStatementReductionOpportunitiesTest {
 
     List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-        new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+        new ReducerContext(false, true, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), new IdGenerator()));
 
     assertEquals(1, ops.size());
@@ -111,7 +111,7 @@ public class OutlinedStatementReductionOpportunitiesTest {
 
     List<OutlinedStatementReductionOpportunity> ops = OutlinedStatementReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-        new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+        new ReducerContext(false, true, ShadingLanguageVersion.ESSL_100,
             new RandomWrapper(0), new IdGenerator()));
 
     assertEquals(0, ops.size());

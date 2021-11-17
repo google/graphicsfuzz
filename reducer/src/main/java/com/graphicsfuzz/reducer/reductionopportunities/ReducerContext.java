@@ -26,6 +26,7 @@ public class ReducerContext {
   private static final int DEFAULT_AGGRESSION_DECREASE_STEP = 5;
 
   private final boolean reduceEverywhere;
+  private final boolean addUbGuards;
   private final ShadingLanguageVersion shadingLanguageVersion;
   private final IRandom random;
   private final IdGenerator idGenerator;
@@ -33,10 +34,12 @@ public class ReducerContext {
   private final int aggressionDecreaseStep;
 
   public ReducerContext(boolean reduceEverywhere,
+                        boolean addUbGuards,
                         ShadingLanguageVersion shadingLanguageVersion,
                         IRandom random, IdGenerator idGenerator, int maxPercentageToReduce,
                         int aggressionDecreaseStep) {
     this.reduceEverywhere = reduceEverywhere;
+    this.addUbGuards = addUbGuards;
     this.shadingLanguageVersion = shadingLanguageVersion;
     this.random = random;
     this.idGenerator = idGenerator;
@@ -45,14 +48,19 @@ public class ReducerContext {
   }
 
   public ReducerContext(boolean reduceEverywhere,
+                        boolean addUbGuards,
                         ShadingLanguageVersion shadingLanguageVersion,
                         IRandom random, IdGenerator idGenerator) {
-    this(reduceEverywhere, shadingLanguageVersion, random, idGenerator,
+    this(reduceEverywhere, addUbGuards, shadingLanguageVersion, random, idGenerator,
         DEFAULT_MAX_PERCENTAGE_TO_REDUCE, DEFAULT_AGGRESSION_DECREASE_STEP);
   }
 
   public boolean reduceEverywhere() {
     return reduceEverywhere;
+  }
+
+  public boolean addUbGuards() {
+    return addUbGuards;
   }
 
   public ShadingLanguageVersion getShadingLanguageVersion() {

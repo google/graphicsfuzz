@@ -41,7 +41,7 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(original);
     final List<SimplifyExprReductionOpportunity> ops = CompoundExprToSubExprReductionOpportunities
           .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-              new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
+              new ReducerContext(false, true, ShadingLanguageVersion.GLSL_440,
                 new RandomWrapper(0), new IdGenerator()));
     assertTrue(ops.isEmpty());
   }
@@ -170,7 +170,7 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
         boolean reduceEverywhere) {
     return CompoundExprToSubExprReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-          new ReducerContext(reduceEverywhere, ShadingLanguageVersion.GLSL_440,
+          new ReducerContext(reduceEverywhere, true, ShadingLanguageVersion.GLSL_440,
           new RandomWrapper(0), new IdGenerator()));
   }
 
@@ -186,7 +186,7 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(program);
     final List<SimplifyExprReductionOpportunity> ops = CompoundExprToSubExprReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-        new ReducerContext(true, ShadingLanguageVersion.ESSL_310, new RandomWrapper(0),
+        new ReducerContext(true, true, ShadingLanguageVersion.ESSL_310, new RandomWrapper(0),
             new IdGenerator()));
     assertEquals(0, ops.size());
   }

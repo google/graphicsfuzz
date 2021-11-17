@@ -201,7 +201,7 @@ public class InlineUniformReductionOpportunitiesTest {
       final ShaderJob temp = shaderJob.clone();
       List<SimplifyExprReductionOpportunity> ops =
           InlineUniformReductionOpportunities.findOpportunities(temp,
-              new ReducerContext(true,
+              new ReducerContext(true, true,
                   ShadingLanguageVersion.ESSL_100, new RandomWrapper(0), null));
       assertEquals(expectedSize, ops.size());
       ops.get(i).applyReduction();
@@ -225,7 +225,7 @@ public class InlineUniformReductionOpportunitiesTest {
     pipelineInfo.addUniform("u", BasicType.INT, Optional.empty(), Collections.singletonList(2));
     final List<SimplifyExprReductionOpportunity> opportunities =
         InlineUniformReductionOpportunities.findOpportunities(new GlslShaderJob(Optional.empty(),
-            pipelineInfo, tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_310,
+            pipelineInfo, tu), new ReducerContext(false, true, ShadingLanguageVersion.ESSL_310,
         new RandomWrapper(0), new IdGenerator()));
     assertTrue(opportunities.isEmpty());
   }
@@ -253,7 +253,7 @@ public class InlineUniformReductionOpportunitiesTest {
     pipelineInfo.addUniform("u", BasicType.INT, Optional.empty(), Collections.singletonList(2));
     final List<SimplifyExprReductionOpportunity> opportunities =
         InlineUniformReductionOpportunities.findOpportunities(new GlslShaderJob(Optional.empty(),
-            pipelineInfo, tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_310,
+            pipelineInfo, tu), new ReducerContext(false, true, ShadingLanguageVersion.ESSL_310,
             new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, opportunities.size());
     opportunities.get(0).applyReduction();
@@ -283,7 +283,7 @@ public class InlineUniformReductionOpportunitiesTest {
     pipelineInfo.addUniform("u", BasicType.INT, Optional.empty(), Collections.singletonList(2));
     final List<SimplifyExprReductionOpportunity> opportunities =
         InlineUniformReductionOpportunities.findOpportunities(new GlslShaderJob(Optional.empty(),
-            pipelineInfo, tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_310,
+            pipelineInfo, tu), new ReducerContext(false, true, ShadingLanguageVersion.ESSL_310,
             new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, opportunities.size());
     opportunities.get(0).applyReduction();
@@ -335,7 +335,7 @@ public class InlineUniformReductionOpportunitiesTest {
     pipelineInfo.addUniform("u", BasicType.INT, Optional.empty(), Collections.singletonList(2));
     final List<SimplifyExprReductionOpportunity> opportunities =
         InlineUniformReductionOpportunities.findOpportunities(new GlslShaderJob(Optional.empty(),
-            pipelineInfo, tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_310,
+            pipelineInfo, tu), new ReducerContext(false, true, ShadingLanguageVersion.ESSL_310,
             new RandomWrapper(0), new IdGenerator()));
     assertEquals(4, opportunities.size());
     for (SimplifyExprReductionOpportunity op : opportunities) {
@@ -367,7 +367,7 @@ public class InlineUniformReductionOpportunitiesTest {
         Collections.singletonList(3));
     final List<SimplifyExprReductionOpportunity> opportunities =
         InlineUniformReductionOpportunities.findOpportunities(new GlslShaderJob(Optional.empty(),
-            pipelineInfo, tu), new ReducerContext(false, ShadingLanguageVersion.ESSL_310,
+            pipelineInfo, tu), new ReducerContext(false, true, ShadingLanguageVersion.ESSL_310,
             new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, opportunities.size());
     opportunities.get(0).applyReduction();

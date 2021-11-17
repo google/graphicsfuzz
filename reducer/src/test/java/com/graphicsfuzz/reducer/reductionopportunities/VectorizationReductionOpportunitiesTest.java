@@ -78,7 +78,7 @@ public class VectorizationReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(original);
     List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
+                new ReducerContext(false, true, ShadingLanguageVersion.GLSL_440,
         new ZeroCannedRandom(), new IdGenerator()));
     assertEquals(2, ops.size());
     ops =
@@ -127,7 +127,7 @@ public class VectorizationReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(original);
     List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-        new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
+        new ReducerContext(false, true, ShadingLanguageVersion.GLSL_440,
             new ZeroCannedRandom(), new IdGenerator()));
     assertEquals(2, ops.size());
     ops.stream().filter(item -> item.getVectorName().equals("GLF_merged2_0_1_1_1_1_1bc")
@@ -140,7 +140,7 @@ public class VectorizationReductionOpportunitiesTest {
         PrettyPrinterVisitor.prettyPrintAsString(tu));
     ops = VectorizationReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-        new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
+        new ReducerContext(false, true, ShadingLanguageVersion.GLSL_440,
             new ZeroCannedRandom(), new IdGenerator()));
     assertEquals(0, ops.size());
   }
@@ -185,7 +185,7 @@ public class VectorizationReductionOpportunitiesTest {
     final IRandom cannedRandom = new ZeroCannedRandom();
     List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
+                new ReducerContext(false, true, ShadingLanguageVersion.GLSL_440,
                     cannedRandom, new IdGenerator()));
     assertEquals(3, ops.size());
     ops.stream().filter(item -> item.getComponentName().equals("P")).findAny().get()
@@ -202,7 +202,7 @@ public class VectorizationReductionOpportunitiesTest {
         PrettyPrinterVisitor.prettyPrintAsString(tu));
     ops = VectorizationReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
+                new ReducerContext(false, true, ShadingLanguageVersion.GLSL_440,
                     cannedRandom, new IdGenerator()));
     assertEquals(0, ops.size());
   }
@@ -247,7 +247,7 @@ public class VectorizationReductionOpportunitiesTest {
     final IRandom cannedRandom = new CannedRandom(2);
     final List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
+                new ReducerContext(false, true, ShadingLanguageVersion.GLSL_440,
                     cannedRandom, new IdGenerator()));
     ops.stream().filter(item -> item.getComponentName().equals("a")).findAny().get()
         .applyReduction();
@@ -302,7 +302,7 @@ public class VectorizationReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(shader);
     List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
+                new ReducerContext(false, true, ShadingLanguageVersion.GLSL_440,
         new ZeroCannedRandom(), new IdGenerator()));
     assertEquals(3, ops.size());
     ops.stream().filter(item -> item.getComponentName().equals("GLF_merged2_0_1_1_1_1_1PQ"))
@@ -355,7 +355,7 @@ public class VectorizationReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(original);
     List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-            new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
+            new ReducerContext(false, true, ShadingLanguageVersion.GLSL_440,
                 new ZeroCannedRandom(), new IdGenerator()));
     assertEquals(2, ops.size());
     ops.stream().filter(item -> item.getComponentName().equals("b")).findAny().get()
@@ -364,7 +364,7 @@ public class VectorizationReductionOpportunitiesTest {
         PrettyPrinterVisitor.prettyPrintAsString(tu));
     ops = VectorizationReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
+                new ReducerContext(false, true, ShadingLanguageVersion.GLSL_440,
         new ZeroCannedRandom(), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.stream().filter(item -> item.getComponentName().equals("c")).findAny().get()
@@ -403,7 +403,7 @@ public class VectorizationReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(original);
     List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
+                new ReducerContext(false, true, ShadingLanguageVersion.GLSL_440,
         new ZeroCannedRandom(), new IdGenerator()));
     assertEquals(2, ops.size());
     ops.get(0).applyReduction();
@@ -411,7 +411,7 @@ public class VectorizationReductionOpportunitiesTest {
         PrettyPrinterVisitor.prettyPrintAsString(tu));
     ops = VectorizationReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
+                new ReducerContext(false, true, ShadingLanguageVersion.GLSL_440,
         new ZeroCannedRandom(), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -445,7 +445,7 @@ public class VectorizationReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(shader);
     final List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-            new ReducerContext(false, ShadingLanguageVersion.GLSL_440, new RandomWrapper(0),
+            new ReducerContext(false, true, ShadingLanguageVersion.GLSL_440, new RandomWrapper(0),
                 new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -466,7 +466,7 @@ public class VectorizationReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(original);
     List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-            new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
+            new ReducerContext(false, true, ShadingLanguageVersion.GLSL_440,
                 new ZeroCannedRandom(), new IdGenerator()));
     assertEquals(0, ops.size());
   }
@@ -501,7 +501,7 @@ public class VectorizationReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(original);
     List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
+                new ReducerContext(false, true, ShadingLanguageVersion.GLSL_440,
         new ZeroCannedRandom(), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -525,7 +525,7 @@ public class VectorizationReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(original);
     List<VectorizationReductionOpportunity> ops = VectorizationReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                new ReducerContext(false, ShadingLanguageVersion.GLSL_440,
+                new ReducerContext(false, true, ShadingLanguageVersion.GLSL_440,
         new ZeroCannedRandom(), new IdGenerator()));
     assertEquals(0, ops.size());
   }

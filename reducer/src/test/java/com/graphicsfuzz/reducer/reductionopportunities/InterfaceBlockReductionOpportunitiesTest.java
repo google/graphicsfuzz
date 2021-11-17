@@ -41,7 +41,7 @@ public class InterfaceBlockReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(original);
     final List<InterfaceBlockReductionOpportunity> ops = InterfaceBlockReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-            new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+            new ReducerContext(false, true, ShadingLanguageVersion.ESSL_100,
                 new RandomWrapper(0), new IdGenerator()));
     assertEquals(0, ops.size());
   }
@@ -56,7 +56,7 @@ public class InterfaceBlockReductionOpportunitiesTest {
     final TranslationUnit tu = ParseHelper.parse(original);
     final List<InterfaceBlockReductionOpportunity> ops = InterfaceBlockReductionOpportunities
         .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-            new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+            new ReducerContext(false, true, ShadingLanguageVersion.ESSL_100,
                 new RandomWrapper(0), new IdGenerator()));
     assertEquals(1, ops.size());
     ops.get(0).applyReduction();
@@ -64,7 +64,7 @@ public class InterfaceBlockReductionOpportunitiesTest {
     final List<InterfaceBlockReductionOpportunity> moreOps =
         InterfaceBlockReductionOpportunities
             .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
-                new ReducerContext(false, ShadingLanguageVersion.ESSL_100,
+                new ReducerContext(false, true, ShadingLanguageVersion.ESSL_100,
                     new RandomWrapper(0), new IdGenerator()));
     assertEquals(0, moreOps.size());
   }
