@@ -48,7 +48,9 @@ public class VariableDeclReductionOpportunities
   private void getReductionOpportunitiesForUnusedGlobals() {
     for (String name : getCurrentScope().keys()) {
       ScopeEntry entry = getCurrentScope().lookupScopeEntry(name);
-      assert entry.hasVariableDeclInfo();
+      if (!entry.hasVariableDeclInfo()) {
+        continue;
+      }
       assert referencedScopeEntries.peek() != null;
       if (!referencedScopeEntries.peek().contains(entry)) {
         addOpportunity(new VariableDeclReductionOpportunity(entry.getVariableDeclInfo(),
