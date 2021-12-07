@@ -96,7 +96,7 @@ vec3 computePoint(mat2 rotationMatrix)
     vec2 aspect;
     aspect = resolution.xy / min(resolution.x, resolution.y);
     vec2 position;
-    position = (gl_FragCoord.xy / resolution.xy) * aspect;
+    position = (floor(gl_FragCoord.xy) / resolution.xy) * aspect;
     vec2 center;
     center = vec2(0.5) * aspect;
     position *= rotationMatrix;

@@ -49,7 +49,7 @@ int map[16 * 16];
 
 void main() {
   // pos is screen position in 0..1 range
-  vec2 pos = gl_FragCoord.xy / resolution;
+  vec2 pos = floor(gl_FragCoord.xy) / resolution;
   // ipos is screen position in 0..15 range, in integer steps.
   // This creates a tile pattern.
   ivec2 ipos = ivec2(int(pos.x * 16.0), int(pos.y * 16.0));

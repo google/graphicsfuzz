@@ -87,8 +87,8 @@ void main()
   POPULATE_SUMS(m43, 4, 3, 7);
   POPULATE_SUMS(m44, 4, 4, 8);
 
-  int region_x = int(gl_FragCoord.x / (resolution.x / 3.0));
-  int region_y = int(gl_FragCoord.y / (resolution.x / 3.0));
+  int region_x = int(floor(gl_FragCoord.x) / (resolution.x / 3.0));
+  int region_y = int(floor(gl_FragCoord.y) / (resolution.x / 3.0));
   int overall_region = region_y * 3 + region_x;
 
   if (overall_region > 0 && overall_region < 9) {

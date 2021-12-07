@@ -47,7 +47,7 @@ are numerically stable.
 // vertically sort in one order, and for the other half the other.
 bool checkSwap(float a, float b)
 {
-    return gl_FragCoord.y < resolution.y / 2.0 ? a > b : a < b;
+    return floor(gl_FragCoord.y) < resolution.y / 2.0 ? a > b : a < b;
 }
 
 void main()
@@ -86,7 +86,7 @@ void main()
     // Draw image based on the sorted values.
     // For half the screen horizontally use one order,
     // and for the other the inverse order of values.
-    if (gl_FragCoord.x < resolution.x / 2.0)
+    if (floor(gl_FragCoord.x) < resolution.x / 2.0)
         {
             _GLF_color = vec4(data[0] / 10.0, data[5] / 10.0, data[9] / 10.0, 1.0);
         }

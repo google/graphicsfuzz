@@ -74,8 +74,8 @@ void main()
     // Use of uniform avoids compiler optimizations.
     float thirty_two = round(resolution.x / 8.0);
 
-    c.x = compute_value(gl_FragCoord.x, thirty_two);
-    c.y = compute_value(gl_FragCoord.y, thirty_two);
+    c.x = compute_value(floor(gl_FragCoord.x), thirty_two);
+    c.y = compute_value(floor(gl_FragCoord.y), thirty_two);
     c.z = c.x + c.y;
 
     for (int i = 0; i < 3; i++) {

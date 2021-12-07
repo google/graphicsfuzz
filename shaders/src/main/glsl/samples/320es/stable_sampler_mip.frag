@@ -37,7 +37,7 @@ uniform sampler2D tex;
 
 void main()
 {
-    vec2 coord = gl_FragCoord.xy * (1.0 / 256.0);
+    vec2 coord = floor(gl_FragCoord.xy) * (1.0 / 256.0);
     vec4 res = vec4(0.25);
     coord *= 2.0;
     int i = 0;

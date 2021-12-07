@@ -60,11 +60,11 @@ void main() {
     obj.even_numbers[i] = smaller_number;
   }
 
-  vec2 uv = gl_FragCoord.xy/resolution.xy;
+  vec2 uv = floor(gl_FragCoord.xy)/resolution.xy;
   vec3 col =  tan(pow(uv.xxx, uv.yyy) +
   vec3(
-    obj.odd_numbers[int(floor(gl_FragCoord.x/1000.0))],
-    obj.even_numbers[int(floor(gl_FragCoord.y/1000.0))],
+    obj.odd_numbers[int(floor(floor(gl_FragCoord.x) / 1000.0))],
+    obj.even_numbers[int(floor(floor(gl_FragCoord.y) / 1000.0))],
     sinh(uv.x)
   ));
 

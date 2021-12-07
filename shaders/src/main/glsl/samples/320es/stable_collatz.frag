@@ -80,7 +80,7 @@ int collatz(int v) {
 
 void main() {
   // lin is screen coordinates in 0..1
-  vec2 lin = gl_FragCoord.xy / resolution;
+  vec2 lin = floor(gl_FragCoord.xy) / resolution;
   // now lin is screen coordinates in 0..7 in integer steps
   // this creates a tile pattern of 8x8 pixel tiles
   lin = floor(lin * 8.0);

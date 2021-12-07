@@ -61,7 +61,7 @@ to pick a color from the table of 16 colors.
 
 void main() {
   // pos is screen coordinates in 0..1 range
-  vec2 pos = gl_FragCoord.xy / resolution;
+  vec2 pos = floor(gl_FragCoord.xy) / resolution;
   // lin is screen coordinates in 0..9 range, integer steps;
   // this creates a grid pattern.
   ivec2 lin = ivec2(int(pos.x * 10.0), int(pos.y * 10.0));

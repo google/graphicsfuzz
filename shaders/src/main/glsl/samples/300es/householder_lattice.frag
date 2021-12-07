@@ -28,7 +28,7 @@ void main()
 {
     // We need to modify A in place, so we have to copy the uniform
     mat4 matrix_a = mat4(matrix_a_uni);
-    vec4 matrix_b = gl_FragCoord.wxyz;
+    vec4 matrix_b = floor(gl_FragCoord.wxyz);
 
     vec4 matrix_u = vec4(0.0);
 

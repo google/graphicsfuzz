@@ -34,7 +34,7 @@ making this a stable shader.
 
 void main()
 {
-    vec2 coord = vec2(gl_FragCoord.xy) * (1.0 / 256.0);
+    vec2 coord = vec2(floor(gl_FragCoord.xy)) * (1.0 / 256.0);
     
     if (coord.x > 0.4)
     {

@@ -26,7 +26,7 @@ uniform vec2 resolution;
 
 bool checkSwap(float a, float b)
 {
-    return gl_FragCoord.y < resolution.y / 2.0 ? a > b : a < b;
+    return floor(gl_FragCoord.y) < resolution.y / 2.0 ? a > b : a < b;
 }
 void main()
 {
@@ -64,7 +64,7 @@ void main()
                         }
                 }
         }
-    if(gl_FragCoord.x < resolution.x / 2.0)
+    if (floor(gl_FragCoord.x) < resolution.x / 2.0)
         {
             _GLF_color = vec4(data[0] / 10.0, data[5] / 10.0, data[9] / 10.0, 1.0);
         }

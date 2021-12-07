@@ -41,8 +41,8 @@ void main()
     vec4 c = vec4(0.0, 0.0, 0.0, 1.0);
     float ref = floor(resolution.x / 8.0);
 
-    c.x = nb_mod(gl_FragCoord.x, ref);
-    c.y = nb_mod(gl_FragCoord.y, ref);
+    c.x = nb_mod(floor(gl_FragCoord.x), ref);
+    c.y = nb_mod(floor(gl_FragCoord.y), ref);
     c.z = c.x + c.y;
 
     for (int i = 0; i < 3; i++) {

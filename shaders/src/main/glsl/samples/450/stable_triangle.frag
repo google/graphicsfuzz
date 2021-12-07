@@ -56,7 +56,7 @@ int pointInTriangle(vec2 p, vec2 a, vec2 b, vec2 c) {
 }
 
 void main() {
-  vec2 pos = gl_FragCoord.xy / resolution;
+  vec2 pos = floor(gl_FragCoord.xy) / resolution;
   if (pointInTriangle(pos, vec2(0.7, 0.3), vec2(0.5, 0.9), vec2(0.1, 0.4)) == 1) {
     _GLF_color = vec4(1.0, 0.0, 0.0, 1.0);
   }

@@ -105,7 +105,7 @@ vec4 match(vec2 pos) {
 
 void main() {
   // Lin is screen position in 0..1 range
-  vec2 lin = gl_FragCoord.xy / resolution;
+  vec2 lin = floor(gl_FragCoord.xy) / resolution;
   // Lin is screen position in 0..31 range in integer steps.
   // This creates a tile pattern.
   lin = floor(lin * 32.0);

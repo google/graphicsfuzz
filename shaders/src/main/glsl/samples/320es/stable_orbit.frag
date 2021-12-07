@@ -69,7 +69,7 @@ ivec2 iter(ivec2 p) {
 
 void main() {
   // pos is screen coordinates in 0..1 range
-  vec2 pos = gl_FragCoord.xy / resolution;
+  vec2 pos = floor(gl_FragCoord.xy) / resolution;
   // ipos is screen coordinates in 0..7 range in integer steps.
   // This creates a tile pattern.
   ivec2 ipos = ivec2(int(pos.x * 8.0), int(pos.y * 8.0));
