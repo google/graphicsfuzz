@@ -295,8 +295,6 @@ public class GeneratorUnitTest {
                                                List<String> exclusionList100,
                                                List<String> exclusionList300es)
       throws IOException, ParseTimeoutException, InterruptedException, GlslParserException {
-    testTransformationMultiVersions(Arrays.asList(transformation), probabilities,
-        suffix, exclusionList100, exclusionList300es);
     testTransformationMultiVersions(Collections.singletonList(transformation), probabilities,
         suffix, exclusionList100, exclusionList300es);
   }
