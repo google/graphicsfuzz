@@ -32,9 +32,7 @@ SHORT_DESCRIPTION_LINE_PREFIX = "# Short description: "
 
 MUST_PASS_PATHS = [
     os.path.join("android", "cts", "main", "vk-master", "graphicsfuzz.txt"),
-    os.path.join(
-        "android", "cts", "main", "vk-master-2021-03-01", "graphicsfuzz.txt"
-    ),
+    os.path.join("android", "cts", "main", "vk-master-2021-03-01", "graphicsfuzz.txt"),
     os.path.join(
         "external", "vulkancts", "mustpass", "main", "vk-default", "graphicsfuzz.txt"
     ),
