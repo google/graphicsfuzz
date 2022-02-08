@@ -40,9 +40,9 @@ uniform sampler2D tex;
 void main()
 {
     int i = 0;
-    vec2 uvstep = vec2(1.0) * (1.0 / 256.0);
-    float slope = 2.0 / 256.0;
-    vec2 coord = gl_FragCoord.xy * (1.0 / 256.0);
+    vec2 uvstep = vec2(1.0) * (1.0 / 255.0);
+    float slope = 2.0 / 255.0;
+    vec2 coord = floor(gl_FragCoord.xy) * (1.0 / 255.0);
     float refh = texture(tex, coord).y;
     coord -= uvstep;
     refh += slope;

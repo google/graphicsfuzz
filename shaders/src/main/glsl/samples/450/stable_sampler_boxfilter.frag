@@ -44,8 +44,8 @@ const float weights[9] = float[9](
 
 void main()
 {
-    vec2 coord = gl_FragCoord.xy * (1.0 / 256.0);
-    float uvstep = 1.0 / 256.0;
+    vec2 coord = floor(gl_FragCoord.xy) * (1.0 / 255.0);
+    float uvstep = 1.0 / 255.0;
 
     vec4 res = vec4(0);
 
