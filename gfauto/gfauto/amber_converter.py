@@ -429,12 +429,18 @@ def is_compute_job(input_asm_spirv_job_json_path: pathlib.Path) -> bool:
 
 
 def derive_draw_command(json_contents: str) -> str:
+    width = 256
+    height = 256
     shader_job_info = json.loads(json_contents)
+    if "$framebuffer" in shader_job_info.keys():
+        width = shader_job_info["$framebuffer"]["width"]
+        height = shader_job_info["$framebuffer"]["height"]
+
     if "$grid" in shader_job_info.keys():
         cols = shader_job_info["$grid"]["dimensions"][0]
         rows = shader_job_info["$grid"]["dimensions"][1]
-        return f"DRAW_GRID POS 0 0 SIZE 256 256 CELLS {cols} {rows}"
-    return "DRAW_RECT POS 0 0 SIZE 256 256"
+        return f"DRAW_GRID POS 0 0 SIZE {width} {height} CELLS {cols} {rows}"
+    return f"DRAW_RECT POS 0 0 SIZE {width} {height}"
 
 
 class ShaderType(Enum):
@@ -487,6 +493,8 @@ class GraphicsShaderJob(ShaderJob):
     vertex_shader: Shader
     fragment_shader: Shader
     draw_command: str
+    framebuffer_width: int
+    framebuffer_height: int
 
 
 @dataclass
@@ -559,6 +567,13 @@ class ShaderJobFile:
         # Figure out if we want to draw a rectangle or a grid.
         draw_command = derive_draw_command(json_contents)
 
+        framebuffer_width = 256
+        framebuffer_height = 256
+        shader_job_info = json.loads(json_contents)
+        if "$framebuffer" in shader_job_info.keys():
+            framebuffer_width = shader_job_info["$framebuffer"]["width"]
+            framebuffer_height = shader_job_info["$framebuffer"]["height"]
+
         return GraphicsShaderJob(
             self.name_prefix,
             amberscript_uniform_buffer_def(json_contents, self.name_prefix),
@@ -576,6 +591,8 @@ class ShaderJobFile:
                 self.processing_info,
             ),
             draw_command,
+            framebuffer_width,
+            framebuffer_height,
         )
 
 
@@ -732,6 +749,9 @@ def graphics_shader_job_amber_test_to_amber_script(
 
         prefix = job.name_prefix
 
+        framebuffer_width = job.framebuffer_width
+        framebuffer_height = job.framebuffer_height
+
         vertex_shader_name = f"{prefix}_vertex_shader"
         fragment_shader_name = f"{prefix}_fragment_shader"
 
@@ -753,7 +773,7 @@ def graphics_shader_job_amber_test_to_amber_script(
         result += f"\nPIPELINE graphics {prefix}_pipeline\n"
         result += f"  ATTACH {vertex_shader_name}\n"
         result += f"  ATTACH {fragment_shader_name}\n"
-        result += "  FRAMEBUFFER_SIZE 256 256\n"
+        result += f"  FRAMEBUFFER_SIZE {framebuffer_width} {framebuffer_height}\n"
         result += f"  BIND BUFFER {prefix}_framebuffer AS color LOCATION 0\n"
         result += job.uniform_bindings
         result += "END\n"
@@ -775,6 +795,9 @@ def graphics_shader_job_amber_test_to_amber_script(
 
     if amberfy_settings.extra_commands:
         result += amberfy_settings.extra_commands
+
+    if amberfy_settings.is_coverage_gap:
+        result += f"EXPECT variant_framebuffer IDX 0 0 SIZE {framebuffer_width} {framebuffer_height} EQ_RGBA 255 0 0 255\n"
 
     return result
 
