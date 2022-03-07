@@ -19,6 +19,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.ast.decl.VariableDeclInfo;
+import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.Expr;
 import com.graphicsfuzz.common.ast.expr.UnaryExpr;
@@ -38,7 +39,11 @@ public abstract class ReductionOpportunitiesBase
 
   final ShaderKind shaderKind;
 
-  private int numEnclosingLValues;
+  // Each entry in this stack records how many l-values enclose the current expression. A new
+  // stack entry is pushed each time an array indexing expression is encountered, because even when
+  // an array indexing expression is an l-value, this does not mean that the index expression
+  // itself is an l-value.
+  private final List<Integer> enclosingLValuesStack;
 
   /**
    * Construct base class for finding reduction opportunities, with respect to a translation unit.
@@ -51,7 +56,8 @@ public abstract class ReductionOpportunitiesBase
     this.opportunities = new ArrayList<>();
     this.context = context;
     this.shaderKind = tu.getShaderKind();
-    this.numEnclosingLValues = 0;
+    this.enclosingLValuesStack = new ArrayList<>();
+    this.enclosingLValuesStack.add(0);
   }
 
   @Override
@@ -87,6 +93,13 @@ public abstract class ReductionOpportunitiesBase
   }
 
   @Override
+  public void visitArrayIndexExpr(ArrayIndexExpr arrayIndexExpr) {
+    enclosingLValuesStack.add(0);
+    super.visitArrayIndexExpr(arrayIndexExpr);
+    enclosingLValuesStack.remove(enclosingLValuesStack.size() - 1);
+  }
+
+  @Override
   protected void visitChildFromParent(IAstNode child, IAstNode parent) {
     super.visitChildFromParent(child, parent);
     if (child instanceof Expr) {
@@ -99,16 +112,18 @@ public abstract class ReductionOpportunitiesBase
   }
 
   private void enterLValueContext() {
-    numEnclosingLValues++;
+    enclosingLValuesStack.set(enclosingLValuesStack.size() - 1,
+        enclosingLValuesStack.get(enclosingLValuesStack.size() - 1) + 1);
   }
 
   private void exitLValueContext() {
-    assert numEnclosingLValues > 0;
-    numEnclosingLValues--;
+    assert enclosingLValuesStack.get(enclosingLValuesStack.size() - 1) > 0;
+    enclosingLValuesStack.set(enclosingLValuesStack.size() - 1,
+        enclosingLValuesStack.get(enclosingLValuesStack.size() - 1) - 1);
   }
 
   boolean inLValueContext() {
-    return numEnclosingLValues > 0;
+    return enclosingLValuesStack.get(enclosingLValuesStack.size() - 1) > 0;
   }
 
   boolean initializerIsScalarAndSideEffectFree(VariableDeclInfo variableDeclInfo) {

@@ -18,6 +18,7 @@ package com.graphicsfuzz.reducer.reductionopportunities;
 
 import com.graphicsfuzz.common.ast.IAstNode;
 import com.graphicsfuzz.common.ast.TranslationUnit;
+import com.graphicsfuzz.common.ast.expr.ArrayIndexExpr;
 import com.graphicsfuzz.common.ast.expr.BinOp;
 import com.graphicsfuzz.common.ast.expr.BinaryExpr;
 import com.graphicsfuzz.common.ast.expr.ConstantExpr;
@@ -51,7 +52,7 @@ public class CompoundExprToSubExprReductionOpportunities
     if (child instanceof ParenExpr) {
       // We need to be careful about removing parentheses, as this can change precedence.
       // We only remove parentheses if they are at the root of an expression, immediately under
-      // other parentheses, or immediately under a function call.
+      // other parentheses, immediately under a function call, or immediately under array brackets.
       if (!isOkToRemoveParens(parent, (ParenExpr) child)) {
         return;
       }
@@ -95,6 +96,10 @@ public class CompoundExprToSubExprReductionOpportunities
     }
     if (parent instanceof ParenExpr) {
       // These are parentheses within parentheses; fine to remove them.
+      return true;
+    }
+    if (parent instanceof ArrayIndexExpr && child == ((ArrayIndexExpr)parent).getIndex()) {
+      // These are parenthesis directly under array indexing brackets; fine to remove them.
       return true;
     }
     if (parent instanceof FunctionCallExpr) {
