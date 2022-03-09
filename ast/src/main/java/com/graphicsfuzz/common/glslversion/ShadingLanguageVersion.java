@@ -374,4 +374,10 @@ public interface ShadingLanguageVersion {
    * @return true if and only if push constants are supported.
    */
   boolean supportedPushConstants();
+
+  /**
+   * GLSL versions 4.2+ support scalar swizzles, such as v.x.x
+   * @return true if and only if scalar swizzles are supported.
+   */
+  boolean supportedScalarSwizzle();
 }

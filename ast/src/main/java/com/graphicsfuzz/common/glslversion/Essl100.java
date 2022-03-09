@@ -338,4 +338,9 @@ final class Essl100 implements ShadingLanguageVersion {
   public boolean supportedPushConstants() {
     return false;
   }
+
+  @Override
+  public boolean supportedScalarSwizzle() {
+    return false;
+  }
 }
