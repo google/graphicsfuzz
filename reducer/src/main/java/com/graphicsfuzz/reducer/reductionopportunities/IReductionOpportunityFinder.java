@@ -593,4 +593,49 @@ public interface IReductionOpportunityFinder<T extends IReductionOpportunity> {
     };
   }
 
+  static IReductionOpportunityFinder<RemoveSwizzleReductionOpportunity> removeSwizzleFinder() {
+    return new IReductionOpportunityFinder<RemoveSwizzleReductionOpportunity>() {
+      @Override
+      public List<RemoveSwizzleReductionOpportunity> findOpportunities(ShaderJob shaderJob,
+                                                                      ReducerContext context) {
+        return RemoveSwizzleReductionOpportunities.findOpportunities(shaderJob, context);
+      }
+
+      @Override
+      public String getName() {
+        return "removeSwizzle";
+      }
+    };
+  }
+
+  static IReductionOpportunityFinder<SimplifySwizzleReductionOpportunity> simplifySwizzleFinder() {
+    return new IReductionOpportunityFinder<SimplifySwizzleReductionOpportunity>() {
+      @Override
+      public List<SimplifySwizzleReductionOpportunity> findOpportunities(ShaderJob shaderJob,
+                                                                      ReducerContext context) {
+        return SimplifySwizzleReductionOpportunities.findOpportunities(shaderJob, context);
+      }
+
+      @Override
+      public String getName() {
+        return "simplifySwizzle";
+      }
+    };
+  }
+
+  static IReductionOpportunityFinder<ShortenSwizzleReductionOpportunity> shortenSwizzleFinder() {
+    return new IReductionOpportunityFinder<ShortenSwizzleReductionOpportunity>() {
+      @Override
+      public List<ShortenSwizzleReductionOpportunity> findOpportunities(ShaderJob shaderJob,
+                                                                      ReducerContext context) {
+        return ShortenSwizzleReductionOpportunities.findOpportunities(shaderJob, context);
+      }
+
+      @Override
+      public String getName() {
+        return "shortenSwizzle";
+      }
+    };
+  }
+
 }

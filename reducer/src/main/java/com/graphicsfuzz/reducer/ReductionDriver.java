@@ -126,7 +126,10 @@ public class ReductionDriver {
         IReductionOpportunityFinder.redundantUniformMetadataFinder(),
         IReductionOpportunityFinder.variableDeclToExprFinder(),
         IReductionOpportunityFinder.globalVariableDeclToExprFinder(),
-        IReductionOpportunityFinder.globalPrecisionDeclarationFinder())) {
+        IReductionOpportunityFinder.globalPrecisionDeclarationFinder(),
+        IReductionOpportunityFinder.removeSwizzleFinder(),
+        IReductionOpportunityFinder.shortenSwizzleFinder(),
+        IReductionOpportunityFinder.simplifySwizzleFinder())) {
       cleanupPasses.add(new SystematicReductionPass(context,
           verbose,
           finder));
