@@ -1072,14 +1072,13 @@ public class ReductionDriverTest {
         + " int ext_0;\n"
         + " int ext_1[3];\n"
         + " int ext_2[3];\n"
-        + " ext_2[(all(bvec2(true)) ? (+ abs(ext_1[1])) : (ext_0 & -- ext_2[2]))] |= 1;\n"
+        + " int[3](1, 1, 1)[(all(bvec2(true)) ? (+ abs(ext_1[1])) : (ext_0 & -- ext_2[2]))] |= 1;\n"
         + "}\n";
 
     final String expected = "#version 310 es\n"
         + "void main()\n"
         + "{\n"
         + " int ext_1[3];\n"
-        + " int ext_2[3];\n"
         + " int[3](1, 1, 1)[abs(ext_1[1])] |= 1;\n"
         + "}\n";
 
@@ -1097,8 +1096,7 @@ public class ReductionDriverTest {
         assert customJudgeShaderJob.getShaders().size() == 1;
         final TranslationUnit tu = customJudgeShaderJob.getShaders().get(0);
         final String shaderString = tu.getText();
-        return shaderString.contains("ext_2[") && shaderString.contains("abs(ext_1[1])")
-            && shaderString.contains(" |= 1");
+        return shaderString.contains("abs(ext_1[1])") && shaderString.contains(" |= 1");
       } catch (Exception exception) {
         throw new RuntimeException(exception);
       }
