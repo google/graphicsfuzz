@@ -138,7 +138,7 @@ def exclude_filename(f: str):
 
 def go():
     fail = False
-    copyright_pattern = re.compile(r"Copyright 20(18|19|20|21) The GraphicsFuzz Project Authors")
+    copyright_pattern = re.compile(r"Copyright 20(18|19|20|21|22) The GraphicsFuzz Project Authors")
     generated_pattern = re.compile(r"(g|G)enerated")
 
     for (dirpath, dirnames, filenames) in os.walk(os.curdir, topdown=True):
