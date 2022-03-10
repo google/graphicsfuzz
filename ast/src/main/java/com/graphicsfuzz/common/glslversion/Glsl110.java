@@ -341,4 +341,9 @@ final class Glsl110 implements ShadingLanguageVersion {
   public boolean supportedPushConstants() {
     return false;
   }
+
+  @Override
+  public boolean supportedScalarSwizzle() {
+    return false;
+  }
 }

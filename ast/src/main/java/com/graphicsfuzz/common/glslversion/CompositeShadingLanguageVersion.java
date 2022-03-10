@@ -337,4 +337,9 @@ abstract class CompositeShadingLanguageVersion implements ShadingLanguageVersion
   public boolean supportedPushConstants() {
     return prototype.supportedPushConstants();
   }
+
+  @Override
+  public boolean supportedScalarSwizzle() {
+    return prototype.supportedScalarSwizzle();
+  }
 }

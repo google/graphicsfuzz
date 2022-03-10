@@ -1000,6 +1000,56 @@ public class TyperTest {
     }.visit(tu);
   }
 
+  @Test
+  public void testScalarSwizzleTyped() throws Exception {
+    final TranslationUnit tu = ParseHelper.parse("#version 420\n"
+        + "void main() {\n"
+        + "  float f;\n"
+        + "  vec3 fv;\n"
+        + "  int i;\n"
+        + "  ivec3 iv;\n"
+        + "  uint u;\n"
+        + "  uvec3 uv;\n"
+        + "  bool b;\n"
+        + "  bvec3 bv;\n"
+        + "  f.x;\n"
+        + "  f.r;\n"
+        + "  f.s;\n"
+        + "  fv.x.x;\n"
+        + "  fv.g.g;\n"
+        + "  fv.t.t;\n"
+        + "  i.x;\n"
+        + "  i.r;\n"
+        + "  i.s;\n"
+        + "  iv.x.x;\n"
+        + "  iv.g.g;\n"
+        + "  iv.t.t;\n"
+        + "  u.x;\n"
+        + "  u.r;\n"
+        + "  u.s;\n"
+        + "  uv.x.x;\n"
+        + "  uv.g.g;\n"
+        + "  uv.t.t;\n"
+        + "  b.x;\n"
+        + "  b.r;\n"
+        + "  b.s;\n"
+        + "  bv.x.x;\n"
+        + "  bv.g.g;\n"
+        + "  bv.t.t;\n"
+        + "}\n");
+    new NullCheckTyper(tu) {
+      private int counter = 0;
+      @Override
+      public void visitMemberLookupExpr(MemberLookupExpr memberLookupExpr) {
+        super.visitMemberLookupExpr(memberLookupExpr);
+        assertTrue(Arrays.asList("x", "r", "g", "s", "t").contains(memberLookupExpr.getMember()));
+        final BasicType type =
+            (BasicType) lookupType(memberLookupExpr.getStructure()).getWithoutQualifiers();
+        assertSame(type.getElementType(), lookupType(memberLookupExpr));
+      }
+    }.visit(tu);
+  }
+
   private void checkComputeShaderBuiltin(String builtin, String builtinConstant, BasicType baseType,
       TypeQualifier qualifier) throws IOException, ParseTimeoutException, InterruptedException,
       GlslParserException {
