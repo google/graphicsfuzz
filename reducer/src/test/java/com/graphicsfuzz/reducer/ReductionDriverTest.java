@@ -1064,4 +1064,58 @@ public class ReductionDriverTest {
         resultsPrefix + ".frag")));
   }
 
+  @Test
+  public void testSimplificationOfTernaryWithArray() throws Exception {
+    final String shader = "#version 310 es\n"
+        + "void main()\n"
+        + "{\n"
+        + " int ext_0;\n"
+        + " int ext_1[3];\n"
+        + " int ext_2[3];\n"
+        + " int[3](1, 1, 1)[(all(bvec2(true)) ? (+ abs(ext_1[1])) : (ext_0 & -- ext_2[2]))] |= 1;\n"
+        + "}\n";
+
+    final String expected = "#version 310 es\n"
+        + "void main()\n"
+        + "{\n"
+        + " int ext_1[3];\n"
+        + " int[3](1, 1, 1)[abs(ext_1[1])] |= 1;\n"
+        + "}\n";
+
+    final ShaderJob shaderJob = new GlslShaderJob(Optional.empty(),
+        new PipelineInfo(),
+        ParseHelper.parse(shader));
+
+    final File workDir = testFolder.getRoot();
+    final File tempShaderJobFile = new File(workDir, "temp.json");
+    fileOps.writeShaderJobFile(shaderJob, tempShaderJobFile);
+
+    final IFileJudge customJudge = (file, unused) -> {
+      try {
+        ShaderJob customJudgeShaderJob = fileOps.readShaderJobFile(file);
+        assert customJudgeShaderJob.getShaders().size() == 1;
+        final TranslationUnit tu = customJudgeShaderJob.getShaders().get(0);
+        final String shaderString = tu.getText();
+        return shaderString.contains("abs(ext_1[1])") && shaderString.contains(" |= 1");
+      } catch (Exception exception) {
+        throw new RuntimeException(exception);
+      }
+    };
+
+    final String resultsPrefix = new ReductionDriver(new ReducerContext(true,
+        false,
+        ShadingLanguageVersion.ESSL_310,
+        new RandomWrapper(0),
+        new IdGenerator()),
+        false,
+        fileOps,
+        customJudge,
+        workDir)
+        .doReduction(shaderJob, "temp", 0, 100);
+
+    CompareAsts.assertEqualAsts(expected, ParseHelper.parse(new File(testFolder.getRoot(),
+        resultsPrefix + ".frag")));
+
+  }
+
 }

@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
 import com.graphicsfuzz.common.tool.PrettyPrinterVisitor;
+import com.graphicsfuzz.common.util.CompareAsts;
 import com.graphicsfuzz.common.util.GlslParserException;
 import com.graphicsfuzz.common.util.IdGenerator;
 import com.graphicsfuzz.common.util.ParseHelper;
@@ -189,6 +190,57 @@ public class CompoundExprToSubExprReductionOpportunitiesTest {
         new ReducerContext(true, true, ShadingLanguageVersion.ESSL_310, new RandomWrapper(0),
             new IdGenerator()));
     assertEquals(0, ops.size());
+  }
+
+  @Test
+  public void testTernary() throws Exception {
+    final String program = "#version 310 es\n"
+        + "void main() {\n"
+        + "  true ? 1 : 0;\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    final List<SimplifyExprReductionOpportunity> ops = CompoundExprToSubExprReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+            new ReducerContext(true, true, ShadingLanguageVersion.ESSL_310, new RandomWrapper(0),
+                new IdGenerator()));
+    assertEquals(2, ops.size());
+    ops.get(0).applyReduction();
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  1;\n"
+        + "}\n";
+    CompareAsts.assertEqualAsts(expected, tu);
+  }
+
+  @Test
+  public void testArrayIndexWithParentheses() throws Exception {
+    final String program = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int x, y;"
+        + "  int A[1];\n"
+        + "  A[(x + y)];\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    final List<SimplifyExprReductionOpportunity> ops = CompoundExprToSubExprReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+            new ReducerContext(true, true, ShadingLanguageVersion.ESSL_310, new RandomWrapper(0),
+                new IdGenerator()));
+    assertEquals(4, ops.size());
+  }
+
+  @Test
+  public void testSimplifyArrayIndexOfLValue() throws Exception {
+    final String program = "#version 310 es\n"
+        + "void main() {\n"
+        + "  int A[1];\n"
+        + "  A[(0)] = 1;\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    final List<SimplifyExprReductionOpportunity> ops = CompoundExprToSubExprReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+            new ReducerContext(true, true, ShadingLanguageVersion.ESSL_310, new RandomWrapper(0),
+                new IdGenerator()));
+    assertEquals(3, ops.size());
   }
 
 }
