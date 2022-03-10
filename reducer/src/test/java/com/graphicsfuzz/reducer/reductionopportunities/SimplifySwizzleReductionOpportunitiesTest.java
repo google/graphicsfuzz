@@ -17,6 +17,7 @@
 package com.graphicsfuzz.reducer.reductionopportunities;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 import com.graphicsfuzz.common.ast.TranslationUnit;
 import com.graphicsfuzz.common.glslversion.ShadingLanguageVersion;
@@ -79,6 +80,46 @@ public class SimplifySwizzleReductionOpportunitiesTest {
       }
     }
     CompareAsts.assertEqualAsts(reducedProgram, tu);
+  }
+
+  @Test
+  public void testLvalues() throws Exception {
+    final String program = "#version 310 es\n"
+        + "void main() {\n"
+        + "  vec4 v = vec2(1.0);\n"
+        + "  v.xy = vec2(1.0);\n"
+        + "  v.rg = vec2(1.0);\n"
+        + "  v.st = vec2(1.0);\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    List<SimplifySwizzleReductionOpportunity> ops = SimplifySwizzleReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+            new ReducerContext(true, true, ShadingLanguageVersion.ESSL_100,
+                new RandomWrapper(0), new IdGenerator()));
+    assertEquals(0, ops.size());
+  }
+
+  @Test
+  public void testLvalues2() throws Exception {
+    final String program = "#version 310 es\n"
+        + "void main() {\n"
+        + "  vec4 v = vec2(1.0);\n"
+        + "  v.yz = vec2(1.0);\n"
+        + "}\n";
+    final String expected = "#version 310 es\n"
+        + "void main() {\n"
+        + "  vec4 v = vec2(1.0);\n"
+        + "  v.xz = vec2(1.0);\n"
+        + "}\n";
+    final TranslationUnit tu = ParseHelper.parse(program);
+    List<SimplifySwizzleReductionOpportunity> ops = SimplifySwizzleReductionOpportunities
+        .findOpportunities(MakeShaderJobFromFragmentShader.make(tu),
+            new ReducerContext(true, true, ShadingLanguageVersion.ESSL_100,
+                new RandomWrapper(0), new IdGenerator()));
+    assertEquals(2, ops.size());
+    ops.get(0).applyReductionImpl();
+    assertFalse(ops.get(1).preconditionHolds());
+    CompareAsts.assertEqualAsts(expected, tu);
   }
 
 }

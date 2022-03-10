@@ -28,14 +28,17 @@ public class SimplifySwizzleReductionOpportunity extends AbstractReductionOpport
   final MemberLookupExpr swizzle;
   final int component;
   final char newComponentValue;
+  final boolean swizzleIsLvalue;
 
   SimplifySwizzleReductionOpportunity(MemberLookupExpr swizzle,
                                       int component, char newComponentValue,
+                                      boolean swizzleIsLvalue,
                                       VisitationDepth depth) {
     super(depth);
     this.swizzle = swizzle;
     this.component = component;
     this.newComponentValue = newComponentValue;
+    this.swizzleIsLvalue = swizzleIsLvalue;
   }
 
   @Override
@@ -56,6 +59,20 @@ public class SimplifySwizzleReductionOpportunity extends AbstractReductionOpport
     if (swizzle.getMember().length() <= component) {
       return false;
     }
+
+    if (swizzleIsLvalue) {
+      for (int i = 0; i < swizzle.getMember().length(); i++) {
+        if (i == component) {
+          continue;
+        }
+        if (newComponentValue == swizzle.getMember().charAt(i)) {
+          // Changing the component to the new value would lead to duplicated components, which is
+          // not allowed in an l-value swizzle.
+          return false;
+        }
+      }
+    }
+
     final char existingComponentValue = swizzle.getMember().charAt(component);
     switch (newComponentValue) {
       case 'x':

@@ -23,8 +23,10 @@ import com.graphicsfuzz.common.typing.Typer;
 import com.graphicsfuzz.common.util.ListConcat;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 /**
  * <p>This class finds opportunities to make swizzles (and vector lookups) simpler.</p>
@@ -76,6 +78,10 @@ public class SimplifySwizzleReductionOpportunities
     if (!RemoveSwizzleReductionOpportunity.isSwizzle(memberLookupExpr, typer)) {
       return;
     }
+    final Set<Character> existingComponents = new HashSet<>();
+    for (int i = 0; i < memberLookupExpr.getMember().length(); i++) {
+      existingComponents.add(memberLookupExpr.getMember().charAt(i));
+    }
     for (int component = 0; component < memberLookupExpr.getMember().length(); component++) {
       char currentComponent = memberLookupExpr.getMember().charAt(component);
       // We push replacements on to a queue such that the most aggressive replacements are pushed
@@ -113,9 +119,14 @@ public class SimplifySwizzleReductionOpportunities
         default:
           break;
       }
+      if (inLValueContext()) {
+        // An l-value swizzle cannot have repeated components, so we remove any existing components
+        // from the set of replacements.
+        replacements.removeAll(existingComponents);
+      }
       while (!replacements.isEmpty()) {
         addOpportunity(new SimplifySwizzleReductionOpportunity(memberLookupExpr, component,
-            replacements.pop(), getVistitationDepth()));
+            replacements.pop(), inLValueContext(), getVistitationDepth()));
       }
     }
   }
