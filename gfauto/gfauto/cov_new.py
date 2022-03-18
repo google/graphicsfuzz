@@ -51,16 +51,36 @@ def main() -> None:
     with open(b_coverage, mode="rb") as f:
         b_line_counts: cov_util.LineCounts = pickle.load(f)
 
+    newly_covered_total: int = 0
+
     # We modify b_line_counts so that lines already covered by A are set to 0.
     # Note that line counts appear to be able to overflow, so we use "!= 0" instead of "> 0".
     for source_file_path, b_counts in b_line_counts.items():
         if source_file_path in a_line_counts:
             a_counts = a_line_counts[source_file_path]
+            newly_covered_local: int = 0
             for line_number, b_count in b_counts.items():
                 if b_count != 0:
                     # Defaults to 0 if not present.
                     if a_counts[line_number] != 0:
                         b_counts[line_number] = 0
+                    else:
+                        newly_covered_local += 1
+                        newly_covered_total += 1
+            if newly_covered_local > 0:
+                print(
+                    "{:03d}".format(newly_covered_local)
+                    + " line(s) newly covered in "
+                    + source_file_path
+                )
+
+    print(
+        str(newly_covered_total)
+        + " line(s) newly covered in "
+        + b_coverage
+        + " compared with "
+        + a_coverage
+    )
 
     with open(output_coverage, mode="wb") as f:
         pickle.dump(b_line_counts, f, protocol=pickle.HIGHEST_PROTOCOL)
