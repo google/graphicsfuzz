@@ -82,7 +82,7 @@ vec4 trace(ivec2 pos) {
 
 void main() {
   // pos is screen coodrdinates in 0..1
-  vec2 pos = gl_FragCoord.xy / resolution;
+  vec2 pos = floor(gl_FragCoord.xy) / resolution;
   // ipos is screen coordinates in 0..255 in integer steps.
   ivec2 ipos = ivec2(int(pos.x * 256.0), int(pos.y * 256.0));
 

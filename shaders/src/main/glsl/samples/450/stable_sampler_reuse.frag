@@ -39,7 +39,7 @@ uniform sampler2D tex;
 
 void main()
 {
-    vec3 texel = texture(tex, gl_FragCoord.xy * (1.0 / 256.0)).xyz;
+    vec3 texel = texture(tex, floor(gl_FragCoord.xy) * (1.0 / 256.0)).xyz;
     vec2 reuse = (texel.xz + texel.yy) * 0.5 + vec2(0.25, 0.25);
     reuse = floor(reuse * 256.0) / 256.0;
     _GLF_color = texture(tex, reuse);

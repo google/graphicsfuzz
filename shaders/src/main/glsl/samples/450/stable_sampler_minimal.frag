@@ -33,6 +33,6 @@ uniform sampler2D tex;
 
 void main()
 {
-    _GLF_color = texture(tex, gl_FragCoord.xy * (1.0 / 256.0));
+    _GLF_color = texture(tex, floor(gl_FragCoord.xy) * (1.0 / 256.0));
 }
 

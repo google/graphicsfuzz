@@ -63,7 +63,7 @@ void main() {
   vec3 data[16];
   for (int i = 0; i < 4; i++) {
     for (int j = 0; j < 4; j++) {
-      data[4*j + i] = mand(gl_FragCoord.x + float(i - 1), gl_FragCoord.y + float(j - 1));
+      data[4*j + i] = mand(floor(gl_FragCoord.x) + float(i - 1), floor(gl_FragCoord.y) + float(j - 1));
     }
   }
   vec3 sum = vec3(0.0);

@@ -37,7 +37,7 @@ float compute_stripe(float v) {
 }
 
 void main() {
-  vec2 uv = gl_FragCoord.xy / resolution.x;
+  vec2 uv = floor(gl_FragCoord.xy) / resolution.x;
   vec3 col = vec3(0, 0, 0);
 
   bool c1 = uv.y < 0.25;

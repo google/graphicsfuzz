@@ -97,7 +97,7 @@ void main() {
     }
     quicksort();
     vec2 grid = vec2(20, 20);
-    vec2 uv = gl_FragCoord.xy / resolution;
+    vec2 uv = floor(gl_FragCoord.xy) / resolution;
     vec3 color = palette(vec3(float(obj.numbers[4]) * 0.1), vec3(0.9, float(obj.numbers[8]) * 0.1, 0.8), trunc(vec3(injectionSwitch.y)), vec3(injectionSwitch.x, 0.3, 0.7));
     if (uv.x > (1.0 / 4.0)) {
         int count = int(injectionSwitch.x);
@@ -124,7 +124,7 @@ void main() {
         grid += vec2(count + obj.numbers[3], count + obj.numbers[3]);
     }
 
-    vec2 position = vec2(gl_FragCoord.x, resolution.x - gl_FragCoord.y);
+    vec2 position = vec2(floor(gl_FragCoord.x), resolution.x - floor(gl_FragCoord.y));
     position = floor(position / grid);
     _GLF_color = vec4(color, injectionSwitch.y) + vec4(!puzzlelize(position));
 

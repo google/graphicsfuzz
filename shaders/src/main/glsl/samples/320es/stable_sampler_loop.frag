@@ -42,7 +42,7 @@ uniform sampler2D tex;
 void main()
 {
     int i = 0;
-    vec2 coord = gl_FragCoord.xy * (1.0 / 256.0);
+    vec2 coord = floor(gl_FragCoord.xy) * (1.0 / 256.0);
     vec4 texel = texture(tex, coord);
     while (texel.x + texel.y + texel.z > 1.0 && i < 16)
     {

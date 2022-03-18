@@ -72,7 +72,7 @@ void main() {
   vec3 data[16];
   for (int i = 0; i < findMSB(16); i++) {
     for (int j = 0; j < findLSB(16); j++) {
-      data[uaddCarry(uint(4*j), uint(i), uselessOutVariable)] = mand(gl_FragCoord.x + float(i - bitCount(1)), gl_FragCoord.y + float(j - bitCount(1)));
+      data[uaddCarry(uint(4*j), uint(i), uselessOutVariable)] = mand(floor(gl_FragCoord.x) + float(i - bitCount(1)), floor(gl_FragCoord.y) + float(j - bitCount(1)));
     }
   }
   vec3 sum = vec3(0.0);

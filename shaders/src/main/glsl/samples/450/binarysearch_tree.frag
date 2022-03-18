@@ -149,7 +149,7 @@ void main() {
     treeIndex++;
     insert(treeIndex, 13);
 
-    vec2 z = (gl_FragCoord.yx / resolution);
+    vec2 z = (floor(gl_FragCoord.yx) / resolution);
     float x = makeFrame(z.x);
     float y = makeFrame(z.y);
 

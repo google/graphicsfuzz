@@ -38,7 +38,7 @@ vec2 brick(vec2 uv) {
     int b = 3;
     do {
         uv.y -= step(injectionSwitch.y, uv.x) + float(a);
-        uv.x *= (isnan(uv.y) ? cosh(gl_FragCoord.y) : tanh(gl_FragCoord.x));
+        uv.x *= (isnan(uv.y) ? cosh(floor(gl_FragCoord.y)) : tanh(floor(gl_FragCoord.x)));
         b--;
     } while (b > int(injectionSwitch.x));
     int c = 2;
@@ -58,7 +58,7 @@ vec2 brick(vec2 uv) {
 float patternize(vec2 uv) {
     vec2 size = vec2(0.45);
     vec2 st = smoothstep(size, size, uv);
-     switch (int(mod(gl_FragCoord.y, 5.0))) {
+     switch (int(mod(floor(gl_FragCoord.y), 5.0))) {
         case 0:
             return mix(pow(st.x, injectionSwitch.y), st.x, size.y);
         break;
@@ -122,11 +122,11 @@ void main() {
         }
     }
 
-    vec2 uv = (gl_FragCoord.xy / resolution.x) * vec2(resolution.x / resolution.y, 1.0);
+    vec2 uv = (floor(gl_FragCoord.xy) / resolution.x) * vec2(resolution.x / resolution.y, 1.0);
     vec2 b = brick(uv * 7.0);
     vec3 color = vec3(patternize(b));
 
-    if (gl_FragCoord.y < resolution.y / 1.1) {
+    if (floor(gl_FragCoord.y) < resolution.y / 1.1) {
         // We are going to search the item in array by giving the value of the item index 4 and 0 in an array.
         if (binarySearch(obj, obj.prime_numbers[4]) != -(int(resolution.y)) && binarySearch(obj, obj.prime_numbers[0]) >= -(int(resolution.x))) {
             color.yz -= dot(float(binarySearch(obj, obj.prime_numbers[4])), float(binarySearch(obj, obj.prime_numbers[0])));

@@ -93,7 +93,7 @@ vec2 polarize(vec2 coord)
 
 void main()
 {
-    vec2 coord = gl_FragCoord.xy * (1.0 / 256.0);
+    vec2 coord = floor(gl_FragCoord.xy) * (1.0 / 256.0);
 
     vec2 coord1 = polarize(coord + vec2(20.0 / 256.0, -80.0 / 256.0));
     vec2 coord2 = polarize(coord + vec2(-60.0 / 256.0, 40.0 / 256.0));

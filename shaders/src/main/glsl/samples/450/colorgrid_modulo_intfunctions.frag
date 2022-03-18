@@ -47,8 +47,8 @@ void main()
     vec4 c = vec4(bitfieldExtract(0, 0, 0), 0.0, 0.0, bitCount(msb8));
     float ref = floor(resolution.x / float(findLSB(msb8)));
 
-    c.x = nb_mod(gl_FragCoord.x, ref);
-    c.y = nb_mod(gl_FragCoord.y, ref);
+    c.x = nb_mod(floor(gl_FragCoord.x), ref);
+    c.y = nb_mod(floor(gl_FragCoord.y), ref);
     c.z = c.x + c.y;
     int i = bitfieldReverse(bitfieldExtract(0, 0, 0));
     do {

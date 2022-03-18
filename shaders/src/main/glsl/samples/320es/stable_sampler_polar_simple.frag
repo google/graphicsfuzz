@@ -92,7 +92,7 @@ vec2 polarize(vec2 coord)
 
 void main()
 {
-    vec2 coord = gl_FragCoord.xy * (1.0 / 256.0);
+    vec2 coord = floor(gl_FragCoord.xy) * (1.0 / 256.0);
     coord = polarize(coord);
     coord = floor(coord * 256.0) / 256.0;
     _GLF_color = vec4(texture(tex, coord).xyz, 1.0);

@@ -46,7 +46,7 @@ vec2 pattern(in vec2 x) {
 }
 
 void main() {
-  vec2 uv = gl_FragCoord.xy / resolution.y;
+  vec2 uv = floor(gl_FragCoord.xy) / resolution.y;
   float A[50];
   for (int i = 0; i < 200; i++) {
     if (i >= int(resolution.x)) {

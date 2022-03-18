@@ -27,7 +27,7 @@ uniform vec2 resolution;
 
 bool checkSwap(float a, float b)
 {
-    return gl_FragCoord.y < resolution.y / 2.0 ? a > b : a < b;
+    return floor(gl_FragCoord.y) < resolution.y / 2.0 ? a > b : a < b;
 }
 void main()
 {
@@ -58,7 +58,7 @@ void main()
         }
         i++;
     } while(i < findMSB(msb9));
-    if(gl_FragCoord.x < resolution.x / 2.0)
+    if(floor(gl_FragCoord.x) < resolution.x / 2.0)
     {
         _GLF_color = vec4(data[findMSB(1)] / 10.0, data[findLSB(32)] / 10.0, data[findMSB(msb9)] / 10.0, 1.0);
     }

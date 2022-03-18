@@ -123,7 +123,7 @@ void main() {
     quicksort();
 
     // uv gets screen coordinates in 0..1 range
-    vec2 uv = gl_FragCoord.xy / resolution;
+    vec2 uv = floor(gl_FragCoord.xy) / resolution;
 
     // start color from an arbituary vector
     vec3 color = vec3(1.0, 2.0, 3.0);
