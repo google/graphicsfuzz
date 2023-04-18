@@ -42,7 +42,7 @@ limitations under the License.
 
     <maven.compiler.source>1.8</maven.compiler.source>
     <maven.compiler.target>1.8</maven.compiler.target>
-    <jettyVersion>9.4.36.v20210114</jettyVersion>
+    <jettyVersion>10.0.14</jettyVersion>
   </properties>
 
   <!-- Dependency versions -->
