@@ -24,20 +24,20 @@ public class TransformationProbabilitiesTest {
 
   @Test
   public void testToString() {
-    assertEquals("probSubstituteFreeVariable: 80\n"
+    assertEquals("probAddDeadFragColorWrites: 5\n"
+        + "probAddLiveFragColorWrites: 5\n"
         + "probDonateDeadCodeAtStmt: 5\n"
         + "probDonateLiveCodeAtStmt: 5\n"
+        + "probInjectDeadBarrierAtStmt: 5\n"
         + "probInjectJumpAtStmt: 5\n"
-        + "probWrapStmtInConditional: 5\n"
         + "probMutatePoint: 3\n"
-        + "probVectorizeStmts: 3\n"
+        + "probOutline: 5\n"
         + "probSplitLoops: 5\n"
         + "probStructify: 3\n"
-        + "probOutline: 5\n"
-        + "probAddLiveFragColorWrites: 5\n"
-        + "probAddDeadFragColorWrites: 5\n"
+        + "probSubstituteFreeVariable: 80\n"
         + "probSwitchify: 5\n"
-        + "probInjectDeadBarrierAtStmt: 5\n",
+        + "probVectorizeStmts: 3\n"
+        + "probWrapStmtInConditional: 5\n",
         TransformationProbabilities.SMALL_PROBABILITIES.toString());
   }
 
