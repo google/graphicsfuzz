@@ -18,6 +18,8 @@ package com.graphicsfuzz.generator.util;
 
 import com.graphicsfuzz.common.util.IRandom;
 import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.Comparator;
 
 public class TransformationProbabilities {
 
@@ -381,7 +383,13 @@ public class TransformationProbabilities {
   @Override
   public String toString() {
     String result = "";
-    for (Field field : this.getClass().getDeclaredFields()) {
+    Field[] sortedFields = this.getClass().getDeclaredFields();
+    Arrays.sort(sortedFields, new Comparator<Field>() {
+      public int compare(Field field1, Field field2) {
+        return field1.getName().compareTo(field2.getName());
+      }
+    });
+    for (Field field : sortedFields) {
       if (java.lang.reflect.Modifier.isStatic(field.getModifiers())) {
         continue;
       }
