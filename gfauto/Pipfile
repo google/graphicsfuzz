@@ -32,7 +32,7 @@ jedi = "*"
 
 # Code formatter. Explicit version given because it is a pre-release and
 # otherwise we get errors.
-black = "==19.10b0"
+black = "==24.3.0"
 
 # Plugin to protoc that outputs .pyi files (type information).
 mypy-protobuf = "*"
